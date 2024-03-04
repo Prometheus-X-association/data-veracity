@@ -96,6 +96,8 @@ Requirements
 _High-level BB requirements with identifiers.
 eg * **R1.** BB MUST communicate with [other BB]_
 
+_See also [Requirement spreadsheets](https://drive.google.com/drive/folders/1q0FBj0OfXGlhfJBguuZOUxBG6ao2ZkRq)_
+
 
 Architecture
 ------------
@@ -202,7 +204,8 @@ Provide examples._
 Third Party Components & Licenses
 ---------------------------------
 
-_Does this BB rely on any 3rd-party components?_
+_Does this BB rely on any 3rd-party components?
+See also [the relevant spreadsheet](https://docs.google.com/spreadsheets/d/13Lf4PfVnA_lAk-7dMeIy0QRxHnarxMcsS8EaLjyOlBA)_
 
 
 Implementation Details
