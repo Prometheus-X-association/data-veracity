@@ -48,6 +48,18 @@ _What other BBs does this BB integrate with intermediated by the connector?
 Why?_
 
 
+Relevant Standards
+------------------
+
+### Data Format Standards
+
+_Any data type / data format standards the BB adheres to_
+
+### Mapping to Data Space Reference Architecture Models
+
+_Mapping to [DSSC](https://dssc.eu/space/DDP/117211137/DSSC+Delivery+Plan+-+Summary+of+assets+publication) or [IDS RAM](https://docs.internationaldataspaces.org/ids-knowledgebase/v/ids-ram-4/)_
+
+
 Input / Output Data
 -------------------
 
@@ -179,8 +191,20 @@ What is the configuration format?
 Provide examples._
 
 
+Third Party Components & Licenses
+---------------------------------
+
+_Does this BB rely on any 3rd-party components?_
+
+
 Implementation Details
 ----------------------
 
 _This is optional: remove this heading if not needed.
 You can add details about implementation plans and lower-level design here._
+
+
+OpenAPI Specification
+---------------------
+
+_In the future: link your OpenAPI spec here._
