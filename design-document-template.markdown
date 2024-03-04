@@ -15,7 +15,8 @@ What are the main components?_
 Use Cases & Features
 --------------------
 
-_Brief summary of use cases and features._
+_Brief summary of use cases and features.
+See [BB Info for UCs spreadsheet](https://docs.google.com/spreadsheets/d/1oKWCe0XqRJ1d-wZfKnFtZb2fS0NetFMEXX4OWSyiwDU)_
 
 ### Use Cases
 
@@ -28,11 +29,6 @@ A bullet point list is recommended._
 
 _In-depth description of BB features.
 Again, an enumeration (ie bullet points) is useful._
-
-### Target Users
-
-_Who will be the users of the BB?
-What does the BB provide to these users?_
 
 
 Integrations
