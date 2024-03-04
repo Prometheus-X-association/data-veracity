@@ -167,19 +167,27 @@ _Example sequence diagram using Mermaid:_
 
 ```mermaid
 ---
-title: Sequence Diagram Example (from Mermaid docs)
+title: Sequence Diagram Example (Connector Data Exchange)
 ---
 
 sequenceDiagram
-    Alice->>Bob: Hello Bob, how are you?
-    alt is sick
-        Bob->>Alice: Not very good
-    else is well
-        Bob->>Alice: I feel great
-    end
-    opt Extra response
-        Bob->>Alice: Thanks for asking
-    end
+    participant prov as Participant (Data Provider)
+    participant provconn as Provider Data Space Connector
+    participant contract as Contract Service
+    participant catalogue as Catalogue Service
+    participant consconn as Data Consumer Connector
+    participant cons as Participant (Data Consumer)
+
+    prov -) catalogue: Trigger data exchange
+    catalogue -) consconn: contract & data exchange info
+    consconn -) provconn: data request (w/ contract)
+    provconn -) contract: Verify contract & policies
+    Note over provconn: Policy verification & Access control
+    provconn -) prov: Get data
+    prov -) provconn: data
+    provconn -) consconn: data
+    Note over consconn: Policy verification & Access control
+    consconn -) cons: data
 ```
 
 
