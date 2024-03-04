@@ -38,8 +38,17 @@ What does the BB provide to these users?_
 Integrations
 ------------
 
-_What other BBs does this BB interact with?
+_[See BB Connections Spreadsheet](https://docs.google.com/spreadsheets/d/1iNFLRofdwmrgNZ7E2JPSW0PL8xIUU4EVqIt-sMo9nlk)_
+
+### Direct Integrations with Other BBs
+
+_What other BBs does this BB interact with directly (without the connector)?
 How?
+Why?_
+
+### Integrations via Connector
+
+_What other BBs does this BB integrate with intermediated by the connector?
 Why?_
 
 
