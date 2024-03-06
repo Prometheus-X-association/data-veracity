@@ -1,5 +1,4 @@
-_BB Design Document Template_
-=============================
+# _BB Design Document Template_
 
 _This is just a template.
 Replace italic text with your own content.
@@ -12,11 +11,11 @@ What does it do?
 What are the main components?_
 
 
-Use Cases & Features
---------------------
+## Use Cases & Features
+
 
 _Brief summary of use cases and features.
-See [BB Info for UCs spreadsheet](https://docs.google.com/spreadsheets/d/1oKWCe0XqRJ1d-wZfKnFtZb2fS0NetFMEXX4OWSyiwDU)_
+See "BB info for use cases (WP2)" spreadsheet._
 
 ### Use Cases
 
@@ -31,10 +30,9 @@ _In-depth description of BB features.
 Again, an enumeration (ie bullet points) is useful._
 
 
-Integrations
-------------
+## Integrations
 
-_[See BB Connections Spreadsheet](https://docs.google.com/spreadsheets/d/1iNFLRofdwmrgNZ7E2JPSW0PL8xIUU4EVqIt-sMo9nlk)_
+_See "01_BB Connections" spreadsheet_
 
 ### Direct Integrations with Other BBs
 
@@ -48,8 +46,7 @@ _What other BBs does this BB integrate with intermediated by the connector?
 Why?_
 
 
-Relevant Standards
-------------------
+## Relevant Standards
 
 ### Data Format Standards
 
@@ -60,8 +57,7 @@ _Any data type / data format standards the BB adheres to_
 _Mapping to [DSSC](https://dssc.eu/space/DDP/117211137/DSSC+Delivery+Plan+-+Summary+of+assets+publication) or [IDS RAM](https://docs.internationaldataspaces.org/ids-knowledgebase/v/ids-ram-4/)_
 
 
-Input / Output Data
--------------------
+## Input / Output Data
 
 _What data does this BB receive?
 What data does this BB produce?
@@ -90,17 +86,15 @@ _Gives:_
 ![PlantUML JSON Example](diagrams/json.svg)
 
 
-Requirements
-------------
+## Requirements
 
 _High-level BB requirements with identifiers.
 eg * **R1.** BB MUST communicate with [other BB]_
 
-_See also [Requirement spreadsheets](https://drive.google.com/drive/folders/1q0FBj0OfXGlhfJBguuZOUxBG6ao2ZkRq)_
+_See also the Requirements spreadsheets_
 
 
-Architecture
-------------
+## Architecture
 
 _What components make up this BB?
 If applicable, insert a simple figure, eg a UML class diagram.
@@ -137,8 +131,7 @@ classDiagram
 ```
 
 
-Dynamic Behaviour
------------------
+## Dynamic Behaviour
 
 _What is the behaviour of the BB, how does it operate?
 UML sequence diagrams and/or statecharts are recommended._
@@ -197,29 +190,25 @@ stateDiagram-v2
 ```
 
 
-Configuration
--------------
+## Configuration
 
 _What configuration options does this BB have?
 What is the configuration format?
 Provide examples._
 
 
-Third Party Components & Licenses
----------------------------------
+## Third Party Components & Licenses
 
 _Does this BB rely on any 3rd-party components?
-See also [the relevant spreadsheet](https://docs.google.com/spreadsheets/d/13Lf4PfVnA_lAk-7dMeIy0QRxHnarxMcsS8EaLjyOlBA)_
+See also the "EDGE third party/background components" spreadsheet.
 
 
-Implementation Details
-----------------------
+## Implementation Details
 
 _This is optional: remove this heading if not needed.
 You can add details about implementation plans and lower-level design here._
 
 
-OpenAPI Specification
----------------------
+## OpenAPI Specification
 
 _In the future: link your OpenAPI spec here._
