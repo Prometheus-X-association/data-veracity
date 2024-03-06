@@ -212,3 +212,26 @@ You can add details about implementation plans and lower-level design here._
 ## OpenAPI Specification
 
 _In the future: link your OpenAPI spec here._
+
+## Test specification
+
+_Test definitions and testing environment should be availaible, and the tests should be repeatable._
+
+### Test plan
+Testing strategy, tools and methods chosen, methods for acceptance criteria.
+To be detailed.
+
+### Unit tests
+
+_Here specify the test cases for the components inside the BB.  
+Candidates for tools that can be used to implement the test cases: JUnit, Mockito, Pytest._
+
+### Integration tests
+
+_Here specify how to test the integration of the components inside the BB.  
+Candidates for tools that can be used to implement the test cases: K6, Postman, stepci, Pact  
+An example tutorial is available [here](https://github.com/ftsrg-edu/swsv-labs/wiki/2b-Integration-testing)._
+
+### UI test (where relevant)
+
+_Candidates for tools that can be used to implement the test cases: Selenium_
