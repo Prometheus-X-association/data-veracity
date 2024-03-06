@@ -143,29 +143,9 @@ Dynamic Behaviour
 _What is the behaviour of the BB, how does it operate?
 UML sequence diagrams and/or statecharts are recommended._
 
-_Example of a statechart using Mermaid:_
-
-```mermaid
----
-title: Statechart Example (Traffic Light)
----
-
-stateDiagram-v2
-    direction LR
-    [*] --> Off
-    Off --> On: turnOn
-    state On {
-        direction LR
-        [*] --> Red
-        Red --> RedYellow: timeRed
-        RedYellow --> Green: timeRedYellow
-        Green --> Yellow: timeGreen
-        Yellow --> Red: timeYellow
-    }
-    On --> Off: turnOff
-```
-
 _Example sequence diagram using Mermaid:_
+
+The sequence diagram shows how the component comminicates with other components.
 
 ```mermaid
 ---
@@ -190,6 +170,30 @@ sequenceDiagram
     provconn -) consconn: data
     Note over consconn: Policy verification & Access control
     consconn -) cons: data
+```
+
+_Example of a statechart using Mermaid:_
+
+This statechart shows the internal state changes of the component.
+
+```mermaid
+---
+title: Statechart Example (Traffic Light)
+---
+
+stateDiagram-v2
+    direction LR
+    [*] --> Off
+    Off --> On: turnOn
+    state On {
+        direction LR
+        [*] --> Red
+        Red --> RedYellow: timeRed
+        RedYellow --> Green: timeRedYellow
+        Green --> Yellow: timeGreen
+        Yellow --> Red: timeYellow
+    }
+    On --> Off: turnOff
 ```
 
 
