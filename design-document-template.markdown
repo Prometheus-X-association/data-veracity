@@ -91,7 +91,10 @@ _Gives:_
 _High-level BB requirements with identifiers.
 eg * **R1.** BB MUST communicate with [other BB]_
 
-_See also the Requirements spreadsheets_
+_See also the Requirements spreadsheets
+Functional requirements should be extended with extra-functional ones:
+Timeliness (expected response time@request size), Througput (number of requess served by the BB),etc.
+These may be defined later with UCs but have to be indentified here and be part of configuration/deplomyent options_
 
 
 ## Architecture
@@ -138,7 +141,7 @@ UML sequence diagrams and/or statecharts are recommended._
 
 _Example sequence diagram using Mermaid:_
 
-The sequence diagram shows how the component comminicates with other components.
+The sequence diagram shows how the component communicates with other components.
 
 ```mermaid
 ---
@@ -190,11 +193,12 @@ stateDiagram-v2
 ```
 
 
-## Configuration
+## Configuration and deployment settings
 
 _What configuration options does this BB have?
 What is the configuration format?
-Provide examples._
+Provide examples.
+How is the component logging the operations? What are the error scenarios? What are the limits in terms of usage (e.g. number of requests, size of dataset, etc.)?_
 
 
 ## Third Party Components & Licenses
