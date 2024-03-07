@@ -11,23 +11,33 @@ What does it do?
 What are the main components?_
 
 
-## Use Cases & Features
+## Technical usage scenarios & Features
 
 
 _Brief summary of use cases and features.
 See "BB info for use cases (WP2)" spreadsheet._
 
-### Use Cases
+### Features/main functionalities
+
+_In-depth description of BB features (details).
+Again, an enumeration (ie bullet points) is useful. Take input from description for WP2_
+
+### Technical usage scenarios
 
 _In-depth description of the use cases of the BB.
 Explain why would one want to use this BB.
 What services, features does it offer, why these are useful.
 A bullet point list is recommended._
 
-### Features
+## Requirements
 
-_In-depth description of BB features.
-Again, an enumeration (ie bullet points) is useful._
+_High-level BB requirements with identifiers.
+eg * **R1.** BB MUST communicate with [other BB]_
+
+_See also the Requirements spreadsheets
+Functional requirements should be extended with extra-functional ones:
+Timeliness (expected response time@request size), Througput (number of requess served by the BB),etc.
+These may be defined later with UCs but have to be indentified here and be part of configuration/deplomyent options_
 
 
 ## Integrations
@@ -84,17 +94,6 @@ $ java -jar plantuml.jar -tsvg json.puml
 _Gives:_
 
 ![PlantUML JSON Example](diagrams/json.svg)
-
-
-## Requirements
-
-_High-level BB requirements with identifiers.
-eg * **R1.** BB MUST communicate with [other BB]_
-
-_See also the Requirements spreadsheets
-Functional requirements should be extended with extra-functional ones:
-Timeliness (expected response time@request size), Througput (number of requess served by the BB),etc.
-These may be defined later with UCs but have to be indentified here and be part of configuration/deplomyent options_
 
 
 ## Architecture
