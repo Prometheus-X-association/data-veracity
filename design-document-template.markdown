@@ -95,6 +95,7 @@ _Gives:_
 
 ![PlantUML JSON Example](diagrams/json.svg)
 
+_Please add a short description, also estimating the workload for a typical transaction of your BB (e.g. "100.000 record/submission", "traces of n*10.000s of events", etc.)._
 
 ## Architecture
 
