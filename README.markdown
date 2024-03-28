@@ -12,11 +12,11 @@ When the data exchange occurs, in the simplest model, P attaches a proof (or at 
 
 ## Conceptual Overview
 
-![Metamodel](diagrams\dva-concept-meta.png)
+![Metamodel](diagrams/dva-concept-meta.png)
 
 ### Example
 
-![Example Instance Model](diagrams\dva-concept-instance.png)
+![Example Instance Model](diagrams/dva-concept-instance.png)
 
 
 ## Technical Usage Scenarios & Features
