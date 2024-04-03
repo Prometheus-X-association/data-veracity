@@ -1,12 +1,12 @@
 # Data Veracity Assurance BB Design Document
 
-The Data Veracity Assurance (DVA from now on) building block allows data exchange participants to agree on and later prove/verify quality requirements or properties of the exchanged data.
+The Data Veracity Assurance building block (_DVA_ from now on) allows data exchange participants to agree on and later prove/verify quality requirements or properties of the exchanged data.
 
-For example, if a data producer (abbreviated P from now on) provides simple sensor data to a data consumer (C from now on), the DVA BB can facilitate P to prove (and C to verify) that the provided data is credible (eg temperature values are within a certain range).
+For example, if a data producer (abbreviated _P_ from now on) provides simple sensor data to a data consumer (_C_ from now on), DVA can facilitate _P_ to prove (and _C_ to verify) that the provided data is credible (eg, temperature values are within a certain range).
 
-The DVA BB requires a **veracity level agreement** between the exchange participants.
-The agreement is made for a specific data exchange unit, as per the contract.
-The agreement defines a number of **veracity objectives** that each describe a data quality aspect (eg completeness or accuracy) and an evaluation schema (eg value is within a numerical range).
+DVA requires a **veracity level agreement (VLA)** between the exchange participants.
+The agreement is made for a specific data exchange unit, as described by the contract.
+The VLA defines a number of **veracity objectives** that each describe a **data quality aspect** (eg, _completeness_ or _accuracy_) and an **evaluation scheme** (eg, value is within a numerical range).
 When the data exchange occurs, in the simplest model, P attaches a proof (or at least an attestation) regarding the exchanged data’s quality that C trusts or can verify.
 
 
