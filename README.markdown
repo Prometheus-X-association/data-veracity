@@ -9,14 +9,121 @@ The agreement is made for a specific data exchange unit, as described by the con
 The VLA defines a number of **veracity objectives** that each describe a **data quality aspect** (eg, _completeness_ or _accuracy_) and an **evaluation scheme** (eg, value is within a numerical range).
 When the data exchange occurs, in the simplest model, P attaches a proof (or at least an attestation) regarding the exchanged data’s quality that C trusts or can verify.
 
+<!-- Hacking a Mermaid flowchart for a knowledge graph for now -->
 
-## Conceptual Overview
+```mermaid
+%%{init: {'theme':'neutral'}}%%
 
-![Metamodel](diagrams/dva-concept-meta.png)
+---
+title: High-Level Data Veracity Concepts (Knowledge Graph / Metamodel)
+---
 
-### Example
+graph TD
+  xchg(["Data\n Exchange"]):::External
 
-![Example Instance Model](diagrams/dva-concept-instance.png)
+  va(["Veracity\n Assurance"]):::Assurance
+  aov(["Attestation\n of Veracity"]):::Assurance
+  pov(["Proof\n of Veracity"]):::Assurance
+  voe(["Veracity Objective Evaluation"]):::Assurance
+  eval(["Evaluation"]):::Assurance
+
+  vla(["Veracity\n Level\n Agreement"]):::Agreement
+  vo(["Veracity\n Objective"]):::Agreement
+  qa(["Quality\n Aspect"]):::Agreement
+  es(["Evaluation\n Scheme"]):::Agreement
+  crit(["Criterion\n Type"]):::Agreement
+  method(["Evaluation\n Method"]):::Agreement
+
+  syntax(["Syntax\n (ISO 8000)"]):::Aspect
+  timeliness(["Timeliness\n (ISO 25000)"]):::Aspect
+  accuracy(["Accuracy\n (ISO 25000)"]):::Aspect
+  completeness(["Completeness\n (ISO 25000)"]):::Aspect
+  consistency(["Consistency\n (ISO 25000)"]):::Aspect
+
+  validinvalid(["Valid/\n Invalid"]):::Agreement
+  inrange(["In\n Range"]):::Agreement
+  greaterless(["Greater Than\n Less Than"]):::Agreement
+
+  vla-- targets exchange -->xchg
+  vla-- has objective -->vo
+  vo-- targets aspect -->qa
+  vo-- can be evaluated using -->es
+  es-- has type -->crit
+  es-- has method -->method
+
+  syntax & timeliness & accuracy & completeness & consistency-- is a -->qa
+  validinvalid & inrange & greaterless-- is a -->crit
+
+  va-- for agreement -->vla
+  aov & pov-- is a -->va
+
+  va-- has evaluation -->voe
+  voe-- targets objective -->vo
+  voe-- has evaluation -->eval
+
+  classDef Agreement fill:#fcdc00,stroke:#000,color:#000
+  classDef Aspect fill:#fb4b00,stroke:#000,color:#000
+  classDef External fill:#73d8ff,color:#000
+  classDef Assurance fill:#a4dd00,stroke:#000,color:#000
+  linkStyle default stroke-width:4px
+```
+
+```mermaid
+%%{init: {'theme':'neutral'}}%%
+
+---
+title: Data Veracity Concepts Example (xAPI Learning Traces)
+---
+
+graph LR
+  xchg(["xAPI Learning\n Traces Exchange"]):::External
+
+  aov(["Attestation\n of Veracity"]):::Assurance
+  voe_syn(["Syntax\n Evaluation"]):::Assurance
+  voe_rec(["Recency\n Evaluation"]):::Assurance
+  eval_syn(["Valid"]):::Assurance
+  eval_rec(["3 Days\n Old"]):::Assurance
+
+  vla(["xAPI Learning Trace\n Veracity Level Agreement"]):::Agreement
+  vo_syn(["Valid\n Syntax"]):::Agreement
+  vo_rec(["Recency"]):::Agreement
+  qa_syn(["Syntax"]):::Aspect
+  qa_rec(["Timeliness"]):::Aspect
+  es_syn(["Syntax\n Checking"]):::Agreement
+  es_rec(["Timeliness\n Checking"]):::Agreement
+  crit_syn(["Valid/\n Invalid"]):::Agreement
+  crit_rec(["Greater Than\nLess Than"]):::Agreement
+  method_syn(["Syntax\n Checker"]):::Agreement
+  method_rec(["Value\n Comparison"]):::Agreement
+
+  vla-- targets exchange -->xchg
+
+  vla-- has objective -->vo_syn & vo_rec
+  
+  vo_syn-- targets aspect -->qa_syn
+  vo_rec-- targets aspect -->qa_rec
+  vo_syn-- can be evaluated using -->es_syn
+  vo_rec-- can be evaluated using -->es_rec
+
+  es_syn-- has type -->crit_syn
+  es_rec-- has type -->crit_rec
+  es_syn-- has method -->method_syn
+  es_rec-- has method -->method_rec
+
+  aov-- for agreement -->vla
+
+  aov-- has evaluation -->voe_syn & voe_rec
+  voe_syn-- has evaluation -->eval_syn
+  voe_rec-- has evaluation -->eval_rec
+  voe_syn-- targets objective --->vo_syn
+  voe_rec-- targets objective --->vo_rec
+
+  classDef Agreement fill:#fcdc00,stroke:#000,color:#000
+  classDef Aspect fill:#fb4b00,stroke:#000,color:#000
+  classDef External fill:#73d8ff,color:#000
+  classDef Assurance fill:#a4dd00,stroke:#000,color:#000
+  linkStyle default stroke-width:4px
+```
 
 
 ## Technical Usage Scenarios & Features
