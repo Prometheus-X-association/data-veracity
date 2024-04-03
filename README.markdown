@@ -128,44 +128,157 @@ graph LR
 
 ## Technical Usage Scenarios & Features
 
+With DVA, data exchange participants can be assured that the data fulfils predefined quality requirements.
+
 ### Features/Main Functionalities
 
 Key functionalities:
-1. Manage data veracity level agreements
-2. Provide means to verify the veracity of exchanged data
-3. Log results of verification
+1. Manage data veracity level agreements (VLAs)
+2. Provide means to…
+   * attest to
+   * prove
+   * verify
+   the veracity of exchanged data
+3. Log veracity verification results
 
-DVA also potentially enables proving/verifying such properties about the shared data that are related to additional, sensitive (eg due to GDPR) data, without disclosing them (possibly using zero-knowledge proofs).
+Additional functionalities:
+* Potentially enable proving/verifying data properties that are related to further _sensitive_ (eg, due to GDPR) data _without disclosing the sensitive data_
 
 ### Technical Usage Scenarios
 
-With DVA, data exchange participants can be assured that the data fulfils predefined quality requirements.
+#### Management of Veracity Level Agreements (VLAs)
 
-#### Management of Veracity Level Agreements
+VLAs describe exactly what data quality P ‘promises’ and/or C expects.
+The format and exact contents of VLAs is further detailed later in this document.
 
-<!-- TODO -->
+It is among the primary functionalities of DVA to facilitate
+* _striking_ VLAs (which is possibly also related to the _Contract_ module)
+* _querying_ VLAs for a given data exchange
+* _changing_ the terms of VLAs (if this functionality is desired)
+* _revoking_ VLAs (if this functionality is desired)
 
-#### Proving & Attestation of Veracity
+DVA of course also provides the means for P to prove (or attest) and C to verify that the exchanged data fulfils the requirements set by the VLA; see below.
 
-<!-- TODO -->
+#### Proving, Attestation, and Verification of Veracity
+
+There are chiefly two ways P can offer veracity assurance regarding the exchanged data:
+1. By presenting a **Proof of Veracity (PoV)** to C (by sending it together with the data itself)
+2. By sharing an **Attestation of Veracity (AoV)**
+
+The latter is obviously the ‘weaker’ option, but depending on the use case, it may be enough, or _proving_ adherence to the VLA may not be possible.
+
+A PoV is something that C can reliably _verify._
+PoVs should not be possible to generate for data that does not fulfil the VLA.
+<!-- TODO a simple example of a PoV? -->
+
+AoVs are simpler because they are non-verifiable (at least not in the sense as PoVs).
+Attestations rely on trust – for example, a trusted third party may give their attestation that the data is indeed in line with the VLA requirements.
+It is C’s trust in the third party that assures them of the veracity of the data, not actual proof.
+An even ‘weaker’ but still noteworthy option is when P attests to the veracity of the data themselves.
+At the very least, they _claim_ that the data is in line with the VLA and can be later held to their claim if C discovers otherwise.
+
+Finally, there may not even be a proof or attestation, merely a direct check of the data’s veracity by C.
+
+DVA defines what proofs and attestations are (see later in this document) and provides means to generate PoVs, AoVs, and to verify veracity.
 
 #### Logging of Results
 
-<!-- TODO -->
+DVA also keeps track of veracity verification results for traceability purposes.
 
 
 ## Requirements
 
-* **`[BB_08__01]`** DVA MUST define schemata for Data Veracity Agreements
-* **`[BB_08__02]`** DVA MUST support striking Data Veracity Agreements through the Catalogue
+* **`[BB_08__01]`** DVA MUST define schemata for VLAs
+* **`[BB_08__02]`** DVA MUST support striking VLAs (through the Catalogue?)
 * **`[BB_08__03]`** DVA MUST provide multiple veracity assurance methods
-* **`[BB_08__03]`** DVA MUST support veracity attestation (ie either provider or a third party attests that veracity requirements are met
-* **`[BB_08__04]`** DVA SHOULD support veracity self-attestation
-* **`[BB_08__05]`** DVA SHOULD support third-party veracity attestation
-* **`[BB_08__06]`** DVA SHOULD support provider-proven veracity
-* **`[BB_08__07]`** DVA SHOULD support consumer-verified veracity
-* **`[BB_08__08]`** DVA SHOULD interface with the Contract service
-* **`[BB_08__09]`** DVA SHOULD interface with the Connector
+* **`[BB_08__04]`** DVA MUST support veracity attestation (ie, either P or a third party attests that veracity requirements are met)
+* **`[BB_08__05]`** DVA SHOULD support veracity self-attestation
+* **`[BB_08__06]`** DVA SHOULD support third-party veracity attestation
+* **`[BB_08__07]`** DVA SHOULD support provider-proven veracity
+* **`[BB_08__08]`** DVA SHOULD support consumer-verified veracity
+* **`[BB_08__09]`** DVA SHOULD interface with the Contract service
+* **`[BB_08__10]`** DVA SHOULD interface with the Dataspace Connector
+* **`[BB_08__11]`** DVA MUST log verification results
+
+```mermaid
+---
+title: DVA Requirements
+---
+
+requirementDiagram
+  requirement BB_08__01 {
+    id: BB_08__01
+    text: "DVA MUST define schemata for VLAs"
+    risk: medium
+    verifymethod: demonstration
+  }
+  functionalRequirement BB_08__02 {
+    id: BB_08__02
+    text: "DVA MUST support striking VLAs"
+    risk: medium
+    verifymethod: test
+  }
+  functionalRequirement BB_08__03 {
+    id: BB_08__03
+    text: "DVA MUST provide multiple veracity assurance methods"
+    risk: low
+    verifymethod: demonstration
+  }
+  functionalRequirement BB_08__04 {
+    id: BB_08__04
+    text: "DVA MUST support veracity attestation"
+    risk: low
+    verifymethod: demonstration
+  }
+  functionalRequirement BB_08__05 {
+    id: BB_08__05
+    text: "DVA SHOULD support veracity self-attestation"
+    risk: low
+    verifymethod: demonstration
+  }
+  functionalRequirement BB_08__06 {
+    id: BB_08__06
+    text: "DVA SHOULD support third-party veracity attestation"
+    risk: low
+    verifymethod: demonstration
+  }
+  functionalRequirement BB_08__07 {
+    id: BB_08__07
+    text: "DVA SHOULD support provider-proven veracity"
+    risk: medium
+    verifymethod: demonstration
+  }
+  functionalRequirement BB_08__08 {
+    id: BB_08__08
+    text: "DVA SHOULD support consumer-verified veracity"
+    risk: medium
+    verifymethod: demonstration
+  }
+  interfaceRequirement BB_08__09 {
+    id: BB_08__09
+    text: "DVA SHOULD interface with the Contract service"
+    risk: low
+    verifymethod: test
+  }
+  interfaceRequirement BB_08__10 {
+    id: BB_08__10
+    text: "DVA SHOULD interface with the Dataspace Connector"
+    risk: medium
+    verifymethod: test
+  }
+  functionalRequirement BB_08__11 {
+    id: BB_08__11
+    text: "DVA MUST log verification result"
+    risk: medium
+    verifymethod: test
+  }
+
+  BB_08__04 - refines -> BB_08__03
+  BB_08__05 - refines -> BB_08__04
+  BB_08__06 - refines -> BB_08__04
+  BB_08__07 - refines -> BB_08__03
+  BB_08__08 - refines -> BB_08__03
+```
 
 
 ## Integrations
@@ -177,8 +290,8 @@ _No direct integrations identified as of yet._
 
 ### Integrations via Connector
 
-* DVA will likely have to directly integrate with the **Connector** itself to extend data exchange flows with veracity assurance steps
-* As veracity level agreements are similar to contracts (or will become part of the contracts), DVA will have interactions with the **Contract** component
+* DVA will likely have to directly integrate with the **Dataspace Connector** itself to extend data exchange flows with veracity assurance steps
+* As VLAs are similar to contracts (or will become part of the contracts), DVA will likely have interactions with the **Contract** component
 * Potential integrations with **Consent** as well (?)
 * Most likely, DVA will integrate closely with the **Data Value Chain Tracker** BB
   * The _value_ is strongly related to the quality of the data assured by DVA
@@ -190,16 +303,24 @@ _No direct integrations identified as of yet._
 
 <!-- TODO -->
 
+### Other Standards
+
+There are ISO standards that define data-quality-related concepts:
+* [ISO 8000-61:2016](https://www.iso.org/standard/63086.html) – Data Quality – Part 61: Data quality management: Process reference model
+* [ISO/IEC 25000:2014](https://www.iso.org/standard/64764.html) – Systems and software engineering – Systems and software Quality Requirements and Evaluation (SQuaRE)
+
 ### Mapping to Data Space Reference Architecture Models
 
-<!-- TODO -->
+**DSSC:** see the [Value-Added Services](https://dssc.eu/space/BVE/357076468/Value-Added+Services) building block.
+
+**IDS RAM:** see [4.3.6 Data Quality](https://docs.internationaldataspaces.org/ids-knowledgebase/v/ids-ram-4/perspectives-of-the-reference-architecture-model/4_perspectives/4_3_governance_perspective/4_3_7_data_quality) in the Governance Perspective.
 
 
 ## Input / Output Data
 
-### Data Veracity Level Agreements
+### Data Veracity Level Agreements (VLAs)
 
-_No concrete schema has been defined yet, please refer to conceptual model for what may be included in an agreement._
+_No concrete schema has been defined yet; please refer to conceptual model at the top of this document to see what may be included in an agreement._
 
 
 ## Architecture
@@ -211,11 +332,11 @@ _No concrete schema has been defined yet, please refer to conceptual model for w
 
 The sequence diagrams below describe possible DVA additions to the basic Connector flows.
 
-_To be discussed with Félix_
+_(To be discussed with Félix)_
 
 ```mermaid
 ---
-title: Data Exchange with Attestation of Veracity
+title: Data Exchange with Attestation of Veracity (AoV)
 ---
 
 sequenceDiagram
@@ -252,7 +373,7 @@ sequenceDiagram
 
 ```mermaid
 ---
-title: Data Exchange with Proof of Veracity
+title: Data Exchange with Proof of Veracity (PoV)
 ---
 
 sequenceDiagram
@@ -322,3 +443,15 @@ sequenceDiagram
 ### Unit tests
 
 ### Integration Tests
+
+
+## Abbreviations Used
+
+| Abbreviation | Expansion |
+| :--- | :--- |
+| DVA | data veracity assurance building block |
+| VLA | veracity level agreement |
+| P | data producer |
+| C | data consumer |
+| PoV | proof of veracity |
+| AoV | attestation of veracity |
