@@ -301,7 +301,7 @@ _No direct integrations identified as of yet._
 
 ### Data Format Standards
 
-<!-- TODO -->
+_TBD_
 
 ### Other Standards
 
@@ -325,7 +325,37 @@ _No concrete schema has been defined yet; please refer to conceptual model at th
 
 ## Architecture
 
-<!-- TODO -->
+<!-- Abusing Mermaid's flowcharts... -->
+
+```mermaid
+---
+title: Data Veracity Assurance High-Level Architecture
+---
+
+graph LR
+  api>"fa:fa-plug\n Public API"]:::API
+  ctrl["fa:fa-gear\n Internal Controller"]:::Controller
+  att["fa:fa-stamp\n Attestation Service"]:::Service
+  prov["fa:fa-file-circle-check\n Proving Service"]:::Service
+  verif["fa:fa-check-double\n Verification Service"]:::Service
+  log["fa:fa-file-lines\n Logging Service"]:::Service
+  pers[("fa:fa-database\n Log Persistence")]:::Misc
+  third["fa:fa-square-up-right Third Party Attester"]:::Misc
+  gen["Built-in Proof Generator"]:::Misc
+  gen_ext["External Proof Generator"]:::Misc
+
+  api --> ctrl
+  ctrl --> att & prov & verif & log
+  att --> third
+  prov --> gen & gen_ext
+  log --> pers
+
+  classDef default color:#000
+  classDef API fill:lightgreen
+  classDef Controller fill:cyan
+  classDef Service fill:orange
+  classDef Misc fill:grey
+```
 
 
 ## Dynamic Behaviour
@@ -416,17 +446,24 @@ sequenceDiagram
 
 ## Configuration & Deployment Settings
 
-<!-- TODO -->
+One of the main questions is how many DVA instances there are in a data space.
+For example, there may be a single centralized DVA instance that can be contacted by the connectors during data exchange.
+However, a likely more advantageous approach is to have a decentralized configuration with several DVA instances.
+There may be a DVA instance at the participating organizations – eg, P can use their own DVA instance to generate the proof or attestation that will be passed together with the data to C.
+Likewise, C may use their ‘local’ DVA instance to perform the verification.
+
+Going further, all the DVA instances may form a blockchain.
+Using privacy-preserving features (such as private data in Hyperledger Fabric) it is possible for only the data exchange participants to see the proofs generated, while other data space participants merely see a record of the proof having been generated on the blockchain (as a commitment).
 
 
 ## Third Party Components & Licenses
 
-<!-- TODO -->
+_TBD_
 
 
 ## Implementation Details
 
-<!-- TODO -->
+_TBD_
 
 
 ## OpenAPI Specification
@@ -436,7 +473,7 @@ sequenceDiagram
 
 ## Test Specification
 
-<!-- TODO -->
+_TBD_
 
 ### Test Plan
 
