@@ -468,7 +468,7 @@ _TBD_
 
 ## OpenAPI Specification
 
-<!-- TODO -->
+The current specification can be found in [`spec/openapi.yaml`](spec/openapi.yaml).
 
 
 ## Test Specification
