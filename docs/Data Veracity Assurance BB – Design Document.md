@@ -1,4 +1,4 @@
-# Data Veracity Assurance BB Design Document
+# Data Veracity Assurance BB – Design Document
 
 The Data Veracity Assurance building block (_DVA_ from now on) allows data exchange participants to agree on and later prove/verify quality requirements or properties of the exchanged data.
 
@@ -468,7 +468,7 @@ _TBD_
 
 ## OpenAPI Specification
 
-The current specification can be found in [`spec/openapi.yaml`](spec/openapi.yaml).
+The current specification can be found in [`spec/openapi.yaml`](https://github.com/Prometheus-X-association/data-veracity/blob/main/spec/openapi.yaml).
 
 
 ## Test Specification
