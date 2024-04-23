@@ -1,4 +1,4 @@
-# Data Veracity Assurance BB – Design Document
+# Data veracity assurance BB – Design Document
 
 The Data Veracity Assurance building block (_DVA_ from now on) allows data exchange participants to agree on and later prove/verify quality requirements or properties of the exchanged data.
 
