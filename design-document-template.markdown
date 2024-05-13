@@ -239,3 +239,11 @@ An example tutorial is available [here](https://github.com/ftsrg-edu/swsv-labs/w
 ### UI test (where relevant)
 
 _Candidates for tools that can be used to implement the test cases: Selenium_
+
+## Partners & roles
+_Enumerate all partner organizations and specify their roles in the development and planned operation of this component. 
+Do this at a level which a)can be made public, b)supports the understanding of the concrete technical contributions
+(instead of "participates in development" specify the functionality, added value, etc.)_
+
+## Usage in the dataspace
+_Specify the Dataspace Enalbing Service Chain in which the BB will be used. This assumes that during development the block (lead) follows the service chain, contributes to tis detailed design and implements the block to meet the integration requirements of the chain._
