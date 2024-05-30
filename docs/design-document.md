@@ -568,10 +568,13 @@ Several data examples (including correct and incorrect samples) will be used for
 
 The integration with the _Dataspace Connector_ component will be tested thoroughy to verify that the necessary interactions are indeed possible and that error cases are handled properly (eg, when no data is received during a data exchange or data _is_ received but without a PoV/AoV even though it would be required).
 
+While DVA will not directly integrate with the _Contract_ component, it should be tested that DVA can recognize VLA fragments defined in the contracts and that it is possible to extend existing contracts with VLA fragments.
+In the end, this functionality will be provided by (or at least _via_) the _Catalogue_, not this BB.
+
 Furthermore, interactions with other components, such as the _Data Value Chain Tracker (DVCT)_ will be validated through testing, as these potentially involve new interactions, protocols, and interfaces.
 
 The DVA BB test acceptance critieria are, informally, and without striving for completeness:
-* VLAs can be struck.
+* VLAs can be struck and parsed from contracts.
 * DVA correctly handles data fulfilling the criteria in the corresponding VLA as well as data that is non-compliant.
 * DVA can successfully communicate with the _Dataspace Connector_ and be a part of the data exchange flow.
 * AoVs and PoVs can be created via DVA.
