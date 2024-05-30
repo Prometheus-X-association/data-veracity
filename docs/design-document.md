@@ -565,6 +565,7 @@ The current specification can be found in [`spec/openapi.yaml`](https://github.c
 
 The primary objective of testing will be to validate the correct handling of exchanged data compliant and non-compliant with the quality aspects established in the VLA.
 Several data examples (including correct and incorrect samples) will be used for these tests.
+Various data quality aspects will be targeted and case studies will be conducted using different data types used in the main project use cases, like VR traces (xAPI), Moodle learning traces (xAPI), and skills (ontology/terminology).
 
 The integration with the _Dataspace Connector_ component will be tested thoroughy to verify that the necessary interactions are indeed possible and that error cases are handled properly (eg, when no data is received during a data exchange or data _is_ received but without a PoV/AoV even though it would be required).
 
