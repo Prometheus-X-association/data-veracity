@@ -325,7 +325,7 @@ Other possibly relevant standards and specifications:
 
 ### Data Veracity Level Agreements (VLAs)
 
-Initial mockup VLA based on [data contracts](https://github.com/bitol-io/open-data-contract-standard):
+Initial mockup VLAs based on [data contracts](https://github.com/bitol-io/open-data-contract-standard):
 
 ```yaml
 ---
@@ -370,16 +370,43 @@ objectives:
           within: 1w
       type: in_range
 
-  - name: new_exercise
-    description: |
-      No data has been supplied about the exercise in the xAPI file  in
-      the past
+  - name: new_user
+    description: No data has been supplied about this actor in the past
     aspect: uniqueness
     evaluation:
       method:
         id: uniqueness_check
         args:
-          target: verb.id
+          target: actor.id
+      type: valid_invalid
+```
+
+```yaml
+---
+id: urn:vla:example:moodle
+meta:
+  title: Moodle Learning Traces VLA Example
+  version: 0.1.0
+  description: |
+    A simple Veracity Level Agreement (VLA) example for Moodle-like xAPI
+    data
+  exchange: bb54352d-3da4-4b6d-a4db-3639003f5f99
+
+
+models:
+  trace:
+    description: xAPI trace
+    type: xapi
+
+
+objectives:
+
+  - name: is_dases
+    description: Trace is within the subset defined by gaia-x-dases
+    aspect: schema
+    evaluation:
+      method:
+        id: xapi_schema_dases
       type: valid_invalid
 ```
 
