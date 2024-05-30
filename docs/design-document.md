@@ -402,7 +402,7 @@ models:
 objectives:
 
   - name: is_dases
-    description: Trace is within the subset defined by gaia-x-dases
+    description: Trace is within the subset defined by Gaia-X DaSES
     aspect: schema
     evaluation:
       method:
