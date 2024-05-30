@@ -301,13 +301,18 @@ _No direct integrations identified as of yet._
 
 ### Data Format Standards
 
-_TBD_
+* VLAs will likely be encoded in [YAML](https://yaml.org/).
+* In all likelihood, DVA will parse and/or serialize into [JSON](https://www.json.org/) or [JSON-LD](https://json-ld.org/) files for interoperability.
+* For configuration, DVA will use [TOML](https://toml.io/en/).
 
 ### Other Standards
 
 There are ISO standards that define data-quality-related concepts:
 * [ISO 8000-61:2016](https://www.iso.org/standard/63086.html) – Data Quality – Part 61: Data quality management: Process reference model
 * [ISO/IEC 25000:2014](https://www.iso.org/standard/64764.html) – Systems and software engineering – Systems and software Quality Requirements and Evaluation (SQuaRE)
+
+Other possibly relevant standards and specifications:
+* [Data Contracts](https://datacontract.com/), which are very similar to VLAs, have a [standard](https://github.com/bitol-io/open-data-contract-standard)
 
 ### Mapping to Data Space Reference Architecture Models
 
@@ -320,7 +325,63 @@ There are ISO standards that define data-quality-related concepts:
 
 ### Data Veracity Level Agreements (VLAs)
 
-_No concrete schema has been defined yet; please refer to conceptual model at the top of this document to see what may be included in an agreement._
+Initial mockup VLA based on [data contracts](https://github.com/bitol-io/open-data-contract-standard):
+
+```yaml
+---
+id: urn:vla:example:vrtraces
+meta:
+  title: VR Learning Traces VLA Example
+  version: 0.1.0
+  description: |
+    A simple Veracity Level Agreement (VLA) example based on the
+    VR Learning Traces building block.
+  exchange: cdef77c9-4016-45bb-868d-6f014e17ed2d
+
+
+models:
+  trace:
+    description: A VR learning trace
+    type: xapi
+    xapi_extensions:
+      - http://example.com/exercises/b9e16535-4fc9-4c66-ac87-3ad7ce515f5c/sensors/score
+
+
+objectives:
+
+  - name: xapi_syntax
+    description: Data is a valid xAPI JSON file
+    aspect: syntax
+    evaluation:
+      method:
+        id: syntax_check
+        args:
+          checker: xapi
+      type: valid_invalid
+
+  - name: 1w_freshness
+    description: Learning trace is not too old
+    aspect: timeliness
+    evaluation:
+      method:
+        id: timestamp_comparison
+        args:
+          timestamp: xapi_timestamp
+          within: 1w
+      type: in_range
+
+  - name: new_exercise
+    description: |
+      No data has been supplied about the exercise in the xAPI file  in
+      the past
+    aspect: uniqueness
+    evaluation:
+      method:
+        id: uniqueness_check
+        args:
+          target: verb.id
+      type: valid_invalid
+```
 
 
 ## Architecture
@@ -473,9 +534,21 @@ The current specification can be found in [`spec/openapi.yaml`](https://github.c
 
 ## Test Specification
 
-_TBD_
-
 ### Test Plan
+
+The primary objective of testing will be to validate the correct handling of exchanged data compliant and non-compliant with the quality aspects established in the VLA.
+Several data examples (including correct and incorrect samples) will be used for these tests.
+
+The integration with the _Dataspace Connector_ component will be tested thoroughy to verify that the necessary interactions are indeed possible and that error cases are handled properly (eg, when no data is received during a data exchange or data _is_ received but without a PoV/AoV even though it would be required).
+
+Furthermore, interactions with other components, such as the _Data Value Chain Tracker (DVCT)_ will be validated through testing, as these potentially involve new interactions, protocols, and interfaces.
+
+The DVA BB test acceptance critieria are, informally, and without striving for completeness:
+* VLAs can be struck.
+* DVA correctly handles data fulfilling the criteria in the corresponding VLA as well as data that is non-compliant.
+* DVA can successfully communicate with the _Dataspace Connector_ and be a part of the data exchange flow.
+* AoVs and PoVs can be created via DVA.
+* No PoVs can be created for data that does not fulfil the VLA.
 
 ### Unit tests
 
