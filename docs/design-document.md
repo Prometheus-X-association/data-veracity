@@ -581,9 +581,10 @@ The DVA BB test acceptance critieria are, informally, and without striving for c
 * AoVs and PoVs can be created via DVA.
 * No PoVs can be created for data that does not fulfil the VLA.
 
-### Unit tests
+### Internal Unit Tests
 
-### Integration Tests
+
+### Component-level Testing
 
 
 ## Abbreviations Used
