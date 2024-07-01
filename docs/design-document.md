@@ -291,10 +291,10 @@ _No direct integrations identified as of yet._
 
 ### Integrations via Connector
 
-* DVA will likely have to directly integrate with the **Dataspace Connector** itself to extend data exchange flows with veracity assurance steps
-* As VLAs are similar to contracts (or will become part of the contracts), DVA will likely have interactions with the **Contract** component
+* DVA will directly integrate with the **Dataspace Connector** itself to extend data exchange flows with veracity assurance steps
+* As VLAs are similar to contracts (or will become part of the contracts), DVA will have interactions with the **Contract** component
 * Potential integrations with **Consent** as well (?)
-* Most likely, DVA will integrate closely with the **Data Value Chain Tracker** BB
+* DVA will also have integrations with the **Data Value Chain Tracker** BB
   * The _value_ is strongly related to the quality of the data assured by DVA
 
 
@@ -302,7 +302,7 @@ _No direct integrations identified as of yet._
 
 ### Data Format Standards
 
-* VLAs will likely be encoded in [YAML](https://yaml.org/).
+* VLAs will be encoded in [YAML](https://yaml.org/).
 * In all likelihood, DVA will parse and/or serialize into [JSON](https://www.json.org/) or [JSON-LD](https://json-ld.org/) files for interoperability.
 * For configuration, DVA will use [TOML](https://toml.io/en/).
 
@@ -537,7 +537,7 @@ sequenceDiagram
 
 One of the main questions is how many DVA instances there are in a data space.
 For example, there may be a single centralized DVA instance that can be contacted by the connectors during data exchange.
-However, a likely more advantageous approach is to have a decentralized configuration with several DVA instances.
+However, a more advantageous approach is to have a decentralized configuration with several DVA instances.
 There may be a DVA instance at the participating organizations – eg, P can use their own DVA instance to generate the proof or attestation that will be passed together with the data to C.
 Likewise, C may use their ‘local’ DVA instance to perform the verification.
 
