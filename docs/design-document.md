@@ -461,7 +461,7 @@ sequenceDiagram
     participant p as Provider
     participant pc as Provider Connector
     participant con as Contract Service
-    participant evs as External Veracity Attestation Service
+    participant evs as Veracity Attestation Service
     participant cat as Catalogue Service
     participant cc as Consumer Connector
     participant c as Consumer
@@ -498,7 +498,7 @@ sequenceDiagram
     participant p as Provider
     participant pc as Provider Connector
     participant con as Contract Service
-    participant evs as External Veracity Proving Service
+    participant evs as Veracity Proving Service
     participant cat as Catalogue Service
     participant cc as Consumer Connector
     participant c as Consumer
