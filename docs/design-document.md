@@ -328,7 +328,6 @@ requirementDiagram
 ### Integrations via Connector
 
 * DVA will directly integrate with the **Dataspace Connector** itself to extend data exchange flows with veracity assurance steps
-* Potential integrations with **Consent** as well (?)
 * DVA will also have integrations with the **Data Value Chain Tracker** BB
   * The _value_ is strongly related to the quality of the data assured by DVA
 
