@@ -128,7 +128,43 @@ graph LR
 
 ## Technical Usage Scenarios & Features
 
-With DVA, data exchange participants can be assured that the data fulfils predefined quality requirements.
+<!-- Hacking a Mermaid flowchart for a use case diagram for now -->
+
+```mermaid
+%%{init: {'theme':'neutral'}}%%
+
+---
+title: Data Veracity Use Case (Technical Usage Scenario) Diagram
+---
+
+flowchart LR
+  i[Data Intermediary]
+  p[Data Provider 👤]
+  c[Data Consumer 👤]
+
+  uc_con([Perform Contracting])
+  subgraph DVA
+    uc_aov([Create AoV])
+    uc_sel([Create self-attested AoV])
+    uc_3rd([Get 3rd-party AoV])
+    uc_pov([Create PoV])
+    uc_cha([Check AoV])
+    uc_chp([Check PoV])
+    uc_pro([Verify Proof])
+    uc_cre([Verify Credential])
+    uc_com([Check Compliance])
+    uc_dis([Start a Dispute])
+  end
+  
+  i --> uc_con
+  p ----> uc_aov & uc_pov
+  c ---> uc_cha & uc_chp & uc_dis
+
+  uc_chp -. include .-> uc_pro
+  uc_com -. extend .-> uc_cha
+  uc_cha & uc_chp -. include .-> uc_cre
+  uc_sel & uc_3rd -. is a .-> uc_aov
+```
 
 ### Features/Main Functionalities
 
