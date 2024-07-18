@@ -452,6 +452,43 @@ objectives:
       type: valid_invalid
 ```
 
+### Attestations of Veracity (AoVs)
+
+AoVs (and PoVs) are envisioned as verifiable credentials.
+The information graph that summarizes the contents of these credentials can be seen below.
+
+```
+graph TD
+  vc(["(AoV) Credential Instance"]):::Main
+  id[Credential ID #123456789]:::Optional
+  type([Attestation of Veracity]):::Required
+  validFrom[2025-01-12T12:31:33Z]:::Optional
+  subj([Data Exchange Instance]):::Required
+  issuer([Example Org]):::Required
+
+  subjId[Data Exchange ID #ABCD1234]:::Optional
+  subjContract[Contract ID #98765]:::Custom
+  subjObj1[Objective ID #AAA]:::Custom
+  subjObj2[Objective ID #AAB]:::Custom
+  subjObj3[Objective ID #AAC]:::Custom
+
+  vc-- id -->id
+  vc-- type -->type
+  vc-- validFrom -->validFrom
+  vc-- credentialSubject -->subj
+  vc-- issuer -->issuer
+
+  subj-- id -->subjId
+  subj-- contractId -->subjContract
+  subj-- objectives -->subjObj1 & subjObj2 & subjObj3
+
+  classDef Main fill:#fff,stroke:#000,color:#000
+  classDef Required fill:#0fa,stroke:#000,color:#000
+  classDef Optional fill:#7d7,stroke:#000,color:#000
+  classDef Custom fill:#ffa,stroke:#000,color:#000
+  linkStyle default stroke-width:4px
+```
+
 
 ## Architecture
 
