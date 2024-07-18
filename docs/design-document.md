@@ -457,7 +457,7 @@ objectives:
 AoVs (and PoVs) are envisioned as verifiable credentials.
 The information graph that summarizes the contents of these credentials can be seen below.
 
-```
+```mermaid
 graph TD
   vc(["(AoV) Credential Instance"]):::Main
   id[Credential ID #123456789]:::Optional
