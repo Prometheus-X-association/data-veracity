@@ -492,6 +492,12 @@ graph TD
 
 ## Architecture
 
+### High-Level Architecture
+
+![High Level Architecture](./arch.svg)
+
+### Internal Infrastructure
+
 <!-- Abusing Mermaid's flowcharts... -->
 
 ```mermaid
