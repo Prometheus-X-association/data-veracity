@@ -188,7 +188,7 @@ VLAs describe exactly what data quality P ‘promises’ and/or C expects.
 The format and exact contents of VLAs is further detailed later in this document.
 
 It is among the primary functionalities of DVA to facilitate
-* _striking_ VLAs (which is possibly also related to the _Contract_ module)
+* _striking_ VLAs (which also relates to the _Contract_ module)
 * _querying_ VLAs for a given data exchange
 * _changing_ the terms of VLAs (if this functionality is desired)
 * _revoking_ VLAs (if this functionality is desired)
@@ -211,8 +211,12 @@ Such proofs should be _sound,_ meaning that a cheating P cannot forge a PoV for 
 AoVs are simpler because they are non-verifiable (at least not in the sense as PoVs).
 Attestations rely on trust – for example, a trusted third party may give their attestation that the data is indeed in line with the VLA requirements.
 It is C’s trust in the third party that assures them of the veracity of the data, not actual proof.
+
 An even ‘weaker’ but still noteworthy option is when P attests to the veracity of the data themselves.
 At the very least, they _claim_ that the data is in line with the VLA and can be later held to their claim if C discovers otherwise.
+
+Nonetheless, it may be in C’s best interest to ensure that the attester is being honest.
+To this end, C can perform the same (pre-agreed) measurements and checks on the data as the attester claims to have done and compare the results.
 
 Finally, there may not even be a proof or attestation, merely a direct check of the data’s veracity by C.
 
@@ -233,8 +237,8 @@ DVA also keeps track of veracity verification results for traceability purposes.
 * **`[BB_08__06]`** DVA SHOULD support third-party veracity attestation
 * **`[BB_08__07]`** DVA SHOULD support provider-proven veracity
 * **`[BB_08__08]`** DVA SHOULD support consumer-verified veracity
-* **`[BB_08__09]`** DVA SHOULD interface with the Contract service
-* **`[BB_08__10]`** DVA SHOULD interface with the Dataspace Connector
+* **`[BB_08__09]`** DVA MUST interface with the Contract service
+* **`[BB_08__10]`** DVA MUST interface with the Dataspace Connector
 * **`[BB_08__11]`** DVA MUST log verification results
 
 ```mermaid
@@ -348,6 +352,9 @@ There are ISO standards that define data-quality-related concepts:
 
 Other possibly relevant standards and specifications:
 * [Data Contracts](https://datacontract.com/), which are very similar to VLAs, have a [standard](https://github.com/bitol-io/open-data-contract-standard)
+
+PoVs and AoVs are planned to be manifested as [W3C _verifiable credentials_ (VCs)](https://www.w3.org/TR/vc-overview/):
+* [W3C Verifiable Credentials Data Model v2.0](https://www.w3.org/TR/vc-data-model-2.0/)
 
 ### Mapping to Data Space Reference Architecture Models
 
