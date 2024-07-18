@@ -496,7 +496,7 @@ graph TD
 
 ![High Level Architecture](./arch.svg)
 
-### Internal Infrastructure
+### Internal Software Infrastructure
 
 <!-- Abusing Mermaid's flowcharts... -->
 
@@ -506,28 +506,32 @@ title: Data Veracity Assurance High-Level Architecture
 ---
 
 graph LR
-  api>"fa:fa-plug\n Public API"]:::API
-  ctrl["fa:fa-gear\n Internal Controller"]:::Controller
-  att["fa:fa-stamp\n Attestation Service"]:::Service
-  prov["fa:fa-file-circle-check\n Proving Service"]:::Service
-  verif["fa:fa-check-double\n Verification Service"]:::Service
-  log["fa:fa-file-lines\n Logging Service"]:::Service
-  pers[("fa:fa-database\n Log Persistence")]:::Misc
-  third["fa:fa-square-up-right Third Party Attester"]:::Misc
+  apip>"fa:fa-plug\n Data Provider API"]:::API
+  apic>"fa:fa-plug\n Data Consumer API"]:::API
+  att["fa:fa-stamp\n Attestation Component"]:::Component
+  attloc["Local Attestation"]:::Misc
+  attext["External Attestation"]:::Misc
+  con["fa:fa-file\n Contracting Component"]:::Component
+  prov["fa:fa-file-circle-check\n Proving Component"]:::Component
+  verif["fa:fa-check-double\n Verification Component"]:::Component
   gen["Built-in Proof Generator"]:::Misc
   gen_ext["External Proof Generator"]:::Misc
+  ver["Proof Verifier"]:::Misc
 
-  api --> ctrl
-  ctrl --> att & prov & verif & log
-  att --> third
-  prov --> gen & gen_ext
-  log --> pers
+  apip & apic -- strike and query VLAs -->con
+  apip -- create AoV --> att
+  apip -- create PoV --> prov
+  apic -- verify AoV --> att
+  apic -- verify PoV --> prov
+  apic -- check data compliance --> verif
+  att --> attloc & attext
+  prov --> gen & gen_ext & ver
 
   classDef default color:#000
   classDef API fill:lightgreen
   classDef Controller fill:cyan
-  classDef Service fill:orange
-  classDef Misc fill:grey
+  classDef Component fill:orange
+  classDef Misc fill:greeen
 ```
 
 
