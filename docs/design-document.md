@@ -496,7 +496,7 @@ graph TD
 
 ![High Level Architecture](./arch.svg)
 
-### Internal Software Infrastructure
+### Internal Software Architecture
 
 <!-- Abusing Mermaid's flowcharts... -->
 
