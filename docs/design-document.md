@@ -2,12 +2,16 @@
 
 The Data Veracity Assurance building block (_DVA_ from now on) allows data exchange participants to agree on and later prove/verify quality requirements or properties of the exchanged data.
 
-For example, if a data producer (abbreviated _P_ from now on) provides simple sensor data to a data consumer (_C_ from now on), DVA can facilitate P to prove (and C to verify) that the provided data is credible (eg, temperature values are within a certain range).
+For example, if a data producer (abbreviated _P_ from now on) provides simple sensor data to a data consumer (_C_ from now on), DVA can facilitate P to prove (or at least claim) and C to verify that the provided data is credible (eg, temperature values are within a certain range).
 
 DVA requires a **veracity level agreement (VLA)** between the exchange participants.
-The agreement is made for a specific data exchange unit, as described by the contract.
+This agreement is part of the contract and targets a specific data exchange unit (instance).
 The VLA defines a number of **veracity objectives** that each describe a **data quality aspect** (eg, _completeness_ or _accuracy_) and an **evaluation scheme** (eg, value is within a numerical range).
-When the data exchange occurs, in the simplest model, P attaches a proof (or at least an attestation) regarding the exchanged data’s quality that C trusts or can verify.
+The VLA also defines _how_ the evaluation is to be performed (eg, with a certain algorithm or software library).
+When the data exchange occurs, in the simplest model, P attaches an attestation (or even a proof) regarding the exchanged data’s quality that C trusts or can verify.
+
+The high-level concepts of the DVA BB have been summarized in the knowledge graph below.
+The second graph visualizes a concrete example of using DVA in a use case where xAPI training data is exchanged.
 
 <!-- Hacking a Mermaid flowchart for a knowledge graph for now -->
 
@@ -128,48 +132,11 @@ graph LR
 
 ## Technical Usage Scenarios & Features
 
-<!-- Hacking a Mermaid flowchart for a use case diagram for now -->
-
-```mermaid
-%%{init: {'theme':'neutral'}}%%
-
----
-title: Data Veracity Use Case (Technical Usage Scenario) Diagram
----
-
-flowchart LR
-  i[Data Intermediary]
-  p[Data Provider 👤]
-  c[Data Consumer 👤]
-
-  uc_con([Perform Contracting])
-  subgraph DVA
-    uc_aov([Create AoV])
-    uc_sel([Create self-attested AoV])
-    uc_3rd([Get 3rd-party AoV])
-    uc_pov([Create PoV])
-    uc_cha([Check AoV])
-    uc_chp([Check PoV])
-    uc_pro([Verify Proof])
-    uc_cre([Verify Credential])
-    uc_com([Check Compliance])
-    uc_dis([Start a Dispute])
-  end
-  
-  i --> uc_con
-  p ----> uc_aov & uc_pov
-  c ---> uc_cha & uc_chp & uc_dis
-
-  uc_chp -. include .-> uc_pro
-  uc_com -. extend .-> uc_cha
-  uc_cha & uc_chp -. include .-> uc_cre
-  uc_sel & uc_3rd -. is a .-> uc_aov
-```
-
 ### Features/Main Functionalities
 
 Key functionalities:
 1. Manage data veracity level agreements (VLAs)
+   * more precisely: provide VLA templates (to the _Contract_ BB) for inclusion in new contracts
 2. Provide means to…
    * attest to
    * prove
@@ -177,18 +144,51 @@ Key functionalities:
    the veracity of exchanged data
 3. Log veracity verification results
 
-Additional functionalities:
+Additional (not required, value-added) functionalities:
 * Potentially enable proving/verifying data properties that are related to further _sensitive_ (eg, due to GDPR) data _without disclosing the sensitive data_
+* Decentralized DVA architecture
+* Partial attestations or proofs of veracity
 
 ### Technical Usage Scenarios
 
-#### Management of Veracity Level Agreements (VLAs)
+The technical usage scenarios have been summarized in the following UML use case diagram.
+
+![Use Case Diagram](./usecases.svg)
+
+* **Fetch Templates:** the _Contract_ component can get the currently available list of VLA templates (which are essentially data quality requirement templates; eg, how many `NaN` values a dataset contains and how to count them) for inclusion in the VLAs of new contracts
+* **Manage Templates:** the data space orchestrator has the right to select what templates can be used in the data space.
+  The DVA BB provides an initial list of available templates.
+  For testing purposes, DVA will provide a simple GUI where templates can be managed (created, removed, edited, etc).
+* **Create AoV:** P can create an _attestation_ saying that the shared data complies to the VLA.
+  * **Create third-party AoV:** in this case a trusted third party attests to the data’s veracity
+  * **Create self-attested AoV:** alternatively, the provider themselves may attest to the data’s veracity
+  * You can find more information about AoVs later in this document.
+* **Create PoV:** P can also create a _proof_ that the data fulfils the requirements in the VLA.
+  * Proofs are different from attestations as they do not require trust from C in either P or a third party.
+  * Read more about PoVs later in this document.
+* **Send Verdict:** both participants of the data exchange will have a verdict regarding data veracity.
+  * Most of the time, P and C will agree in their verdicts (eg, P attests to the veracity of the data, and C trusts P that the data fulfils the VLA).
+  * In problematic cases, the parties may disagree.
+    For example, P may attest that the data is valid according to the VLA, but C could discover after a re-evaluation (using the methods defined in the contract) that the data quality actually does not meet the requirements.
+  * In any case, the two parties’ verdicts are forwarded to the _Contract_ component, which can then handle potential disputes.
+* **Verify Verifiable Credential:** both AoVs and PoVs are issued as [verifiable credentials](https://www.w3.org/TR/vc-data-model-2.0/).
+  Upon the receipt of an AoV or PoV, C will likely want to verify these documents.
+  * **Verify VC Metadata:** this refers to checking of the verifiable credential itself (for a valid cryptograhic signature, schema, etc).
+  * **Verify VC Content:** this refers to checking what is encoded in the _subject_ of the verifiable credentials.
+    For example, in the context of a PoV, a _proof_ (which could be a small binary object) is included in the file.
+    This proof can be directly verified by C.
+* **Check AoV:** AoVs are based on trust, but C should still check the attestation ‘document’ itself for validity (a _verifiable credential_).
+* **Check PoV:** PoVs are meant to be verified by C.
+  If the proof is deemed valid, it is impossible for P to have generated it based on invalid data.
+* **Re-Evaluate Data:** In case of an AoV, C may still wish to redo the same calculations and checks that P (or a third party) claims to have done.
+
+#### Templates for Veracity Level Agreements (VLAs)
 
 VLAs describe exactly what data quality P ‘promises’ and/or C expects.
 The format and exact contents of VLAs is further detailed later in this document.
 
 It is among the primary functionalities of DVA to facilitate
-* _striking_ VLAs (which also relates to the _Contract_ module)
+* _striking_ VLAs (by providing templates for the _Contract_ module)
 * _querying_ VLAs for a given data exchange
 * _changing_ the terms of VLAs (if this functionality is desired)
 * _revoking_ VLAs (if this functionality is desired)
@@ -198,15 +198,14 @@ DVA of course also provides the means for P to prove (or attest) and C to verify
 #### Proving, Attestation, and Verification of Veracity
 
 There are chiefly two ways P can offer veracity assurance regarding the exchanged data:
-1. By presenting a **Proof of Veracity (PoV)** to C (by sending it together with the data itself)
-2. By sharing an **Attestation of Veracity (AoV)**
+1. By sharing an **Attestation of Veracity (AoV)**
+2. By presenting a **Proof of Veracity (PoV)**
 
-The latter is obviously the ‘weaker’ option, but depending on the use case, it may be enough, or _proving_ adherence to the VLA may not be possible.
+The former is obviously the ‘weaker’ option, but depending on the use case, it may be enough, or _proving_ adherence to the VLA may not be possible.
 
 A PoV is a (cryptographic) proof generated by P (or potentially a third party) of the claim ‘the data in question fulfils the requirements in the VLA’.
 C can reliably _verify_ these proofs.
 Such proofs should be _sound,_ meaning that a cheating P cannot forge a PoV for a piece of data that does not adhere to the VLA’s requirements.
-<!-- TODO a simple example of a PoV? -->
 
 AoVs are simpler because they are non-verifiable (at least not in the sense as PoVs).
 Attestations rely on trust – for example, a trusted third party may give their attestation that the data is indeed in line with the VLA requirements.
@@ -230,16 +229,18 @@ DVA also keeps track of veracity verification results for traceability purposes.
 ## Requirements
 
 * **`[BB_08__01]`** DVA MUST define schemata for VLAs
-* **`[BB_08__02]`** DVA MUST support striking VLAs (through the Catalogue?)
-* **`[BB_08__03]`** DVA MUST provide multiple veracity assurance methods
-* **`[BB_08__04]`** DVA MUST support veracity attestation (ie, either P or a third party attests that veracity requirements are met)
-* **`[BB_08__05]`** DVA SHOULD support veracity self-attestation
-* **`[BB_08__06]`** DVA SHOULD support third-party veracity attestation
-* **`[BB_08__07]`** DVA SHOULD support provider-proven veracity
-* **`[BB_08__08]`** DVA SHOULD support consumer-verified veracity
-* **`[BB_08__09]`** DVA MUST interface with the Contract service
-* **`[BB_08__10]`** DVA MUST interface with the Dataspace Connector
-* **`[BB_08__11]`** DVA MUST log verification results
+* **`[BB_08__02]`** DVA MUST provide VLA templates
+* **`[BB_08__03]`** DVA SHOULD support editing available VLA templates
+* **`[BB_08__04]`** DVA MUST support striking VLAs
+* **`[BB_08__05]`** DVA MUST provide multiple veracity assurance methods
+* **`[BB_08__06]`** DVA MUST support veracity attestation (ie, either P or a third party attests that veracity requirements are met)
+* **`[BB_08__07]`** DVA SHOULD support veracity self-attestation
+* **`[BB_08__08]`** DVA SHOULD support third-party veracity attestation
+* **`[BB_08__09]`** DVA SHOULD support provider-proven veracity
+* **`[BB_08__10]`** DVA SHOULD support consumer-verified veracity
+* **`[BB_08__11]`** DVA MUST interface with the Contract service
+* **`[BB_08__12]`** DVA MUST interface with the Dataspace Connector
+* **`[BB_08__13]`** DVA MUST log verification results
 
 ```mermaid
 ---
@@ -253,72 +254,86 @@ requirementDiagram
     risk: medium
     verifymethod: demonstration
   }
-  functionalRequirement BB_08__02 {
+  requirement BB_08__02 {
     id: BB_08__02
-    text: "DVA MUST support striking VLAs"
+    text: "DVA MUST provide VLA templates"
     risk: medium
-    verifymethod: test
+    verifymethod: demonstration
   }
-  functionalRequirement BB_08__03 {
+  requirement BB_08__03 {
     id: BB_08__03
-    text: "DVA MUST provide multiple veracity assurance methods"
+    text: "DVA SHOULD support editing available VLA templates"
     risk: low
     verifymethod: demonstration
   }
   functionalRequirement BB_08__04 {
     id: BB_08__04
-    text: "DVA MUST support veracity attestation"
-    risk: low
-    verifymethod: demonstration
+    text: "DVA MUST support striking VLAs"
+    risk: medium
+    verifymethod: test
   }
   functionalRequirement BB_08__05 {
     id: BB_08__05
-    text: "DVA SHOULD support veracity self-attestation"
+    text: "DVA MUST provide multiple veracity assurance methods"
     risk: low
     verifymethod: demonstration
   }
   functionalRequirement BB_08__06 {
     id: BB_08__06
-    text: "DVA SHOULD support third-party veracity attestation"
+    text: "DVA MUST support veracity attestation"
     risk: low
     verifymethod: demonstration
   }
   functionalRequirement BB_08__07 {
     id: BB_08__07
-    text: "DVA SHOULD support provider-proven veracity"
-    risk: medium
+    text: "DVA SHOULD support veracity self-attestation"
+    risk: low
     verifymethod: demonstration
   }
   functionalRequirement BB_08__08 {
     id: BB_08__08
+    text: "DVA SHOULD support third-party veracity attestation"
+    risk: low
+    verifymethod: demonstration
+  }
+  functionalRequirement BB_08__09 {
+    id: BB_08__09
+    text: "DVA SHOULD support provider-proven veracity"
+    risk: medium
+    verifymethod: demonstration
+  }
+  functionalRequirement BB_08__10 {
+    id: BB_08__10
     text: "DVA SHOULD support consumer-verified veracity"
     risk: medium
     verifymethod: demonstration
   }
-  interfaceRequirement BB_08__09 {
-    id: BB_08__09
-    text: "DVA SHOULD interface with the Contract service"
-    risk: low
-    verifymethod: test
-  }
-  interfaceRequirement BB_08__10 {
-    id: BB_08__10
-    text: "DVA SHOULD interface with the Dataspace Connector"
+  interfaceRequirement BB_08__11 {
+    id: BB_08__11
+    text: "DVA MUST interface with the Contract service"
     risk: medium
     verifymethod: test
   }
-  functionalRequirement BB_08__11 {
-    id: BB_08__11
+  interfaceRequirement BB_08__12 {
+    id: BB_08__12
+    text: "DVA MUST interface with the Dataspace Connector"
+    risk: medium
+    verifymethod: test
+  }
+  functionalRequirement BB_08__13 {
+    id: BB_08__13
     text: "DVA MUST log verification result"
     risk: medium
     verifymethod: test
   }
 
-  BB_08__04 - refines -> BB_08__03
-  BB_08__05 - refines -> BB_08__04
-  BB_08__06 - refines -> BB_08__04
-  BB_08__07 - refines -> BB_08__03
-  BB_08__08 - refines -> BB_08__03
+  BB_08__02 - refines -> BB_08__01
+  BB_08__03 - refines -> BB_08__01
+  BB_08__06 - refines -> BB_08__05
+  BB_08__07 - refines -> BB_08__06
+  BB_08__08 - refines -> BB_08__06
+  BB_08__09 - refines -> BB_08__05
+  BB_08__10 - refines -> BB_08__05
 ```
 
 
@@ -458,6 +473,10 @@ AoVs (and PoVs) are envisioned as verifiable credentials.
 The information graph that summarizes the contents of these credentials can be seen below.
 
 ```mermaid
+---
+title: Information Graph of an AoV Verifiable Credential
+---
+
 graph TD
   vc(["(AoV) Credential Instance"]):::Main
   id[Credential ID #123456789]:::Optional
@@ -468,9 +487,8 @@ graph TD
 
   subjId[Data Exchange ID #ABCD1234]:::Optional
   subjContract[Contract ID #98765]:::Custom
-  subjObj1[Objective ID #AAA]:::Custom
-  subjObj2[Objective ID #AAB]:::Custom
-  subjObj3[Objective ID #AAC]:::Custom
+  subjEval1[Evaluation of Objective ID #AAA]:::Custom
+  subjEval2[Evaluation of Objective ID #AAB]:::Custom
 
   vc-- id -->id
   vc-- type -->type
@@ -480,7 +498,7 @@ graph TD
 
   subj-- id -->subjId
   subj-- contractId -->subjContract
-  subj-- objectives -->subjObj1 & subjObj2 & subjObj3
+  subj-- evaluations -->subjEval1 & subjEval2
 
   classDef Main fill:#fff,stroke:#000,color:#000
   classDef Required fill:#0fa,stroke:#000,color:#000
@@ -488,6 +506,45 @@ graph TD
   classDef Custom fill:#ffa,stroke:#000,color:#000
   linkStyle default stroke-width:4px
 ```
+
+```mermaid
+---
+title: Information Graph of a PoV Verifiable Credential
+---
+
+graph TD
+  vc(["(PoV) Credential Instance"]):::Main
+  id[Credential ID #123456789]:::Optional
+  type([Proof of Veracity]):::Required
+  validFrom[2025-01-12T12:31:33Z]:::Optional
+  subj([Data Exchange Instance]):::Required
+  issuer([Example Org]):::Required
+
+  subjId[Data Exchange ID #ABCD1234]:::Optional
+  subjContract[Contract ID #98765]:::Custom
+  proof[Proof]:::Custom
+
+  vc-- id -->id
+  vc-- type -->type
+  vc-- validFrom -->validFrom
+  vc-- credentialSubject -->subj
+  vc-- issuer -->issuer
+
+  subj-- id -->subjId
+  subj-- contractId -->subjContract
+  subj-- proof -->proof
+
+  classDef Main fill:#fff,stroke:#000,color:#000
+  classDef Required fill:#0fa,stroke:#000,color:#000
+  classDef Optional fill:#7d7,stroke:#000,color:#000
+  classDef Custom fill:#ffa,stroke:#000,color:#000
+  linkStyle default stroke-width:4px
+```
+
+For AoVs, specifying concrete evaluation results is optional.
+The important elements of an attestation are its issuer and the identifiers of the relevant data exchange (and contract).
+
+For PoVs, the _proof_ is a crucial element of the credential.
 
 
 ## Architecture
@@ -508,17 +565,20 @@ title: Data Veracity Assurance High-Level Architecture
 graph LR
   apip>"fa:fa-plug\n Data Provider API"]:::API
   apic>"fa:fa-plug\n Data Consumer API"]:::API
+  apio>"fa:fa-plug\n Orchestrator API"]:::API
+  apim>"fa:fa-plug\n Contract API"]:::API
   att["fa:fa-stamp\n Attestation Component"]:::Component
   attloc["Local Attestation"]:::Misc
   attext["External Attestation"]:::Misc
-  con["fa:fa-file\n Contracting Component"]:::Component
+  vla["fa:fa-file\n VLA Component"]:::Component
   prov["fa:fa-file-circle-check\n Proving Component"]:::Component
   verif["fa:fa-check-double\n Verification Component"]:::Component
   gen["Built-in Proof Generator"]:::Misc
   gen_ext["External Proof Generator"]:::Misc
   ver["Proof Verifier"]:::Misc
 
-  apip & apic -- strike and query VLAs -->con
+  apio -- manage templates -->vla
+  apim -- get templates -->vla
   apip -- create AoV --> att
   apip -- create PoV --> prov
   apic -- verify AoV --> att
