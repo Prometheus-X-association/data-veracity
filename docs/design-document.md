@@ -755,7 +755,7 @@ The DVA BB test acceptance critieria are, informally, and without striving for c
 <dl>
   <dt><a name=g_att href=#>attestation</a></dt>
   <dd>
-    <q>the issue of a statement, based on a decision, that fulfillment of specified requirements has been demonstrated</q> ([ISO/IEC 17000:2020](https://www.iso.org/standard/73029.html))
+    <q>the issue of a statement, based on a decision, that fulfillment of specified requirements has been demonstrated</q> (<a href=https://www.iso.org/standard/73029.html>ISO/IEC 17000:2020</a>)
     <br>
     In DVA, <em>attestations</em> of veracity (AoVs) are statements made by either <a href=#g_p>P</a> or a third party rearding the fulfilment of the <a href=#g_vla>VLA</a>.
     While <a href=#g_pov>PoVs</a> are meant to be verified, <a href=#g_aov>AoVs</a> are based on trust.
@@ -768,16 +768,16 @@ The DVA BB test acceptance critieria are, informally, and without striving for c
 
   <dt><a name=g_c href=#>data consumer</a></dt>
   <dd>
-    <q>a transaction participant to whom data is, or is to be technically supplied by a <a href=#g_p>data provider</a> in the context of a specific data transaction</q> ([DSSC Glossary v2.0 2023-09 2. Core Concepts:][dssc_glossary_2] <em>Data Recipient</em>)
+    <q>a transaction participant to whom data is, or is to be technically supplied by a <a href=#g_p>data provider</a> in the context of a specific data transaction</q> (<a href=https://dssc.eu/space/Glossary/176554052/2.+Core+Concepts>DSSC Glossary v2.0 2023-09 2. Core Concepts:</a> <em>Data Recipient</em>)
   </dd>
 
   <dt><a name=g_p href=#>data producer</a></dt>
   <dd>
-    <q>a transaction participant that, in the context of a specific data transaction, technically provides data to the <a href=#g_c>data recipients</a> that have a right or duty to access and/or receive that data</q> ([DSSC Glossary v2.0 2023-09 2. Core Concepts:][dssc_glossary_2] <em>Data Provider</em>)
+    <q>a transaction participant that, in the context of a specific data transaction, technically provides data to the <a href=#g_c>data recipients</a> that have a right or duty to access and/or receive that data</q> (<a href=https://dssc.eu/space/Glossary/176554052/2.+Core+Concepts>DSSC Glossary v2.0 2023-09 2. Core Concepts:</a> <em>Data Provider</em>)
   </dd>
 
   <dt><a name=g_dv href=#>data veracity</a></dt>
-  <dd><q>completeness and/or accuracy of data</q> ([ISO/IEC 20546:2019](https://www.iso.org/obp/ui/#iso:std:iso-iec:20546:ed-1:v1:en) 3.1.16)</dd>
+  <dd><q>completeness and/or accuracy of data</q> (<a href=https://www.iso.org/obp/ui/#iso:std:iso-iec:20546:ed-1:v1:en>ISO/IEC 20546:2019</a> 3.1.16)</dd>
 
   <dt><a name=g_orch href=#>orchestrator</a></dt>
   <dd>
@@ -785,12 +785,12 @@ The DVA BB test acceptance critieria are, informally, and without striving for c
       A data space participant that represents and is accountable for a specific use case in the context of the governance framework.
       The orchestrator establishes and enforces business rules and other conditions to be followed by the use case participants.
     </q>
-    ([DSSC Glossary v2.0 2023-09 3. Data space use cases and business model:][dssc_glossary_3] <em>Use case orchestrator</em>)
+    (<a href=https://dssc.eu/space/Glossary/176554052/3.+Data+space+use+cases+and+business+model>DSSC Glossary v2.0 2023-09 3. Data space use cases and business model:</a> <em>Use case orchestrator</em>)
   </dd>
 
   <dt><a name=g_proof href=#>proof</a></dt>
   <dd>
-    <q>a fact or piece of information that shows that something exists or is true</q> ([Cambridge Dictionary](https://dictionary.cambridge.org/dictionary/english/proof))
+    <q>a fact or piece of information that shows that something exists or is true</q> (<a href=https://dictionary.cambridge.org/dictionary/english/proof>Cambridge Dictionary</a>)
     <br>
     In DVA, <em>proofs</em> of veracity (PoVs) are special data that demonstrate the fulfilment of the <a href=#g_vla>VLA</a> and can be verified by <a href=#g_c>C</a>.
     While <a href=#g_aov>AoVs</a> require trust, <a href=#g_pov>PoVs</a> can be directly verified.
@@ -808,7 +808,7 @@ The DVA BB test acceptance critieria are, informally, and without striving for c
 
   <dt><a name=g_vc href=#>verifiable credential</a></dt>
   <dd>
-    <q>a verifiable credential is a tamper-evident credential that has authorship that can be cryptographically verified</q> ([W3C Verifiable Credentials Data Model 2.0](https://www.w3.org/TR/vc-data-model-2.0/#terminology))
+    <q>a verifiable credential is a tamper-evident credential that has authorship that can be cryptographically verified</q> (<a href=https://www.w3.org/TR/vc-data-model-2.0/#terminology>W3C Verifiable Credentials Data Model 2.0</a>)
     <br>
     <strong>credential:</strong>
     <q>
@@ -831,6 +831,3 @@ The DVA BB test acceptance critieria are, informally, and without striving for c
     a single requirement in a <a href=#g_vla>veracity level agreement</a>
   </dd>
 </dl>
-
-[dssc_glossary_2]: https://dssc.eu/space/Glossary/176554052/2.+Core+Concepts
-[dssc_glossary_3]: https://dssc.eu/space/Glossary/176554067/3.+Data+space+use+cases+and+business+model
