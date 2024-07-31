@@ -686,15 +686,7 @@ sequenceDiagram
 
 ## Configuration & Deployment Settings
 
-One of the main questions is how many DVA instances there are in a data space.
-For example, there may be a single centralized DVA instance that can be contacted by the connectors during data exchange.
-However, a more advantageous approach is to have a decentralized configuration with several DVA instances.
-There may be a DVA instance at the participating organizations – e.g., [P](#g_p) can use their own DVA instance to generate the [proof](#g_proof) or [attestation](#g_att) that will be passed together with the data to [C](#g_c).
-Likewise, [C](#g_c) may use their ‘local’ DVA instance to perform the verification.
-
-Going further, all the DVA instances may form a blockchain.
-Using privacy-preserving features (such as private data in Hyperledger Fabric) it is possible for only the data exchange participants to see the [proofs](#g_proof) generated, while other data space participants merely see a record of the [proof](#g_proof) having been generated on the blockchain (as a commitment).
-
+_TBD_
 
 ## Third Party Components & Licenses
 
