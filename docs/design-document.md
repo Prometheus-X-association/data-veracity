@@ -152,6 +152,7 @@ Optional functionalities:
 * [Proving](#g_proof)/verifying data properties that are related to further _sensitive_ (e.g., due to GDPR) data _without disclosing the sensitive data_
 * Decentralized DVA architecture
 * Partial [attestations](#g_att) or [proofs of veracity](#g_pov)
+* Handling of disagreements between [P](#g_p) and [C](#g_c)
 
 ### Technical Usage Scenarios
 
@@ -170,11 +171,6 @@ The technical usage scenarios have been summarized in the following UML use case
 * **Create [PoV](#g_pov):** [P](#g_p) can also create a [_proof_](#g_proof) that the data fulfils the requirements in the [VLA.](#g_vla)
   * Proofs are different from [attestations](#g_att) as they do not require trust from [C](#g_c) in either [P](#g_p) or a third party.
   * Read more about [PoVs](#g_pov) later in this document.
-* **Send Verdict:** both participants of the data exchange will have a verdict regarding data [veracity.](#g_dv)
-  * Most of the time, [P](#g_p) and [C](#g_c) will agree in their verdicts (e.g., [P](#g_p) [attests to](#g_att) the [veracity](#g_dv) of the data, and [C](#g_c) trusts [P](#g_p) that the data fulfils the [VLA](#g_vla)).
-  * In problematic cases, the parties may disagree.
-    For example, [P](#g_p) may [attest](#g_att) that the data is valid according to the [VLA,](#g_vla) but [C](#g_c) could discover after a re-evaluation (using the methods defined in the contract) that the data quality actually does not meet the requirements.
-  * In any case, the two parties’ verdicts are forwarded to the [Contract Manager] component, which can then handle potential disputes.
 * **Verify Verifiable Credential:** both [AoV](#g_aov)s and [PoVs](#g_pov) are issued as [verifiable credentials](https://www.w3.org/TR/vc-data-model-2.0/).
   Upon the receipt of an [AoV](#g_aov) or [PoV,](#g_pov) [C](#g_c) can verify these documents.
   * **Verify VC Metadata:** this refers to checking of the [verifiable credential](#g_vc) itself (for a valid cryptograhic signature, schema, etc.).

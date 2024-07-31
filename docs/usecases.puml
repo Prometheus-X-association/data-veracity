@@ -13,7 +13,6 @@ left to right direction
 (Create PoV) as uc_pov #line:blue;text:blue
 (Check AoV) as uc_aov_c #line:green;text:green
 (Check PoV) as uc_pov_c #line:green;text:green
-(Send Verdict) as uc_verdict
 
 (Verify Verifiable Credential) as uc_verif #line:green;text:green
 (Verify VC Metadata) as uc_verif_meta #line:green;text:green
@@ -43,8 +42,5 @@ p --> uc_aov
 p --> uc_pov
 c --> uc_aov_c
 c --> uc_pov_c
-
-p --> uc_verdict
-c --> uc_verdict
 
 @enduml
