@@ -144,6 +144,7 @@ Key functionalities:
    * [attest to](#g_att)
    * [prove](#g_proof)
    * verify
+
    the [veracity](#g_dv) of exchanged data
 3. Log veracity verification results
 
