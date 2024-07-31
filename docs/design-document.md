@@ -147,7 +147,7 @@ Key functionalities:
    the [veracity](#g_dv) of exchanged data
 3. Log veracity verification results
 
-Additional (not required, value-added) functionalities:
+Optional functionalities:
 * Potentially enable [proving](#g_proof)/verifying data properties that are related to further _sensitive_ (e.g., due to GDPR) data _without disclosing the sensitive data_
 * Decentralized DVA architecture
 * Partial [attestations](#g_att) or [proofs of veracity](#g_pov)
