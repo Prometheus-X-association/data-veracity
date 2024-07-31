@@ -746,7 +746,16 @@ _TBD_
 
 ## Usage in the Data Space
 
-_TBD_
+DVA may be involved in various service chains and use cases.
+So far, the following usages have been identified.
+
+### Learning Records BB: Sharing LMS/Moodle Data for Visualization
+
+![Sharing LMS/Moodle Data for Visualization](./service_chain-lrs.svg)
+
+### Skill Scenarios
+
+![Skills Scenario: Single source data flow goes through PDC communication from Org A to Org B](./service_chain-skills.svg)
 
 
 ## Abbreviations Used
