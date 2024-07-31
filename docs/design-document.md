@@ -139,7 +139,7 @@ graph LR
 
 Key functionalities:
 1. Manage data veracity level agreements ([VLAs](#g_vla))
-   * more precisely: provide [VLA](#g_vla) [templates](#g_template) (to the _Contract_ BB) for inclusion in new contracts
+   * more precisely: provide [VLA](#g_vla) [templates](#g_template) (to the [Contract Manager] BB) for inclusion in new contracts
 2. Provide means to…
    * [attest to](#g_att)
    * [prove](#g_proof)
@@ -158,7 +158,7 @@ The technical usage scenarios have been summarized in the following UML use case
 
 ![Use Case Diagram](./usecases.svg)
 
-* **Fetch Templates:** the _Contract_ component can get the currently available list of [VLA](#g_vla) [templates](#g_template) (which are essentially data quality requirement templates; e.g., how many `NaN` values a dataset contains and how to count them) for inclusion in the [VLAs](#g_vla) of new contracts
+* **Fetch Templates:** the [Contract Manager] component can get the currently available list of [VLA](#g_vla) [templates](#g_template) (which are essentially data quality requirement templates; e.g., how many `NaN` values a dataset contains and how to count them) for inclusion in the [VLAs](#g_vla) of new contracts
 * **Manage Templates:** the data space [orchestrator](#g_orch) has the right to select what [templates](#g_template) can be used in the data space.
   The DVA BB provides an initial list of available [templates.](#g_template)
   For testing purposes, DVA will provide a simple GUI where [templates](#g_template) can be managed (created, removed, edited, etc.).
@@ -173,7 +173,7 @@ The technical usage scenarios have been summarized in the following UML use case
   * Most of the time, [P](#g_p) and [C](#g_c) will agree in their verdicts (e.g., [P](#g_p) [attests to](#g_att) the [veracity](#g_dv) of the data, and [C](#g_c) trusts [P](#g_p) that the data fulfils the [VLA](#g_vla)).
   * In problematic cases, the parties may disagree.
     For example, [P](#g_p) may [attest](#g_att) that the data is valid according to the [VLA,](#g_vla) but [C](#g_c) could discover after a re-evaluation (using the methods defined in the contract) that the data quality actually does not meet the requirements.
-  * In any case, the two parties’ verdicts are forwarded to the _Contract_ component, which can then handle potential disputes.
+  * In any case, the two parties’ verdicts are forwarded to the [Contract Manager] component, which can then handle potential disputes.
 * **Verify Verifiable Credential:** both [AoV](#g_aov)s and [PoVs](#g_pov) are issued as [verifiable credentials](https://www.w3.org/TR/vc-data-model-2.0/).
   Upon the receipt of an [AoV](#g_aov) or [PoV,](#g_pov) [C](#g_c) can verify these documents.
   * **Verify VC Metadata:** this refers to checking of the [verifiable credential](#g_vc) itself (for a valid cryptograhic signature, schema, etc.).
@@ -191,7 +191,7 @@ The technical usage scenarios have been summarized in the following UML use case
 The format and exact contents of [VLAs](#g_vla) is further detailed later in this document.
 
 It is among the primary functionalities of DVA to facilitate
-* _striking_ [VLAs](#g_vla) (by providing [templates](#g_template) for the _Contract_ module)
+* _striking_ [VLAs](#g_vla) (by providing [templates](#g_template) for the [Contract Manager] module)
 * _querying_ [VLAs](#g_vla) for a given data exchange
 * _changing_ the terms of [VLAs](#g_vla) (if this functionality is desired)
 * _revoking_ [VLAs](#g_vla) (if this functionality is desired)
@@ -241,8 +241,8 @@ DVA also keeps track of veracity verification results for traceability purposes.
 * **`[BB_08__08]`** DVA SHOULD support third-party [veracity](#g_dv) [attestation](#g_att)
 * **`[BB_08__09]`** DVA SHOULD support [provider](#g_p)-[proven](#g_proof) [veracity](#g_dv)
 * **`[BB_08__10]`** DVA SHOULD support [consumer](#g_c)-verified [veracity](#g_dv)
-* **`[BB_08__11]`** DVA MUST interface with the Contract service
-* **`[BB_08__12]`** DVA MUST interface with the Dataspace Connector
+* **`[BB_08__11]`** DVA MUST interface with the [Contract Manager] service
+* **`[BB_08__12]`** DVA MUST interface with the [Dataspace Connector]
 * **`[BB_08__13]`** DVA MUST log verification results
 
 ```mermaid
@@ -313,7 +313,7 @@ requirementDiagram
   }
   interfaceRequirement BB_08__11 {
     id: BB_08__11
-    text: "DVA MUST interface with the Contract service"
+    text: "DVA MUST interface with the Contract Manager service"
     risk: medium
     verifymethod: test
   }
@@ -344,13 +344,13 @@ requirementDiagram
 
 ### Direct Integrations with Other BBs
 
-* As [VLAs](#g_vla) are similar to contracts (or will become part of the contracts), DVA will have interactions with the **Contract** component
+* As [VLAs](#g_vla) are similar to contracts (or will become part of the contracts), DVA will have interactions with the **[Contract Manager]** component
 
 
-### Integrations via Connector
+### Integrations via the [Dataspace Connector]
 
-* DVA will directly integrate with the **Dataspace Connector** itself to extend data exchange flows with [veracity](#g_dv) assurance steps
-* DVA will also have integrations with the **Data Value Chain Tracker** BB
+* DVA will directly integrate with the **[Dataspace Connector]** itself to extend data exchange flows with [veracity](#g_dv) assurance steps
+* DVA will also have integrations with the **[Data Value Chain Tracker]** BB
   * The _value_ is strongly related to the quality of the data assured by DVA
 
 
@@ -600,7 +600,7 @@ graph LR
 
 ## Dynamic Behaviour
 
-The sequence diagrams below describe possible DVA additions to the basic Connector flows.
+The sequence diagrams below describe possible DVA additions to the basic [Connector][Database Connector] flows.
 
 _(To be discussed with Félix)_
 
@@ -711,17 +711,17 @@ The primary objective of testing will be to validate the correct handling of exc
 Several data examples (including correct and incorrect samples) will be used for these tests.
 Various data quality aspects will be targeted and case studies will be conducted using different data types used in the main project use cases, like VR traces ([xAPI]), Moodle learning traces ([xAPI]), and skills (ontology/terminology).
 
-The integration with the _Dataspace Connector_ component will be tested thoroughy to verify that the necessary interactions are indeed possible and that error cases are handled properly (e.g., when no data is received during a data exchange or data _is_ received but without a [PoV](#g_pov)/[AoV](#g_aov) even though it would be required).
+The integration with the [Dataspace Connector] component will be tested thoroughy to verify that the necessary interactions are indeed possible and that error cases are handled properly (e.g., when no data is received during a data exchange or data _is_ received but without a [PoV](#g_pov)/[AoV](#g_aov) even though it would be required).
 
-While DVA will not directly integrate with the _Contract_ component, it should be tested that DVA can recognize [VLA](#g_vla) fragments defined in the contracts and that it is possible to extend existing contracts with [VLA](#g_vla) fragments.
+While DVA will not directly integrate with the [Contract Manager] component, it should be tested that DVA can recognize [VLA](#g_vla) fragments defined in the contracts and that it is possible to extend existing contracts with [VLA](#g_vla) fragments.
 In the end, this functionality will be provided by (or at least _via_) the _Catalogue,_ not this BB.
 
-Furthermore, interactions with other components, such as the _Data Value Chain Tracker (DVCT)_ will be validated through testing, as these potentially involve new interactions, protocols, and interfaces.
+Furthermore, interactions with other components, such as the [Data Value Chain Tracker (DVCT)][Data Value Chain Tracker] will be validated through testing, as these potentially involve new interactions, protocols, and interfaces.
 
 The DVA BB test acceptance critieria are, informally, and without striving for completeness:
 * [VLAs](#g_vla) can be struck and parsed from contracts.
 * DVA correctly handles data fulfilling the criteria in the corresponding [VLA](#g_vla) as well as data that is non-compliant.
-* DVA can successfully communicate with the _Dataspace Connector_ and be a part of the data exchange flow.
+* DVA can successfully communicate with the [Dataspace Connector] and be a part of the data exchange flow.
 * [AoVs](#g_aov) and [PoVs](#g_pov) can be created via DVA.
 * No [PoVs](#g_pov) can be created for data that does not fulfil the [VLA.](#g_vla)
 
@@ -827,3 +827,6 @@ The DVA BB test acceptance critieria are, informally, and without striving for c
 
 <!-- Reference links (will not be rendered) -->
 [xAPI]: https://xapi.com/
+[Contract Manager]: https://github.com/Prometheus-X-association/contract-manager
+[Dataspace Connector]: https://github.com/Prometheus-X-association/dataspace-connector
+[Data Value Chain Tracker]: https://github.com/Prometheus-X-association/data-value-chain-tracker
