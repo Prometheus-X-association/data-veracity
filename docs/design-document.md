@@ -728,8 +728,25 @@ The DVA BB test acceptance critieria are, informally, and without striving for c
 
 ### Internal Unit Tests
 
+_TBD_
 
 ### Component-level Testing
+
+_TBD_
+
+### UI test
+
+_TBD_
+
+
+## Partners & Roles
+
+_TBD_
+
+
+## Usage in the Data Space
+
+_TBD_
 
 
 ## Abbreviations Used
