@@ -687,7 +687,11 @@ sequenceDiagram
 
 ## Configuration & Deployment Settings
 
-_TBD_
+The data space [orchstrator](#g_orch) may configure some basic aspects of DVA, such as…
+* what [templates](#g_template) are available to use in [VLAs](#g_vla)
+* whether both [AoVs](#g_aov) and [PoVs](#g_pov) are available
+* for [AoVs](#g_aov): what [attestation](#g_att) methods (third-party, self-) are allowed
+* logging verbosity
 
 ## Third-Party Components & Licenses
 
