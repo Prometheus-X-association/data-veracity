@@ -148,7 +148,7 @@ Key functionalities:
 3. Log veracity verification results
 
 Optional functionalities:
-* Potentially enable [proving](#g_proof)/verifying data properties that are related to further _sensitive_ (e.g., due to GDPR) data _without disclosing the sensitive data_
+* [Proving](#g_proof)/verifying data properties that are related to further _sensitive_ (e.g., due to GDPR) data _without disclosing the sensitive data_
 * Decentralized DVA architecture
 * Partial [attestations](#g_att) or [proofs of veracity](#g_pov)
 
@@ -175,7 +175,7 @@ The technical usage scenarios have been summarized in the following UML use case
     For example, [P](#g_p) may [attest](#g_att) that the data is valid according to the [VLA,](#g_vla) but [C](#g_c) could discover after a re-evaluation (using the methods defined in the contract) that the data quality actually does not meet the requirements.
   * In any case, the two parties’ verdicts are forwarded to the _Contract_ component, which can then handle potential disputes.
 * **Verify Verifiable Credential:** both [AoV](#g_aov)s and [PoVs](#g_pov) are issued as [verifiable credentials](https://www.w3.org/TR/vc-data-model-2.0/).
-  Upon the receipt of an [AoV](#g_aov) or [PoV,](#g_pov) [C](#g_c) will likely want to verify these documents.
+  Upon the receipt of an [AoV](#g_aov) or [PoV,](#g_pov) [C](#g_c) can verify these documents.
   * **Verify VC Metadata:** this refers to checking of the [verifiable credential](#g_vc) itself (for a valid cryptograhic signature, schema, etc.).
   * **Verify VC Content:** this refers to checking what is encoded in the _subject_ of the [verifiable credentials.](#g_vc)
     For example, in the context of a [PoV,](#g_pov) a [_proof_](#g_proof) (which could be a small binary object) is included in the file.
@@ -359,7 +359,7 @@ requirementDiagram
 ### Data Format Standards
 
 * [VLAs](#g_vla) will be encoded in [YAML](https://yaml.org/).
-* In all likelihood, DVA will parse and/or serialize into [JSON](https://www.json.org/) or [JSON-LD](https://json-ld.org/) files for interoperability.
+* DVA will parse and/or serialize into [JSON](https://www.json.org/) or [JSON-LD](https://json-ld.org/) files for interoperability.
 * For configuration, DVA will use [TOML](https://toml.io/en/).
 
 ### Other Standards
@@ -472,7 +472,7 @@ objectives:
 
 ### Attestations of Veracity (AoVs)
 
-[AoVs](#g_aov) (and [PoVs](#g_pov)) are envisioned as [verifiable credentials.](#g_vc)
+[AoVs](#g_aov) (and [PoVs](#g_pov)) will manifest as [verifiable credentials.](#g_vc)
 The information graph that summarizes the contents of these [credentials](#g_vc) can be seen below.
 
 ```mermaid
