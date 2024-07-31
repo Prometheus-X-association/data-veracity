@@ -741,7 +741,7 @@ _TBD_
 
 ## Partners & Roles
 
-_TBD_
+[BME](https://www.bme.hu/) (the BB leader) shall design and implement DVA.
 
 
 ## Usage in the Data Space
