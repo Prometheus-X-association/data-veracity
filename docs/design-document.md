@@ -201,7 +201,7 @@ DVA of course also provides the means for [P](#g_p) to [prove](#g_proof) (or [at
 #### <a name=povsaovs></a>Proving, Attestation, and Verification of Veracity
 
 There are chiefly two ways [P](#g_p) can offer [veracity](#g_dv) assurance regarding the exchanged data:
-1. By sharing an [**Attestation of Veracity (AoV)**](#g_aov)
+1. By presenting an [**Attestation of Veracity (AoV)**](#g_aov)
 2. By presenting a [**Proof of Veracity (PoV)**](#g_pov)
 
 The former is obviously the ‘weaker’ option, but depending on the use case, it may be enough, or [_proving_](#g_proof) adherence to the [VLA](#g_vla) may not be possible.
