@@ -14,7 +14,7 @@ The [VLA](#g_vla) also defines _how_ the evaluation is to be performed (e.g., wi
 When the data exchange occurs, in the simplest model, [P](#g_p) attaches an [attestation](#g_att) (or even a [proof](#g_proof)) regarding the exchanged data’s quality that [C](#g_c) trusts or can verify.
 
 The high-level concepts of the DVA BB have been summarized in the knowledge graph below.
-The second graph visualizes a concrete example of using DVA in a use case where xAPI training data is exchanged.
+The second graph visualizes a concrete example of using DVA in a use case where [xAPI] training data is exchanged.
 
 <!-- Hacking a Mermaid flowchart for a knowledge graph for now -->
 
@@ -717,7 +717,7 @@ The current specification can be found in [`spec/openapi.yaml`](https://github.c
 
 The primary objective of testing will be to validate the correct handling of exchanged data compliant and non-compliant with the quality aspects established in the [VLA.](#g_vla)
 Several data examples (including correct and incorrect samples) will be used for these tests.
-Various data quality aspects will be targeted and case studies will be conducted using different data types used in the main project use cases, like VR traces (xAPI), Moodle learning traces (xAPI), and skills (ontology/terminology).
+Various data quality aspects will be targeted and case studies will be conducted using different data types used in the main project use cases, like VR traces ([xAPI]), Moodle learning traces ([xAPI]), and skills (ontology/terminology).
 
 The integration with the _Dataspace Connector_ component will be tested thoroughy to verify that the necessary interactions are indeed possible and that error cases are handled properly (e.g., when no data is received during a data exchange or data _is_ received but without a [PoV](#g_pov)/[AoV](#g_aov) even though it would be required).
 
@@ -831,3 +831,7 @@ The DVA BB test acceptance critieria are, informally, and without striving for c
     a single requirement in a <a href=#g_vla>veracity level agreement</a>
   </dd>
 </dl>
+
+
+<!-- Reference links (will not be rendered) -->
+[xAPI]: https://xapi.com/
