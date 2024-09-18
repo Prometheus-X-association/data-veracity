@@ -607,35 +607,61 @@ title: Data Exchange with Attestation of Veracity (AoV)
 ---
 
 sequenceDiagram
-    participant p as Provider
-    participant pc as Provider Connector
-    participant con as Contract Service
-    participant evs as Veracity Attestation Service
-    participant cat as Catalogue Service
-    participant cc as Consumer Connector
-    participant c as Consumer
+    participant c as Consumer PDC
 
-    p -) cat: Trigger data exchange
-    cat -) cc: data exchange info (w/ veracity level agreement)
-    cc -) pc: data request (w/ contract + veracity level agreement)
-    pc -) con: Verify contract & policies + veracity agreement
-    Note over pc: Policy verification & Access control
-    pc -) p: Get data
-    p -) pc: data
+    box rgba(50, 100, 20, .5) Data Provider
+      participant p as Provider PDC
+      participant dva as Provider DVA
+    end
+    
+    participant ctr as Contract Manager
 
-    alt self-attestation
-        pc -) pc: Get attestation of veracity
-        pc -) cc: data + attestation
-    else third-party attestation
-        pc -) evs: Get attestation of veracity
-        evs -) pc: attestation
-        pc -) cc: data + attestation
-    else no agreement / attestation
-        pc -) cc: data
+    box rgba(150, 50, 50, .5) 3rd Party DVA Organization
+      participant pdc3 as PDC X 
+      participant dva3 as 3rd Party DVA
+    end
+    
+    box rgba(100, 100, 130, .5) Organizagion/Individual A
+      participant pdca as PDC A
+      participant dvaa as DVA A
+      participant svca as Service A
+    end
+    
+    box rgba(100, 100, 130, .5) Organizagion/Individual B
+      participant pdcb as PDC B
+      participant dvab as DVA B
+      participant svcb as Service B
     end
 
-    Note over cc: Policy verification & Access control
-    cc -) c: data
+    c ->> ctr : Request data processing chain
+    ctr --) c: Return processing sequence
+
+    c -) p: Initiate data transaction
+
+    alt self-attestation
+        c ->> dva: Create self-AoV
+        dva --) c: Return AoV
+    else third-party attestation
+        c ->> pdc3: Request AoV
+        pdc3 ->> dva3: Create AoV
+        dva3 --) pdc3: Return AoV
+        pdc3 --) c: Return AoV
+    end
+
+    p -) pdca: Send raw data (+ AoV) for processing
+
+    pdca -) dvaa: Verify AoV
+    pdca ->> svca: Process data
+    svca --) pdca: Return processed data
+    pdca --) c: Notify progress
+
+    pdca -) pdcb: Send data for next processing
+    pdcb -) dvab: Verify AoV
+    pdcb ->> svcb: Process data
+    svcb --) pdcb: Return processed data
+    pdcb -) c: Notify progress
+
+    pdcb --) c: Send final processed data
 ```
 
 ```mermaid
