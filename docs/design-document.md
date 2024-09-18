@@ -19,8 +19,6 @@ The second graph visualizes a concrete example of using DVA in a use case where 
 <!-- Hacking a Mermaid flowchart for a knowledge graph for now -->
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
-
 ---
 title: High-Level Data Veracity Concepts (Knowledge Graph / Metamodel)
 ---
@@ -76,8 +74,6 @@ graph TD
 ```
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
-
 ---
 title: Data Veracity Concepts Example (xAPI Learning Traces)
 ---
