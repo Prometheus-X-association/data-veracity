@@ -599,8 +599,6 @@ graph LR
 
 The sequence diagrams below describe possible DVA additions to the basic [Connector][Database Connector] flows.
 
-_(To be discussed with Félix)_
-
 ```mermaid
 ---
 title: Data Exchange with Attestation of Veracity (AoV)
