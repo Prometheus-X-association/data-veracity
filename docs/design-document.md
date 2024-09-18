@@ -604,7 +604,7 @@ The sequence diagrams below describe possible DVA additions to the basic [Connec
 
 ```mermaid
 ---
-title: Data Exchange with Attestation of Veracity (AoV)
+title: Data Exchange with Attestation or Proof of Veracity (AoV/PoV)
 ---
 
 sequenceDiagram
@@ -639,72 +639,29 @@ sequenceDiagram
 
     c -) p: Initiate data transaction
 
-    alt self-attestation
-        c ->> dva: Create self-AoV
-        dva --) c: Return AoV
-    else third-party attestation
-        c ->> pdc3: Request AoV
-        pdc3 ->> dva3: Create AoV
-        dva3 --) pdc3: Return AoV
-        pdc3 --) c: Return AoV
+    alt self-attestation or self-generated proof
+        c ->> dva: Create self-AoV or Generate PoV
+        dva --) c: Return AoV/PoV
+    else third-party attestation or proving
+        c ->> pdc3: Request AoV/PoV
+        pdc3 ->> dva3: Create AoV/PoV
+        dva3 --) pdc3: Return AoV/PoV
+        pdc3 --) c: Return AoV/PoV
     end
 
-    p -) pdca: Send raw data (+ AoV) for processing
-
-    pdca -) dvaa: Verify AoV
+    p -) pdca: Send raw data (+ AoV/PoV) for processing
+    pdca -) dvaa: Verify AoV/PoV
     pdca ->> svca: Process data
     svca --) pdca: Return processed data
     pdca --) c: Notify progress
 
     pdca -) pdcb: Send data for next processing
-    pdcb -) dvab: Verify AoV
+    pdcb -) dvab: Verify AoV/PoV
     pdcb ->> svcb: Process data
     svcb --) pdcb: Return processed data
     pdcb -) c: Notify progress
 
     pdcb --) c: Send final processed data
-```
-
-```mermaid
----
-title: Data Exchange with Proof of Veracity (PoV)
----
-
-sequenceDiagram
-    participant p as Provider
-    participant pc as Provider Connector
-    participant con as Contract Service
-    participant evs as Veracity Proving Service
-    participant cat as Catalogue Service
-    participant cc as Consumer Connector
-    participant c as Consumer
-
-    p -) cat: Trigger data exchange
-    cat -) cc: data exchange info (w/ veracity level agreement)
-    cc -) pc: data request (w/ contract + veracity level agreement)
-    pc -) con: Verify contract & policies + veracity agreement
-    Note over pc: Policy verification & Access control
-    pc -) p: Get data
-    p -) pc: data
-
-    alt provider-proven veracity
-        pc -) evs: Get Proof of Veracity
-        evs -) pc: proof
-        pc -) cc: data + proof
-        cc -) cc: Verify proof
-    else consumer-verified veracity
-        pc -) cc: data
-        alt local verification
-            cc -) cc: Verify data veracity
-        else external verification
-            cc -) evs: Verify data veracity
-        end
-    else no agreement / verification
-        pc -) cc: data
-    end
-
-    Note over cc: Policy verification & Access control
-    cc -) c: data
 ```
 
 
