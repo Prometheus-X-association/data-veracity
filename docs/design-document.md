@@ -597,7 +597,7 @@ graph LR
 
 ## Dynamic Behaviour
 
-The sequence diagrams below describe possible DVA additions to the basic [Connector][Database Connector] flows.
+The sequence diagrams below describe possible DVA additions to the basic [Connector][Dataspace Connector] flows.
 
 ```mermaid
 ---
