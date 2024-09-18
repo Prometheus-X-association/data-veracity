@@ -673,6 +673,27 @@ The data space [orchstrator](#g_orch) may configure some basic aspects of DVA, s
 * for [AoVs](#g_aov): what [attestation](#g_att) methods (third-party, self-) are allowed
 * logging verbosity
 
+### Error Scenarios
+
+The main potential error scenarios of DVA are caused by not being able to access the data for which [AoVs](#g_aov) or [PoVs](#g_pov) should be generated or verified and by possible limitations in resources required to generate [AoVs](#g_aov) and [PoVs](#g_pov).
+
+#### Unavailable Data
+
+To be able to generate an [AoV](#g_aov) or a [PoV](#g_pov), DVA needs access to the data under assessment.
+Incomplete or corrupted data may also not be possible to properly analyze.
+[AoVs](#g_aov) and [PoVs](#g_pov) must ‘prove’ that they have been created based on the right data to be valid and reliable (this can be most simply accomplished by ‘committing’ them to a checksum).
+
+Access to the data may be necessary not only for _generation_ by [P](#g_p) but also for _verification_ by [C](#g_c).
+This is only relevant in the case of [PoVs](#g_pov), which are verifiable [proofs](#g_proof) that a given piece of data fulfils the [VLA](#g_vla) – the [proof](#g_proof) can only be checked if the original data is available.
+
+#### Resource Limitations
+
+Some DVA operations may require surprisingly high computational power.
+This is especially true for [PoVs](#g_pov), which are inherently more complex than [AoVs](#g_aov).
+
+Furthermore, DVA will not be prepared to handle extreme workloads and will likely start thrashing above a certain limit of request frequency.
+
+
 ## Third-Party Components & Licenses
 
 _TBD_
