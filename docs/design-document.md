@@ -344,12 +344,12 @@ requirementDiagram
 
 ### Direct Integrations with Other BBs
 
-* As [VLAs](#g_vla) are similar to contracts (or will become part of the contracts), DVA will have interactions with the **[Contract Manager]** component
-
+_No direct integrations._
 
 ### Integrations via the [Dataspace Connector]
 
-* DVA will directly integrate with the **[Dataspace Connector]** itself to extend data exchange flows with [veracity](#g_dv) assurance steps
+* As [VLAs](#g_vla) will be part of the contracts, DVA will have interactions with the **[Contract Manager]** component (e.g., to fetch the current [VLA](#g_vla))
+* DVA will integrate with the **[Dataspace Connector]** itself to extend data exchange flows with [veracity](#g_dv) assurance steps
 * DVA will also have integrations with the **[Data Value Chain Tracker]** BB
   * The _value_ is strongly related to the quality of the data assured by DVA
 
