@@ -385,6 +385,11 @@ Other possibly relevant standards and specifications:
 
 ### Data Veracity Level Agreements (VLAs)
 
+> [!NOTE]
+> The precise language of [VLAs](#g_vla) is still being worked out.
+> This should not be a concern to other components such as the [Contract Manager] at this point, as [VLAs](#g_vla) are expected to be embedded into the contracts.
+> Take, for example, the [Bilateral Contract example](https://github.com/Prometheus-X-association/contract-manager/wiki/Bilateral-Contract-%E2%80%90-Example): the mockup [VLA](#g_vla) could be added to this contract under an additional `vla` key (with some minor modifications and after converting the YAML to JSON of course).
+
 Initial mockup [VLAs](#g_vla) based on [data contracts][data contract]:
 
 ```yaml
