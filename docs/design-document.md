@@ -701,8 +701,18 @@ Furthermore, DVA will not be prepared to handle extreme workloads and will likel
 
 ## Third-Party Components & Licenses
 
-_TBD_
+For [verifiable-credentials-related](#g_vc) operations, DVA will rely on:
+* [Credo](https://credo.js.org/) ([Apache 2.0])
+* [walt.id](https://walt.id/) ([Apache 2.0])
 
+For performing veracity checks, DVA will use:
+* [Great Expectations](https://greatexpectations.io/) ([Apache 2.0])
+
+Other potential, less important libraries planned to be used by the implementation:
+* [toml4j](https://github.com/mwanji/toml4j) for [TOML](https://toml.io/en/) serialization ([MIT])
+* [GenSON](https://github.com/wolverdude/GenSON) for [JSON](https://www.json.org/) serialization ([MIT])
+* [snakeyaml](https://github.com/snakeyaml/snakeyaml) for [YAML](https://yaml.org/) serialization ([Apache 2.0])
+* [ktor](https://github.com/ktorio/ktor) for the REST API ([Apache 2.0])
 
 ## Implementation Details
 
@@ -868,3 +878,5 @@ So far, the following usages have been identified.
 [Dataspace Connector]: https://github.com/Prometheus-X-association/dataspace-connector
 [Data Value Chain Tracker]: https://github.com/Prometheus-X-association/data-value-chain-tracker
 [data contract]: https://github.com/bitol-io/open-data-contract-standard
+[Apache 2.0]: https://opensource.org/license/apache-2-0
+[MIT]: https://opensource.org/license/mit
