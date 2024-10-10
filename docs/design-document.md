@@ -1,5 +1,8 @@
 # Data veracity assurance BB – Design Document
 
+<!-- START doctoc -->
+<!-- END doctoc -->
+
 > [!TIP]
 > When in doubt regarding the intended meaning of a certain term, refer to the [Glossary](#glossary).
 
@@ -19,8 +22,6 @@ The second graph visualizes a concrete example of using DVA in a use case where 
 <!-- Hacking a Mermaid flowchart for a knowledge graph for now -->
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
-
 ---
 title: High-Level Data Veracity Concepts (Knowledge Graph / Metamodel)
 ---
@@ -76,8 +77,6 @@ graph TD
 ```
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
-
 ---
 title: Data Veracity Concepts Example (xAPI Learning Traces)
 ---
@@ -345,12 +344,12 @@ requirementDiagram
 
 ### Direct Integrations with Other BBs
 
-* As [VLAs](#g_vla) are similar to contracts (or will become part of the contracts), DVA will have interactions with the **[Contract Manager]** component
-
+_No direct integrations._
 
 ### Integrations via the [Dataspace Connector]
 
-* DVA will directly integrate with the **[Dataspace Connector]** itself to extend data exchange flows with [veracity](#g_dv) assurance steps
+* As [VLAs](#g_vla) will be part of the contracts, DVA will have interactions with the **[Contract Manager]** component (e.g., to fetch the current [VLA](#g_vla))
+* DVA will integrate with the **[Dataspace Connector]** itself to extend data exchange flows with [veracity](#g_dv) assurance steps
 * DVA will also have integrations with the **[Data Value Chain Tracker]** BB
   * The _value_ is strongly related to the quality of the data assured by DVA
 
@@ -385,6 +384,11 @@ Other possibly relevant standards and specifications:
 ## Input / Output Data
 
 ### Data Veracity Level Agreements (VLAs)
+
+> [!NOTE]
+> The precise language of [VLAs](#g_vla) is still being worked out.
+> This should not be a concern to other components such as the [Contract Manager] at this point, as [VLAs](#g_vla) are expected to be embedded into the contracts.
+> Take, for example, the [Bilateral Contract example](https://github.com/Prometheus-X-association/contract-manager/wiki/Bilateral-Contract-%E2%80%90-Example): the mockup [VLA](#g_vla) could be added to this contract under an additional `vla` key (with some minor modifications and after converting the YAML to JSON of course).
 
 Initial mockup [VLAs](#g_vla) based on [data contracts][data contract]:
 
@@ -601,87 +605,68 @@ graph LR
 
 ## Dynamic Behaviour
 
-The sequence diagrams below describe possible DVA additions to the basic [Connector][Database Connector] flows.
-
-_(To be discussed with Félix)_
+The sequence diagrams below describe possible DVA additions to the basic [Connector][Dataspace Connector] flows.
 
 ```mermaid
 ---
-title: Data Exchange with Attestation of Veracity (AoV)
+title: Data Exchange with Attestation or Proof of Veracity (AoV/PoV)
 ---
 
 sequenceDiagram
-    participant p as Provider
-    participant pc as Provider Connector
-    participant con as Contract Service
-    participant evs as Veracity Attestation Service
-    participant cat as Catalogue Service
-    participant cc as Consumer Connector
-    participant c as Consumer
+    participant c as Consumer PDC
 
-    p -) cat: Trigger data exchange
-    cat -) cc: data exchange info (w/ veracity level agreement)
-    cc -) pc: data request (w/ contract + veracity level agreement)
-    pc -) con: Verify contract & policies + veracity agreement
-    Note over pc: Policy verification & Access control
-    pc -) p: Get data
-    p -) pc: data
+    box rgba(50, 100, 20, .5) Data Provider
+      participant p as Provider PDC
+      participant dva as Provider DVA
+    end
+    
+    participant ctr as Contract Manager
 
-    alt self-attestation
-        pc -) pc: Get attestation of veracity
-        pc -) cc: data + attestation
-    else third-party attestation
-        pc -) evs: Get attestation of veracity
-        evs -) pc: attestation
-        pc -) cc: data + attestation
-    else no agreement / attestation
-        pc -) cc: data
+    box rgba(150, 50, 50, .5) 3rd Party DVA Organization
+      participant pdc3 as PDC X 
+      participant dva3 as 3rd Party DVA
+    end
+    
+    box rgba(100, 100, 130, .5) Organizagion/Individual A
+      participant pdca as PDC A
+      participant dvaa as DVA A
+      participant svca as Service A
+    end
+    
+    box rgba(100, 100, 130, .5) Organizagion/Individual B
+      participant pdcb as PDC B
+      participant dvab as DVA B
+      participant svcb as Service B
     end
 
-    Note over cc: Policy verification & Access control
-    cc -) c: data
-```
+    c ->> ctr : Request data processing chain
+    ctr --) c: Return processing sequence
 
-```mermaid
----
-title: Data Exchange with Proof of Veracity (PoV)
----
+    c -) p: Initiate data transaction
 
-sequenceDiagram
-    participant p as Provider
-    participant pc as Provider Connector
-    participant con as Contract Service
-    participant evs as Veracity Proving Service
-    participant cat as Catalogue Service
-    participant cc as Consumer Connector
-    participant c as Consumer
-
-    p -) cat: Trigger data exchange
-    cat -) cc: data exchange info (w/ veracity level agreement)
-    cc -) pc: data request (w/ contract + veracity level agreement)
-    pc -) con: Verify contract & policies + veracity agreement
-    Note over pc: Policy verification & Access control
-    pc -) p: Get data
-    p -) pc: data
-
-    alt provider-proven veracity
-        pc -) evs: Get Proof of Veracity
-        evs -) pc: proof
-        pc -) cc: data + proof
-        cc -) cc: Verify proof
-    else consumer-verified veracity
-        pc -) cc: data
-        alt local verification
-            cc -) cc: Verify data veracity
-        else external verification
-            cc -) evs: Verify data veracity
-        end
-    else no agreement / verification
-        pc -) cc: data
+    alt self-attestation or self-generated proof
+        c ->> dva: Create self-AoV or Generate PoV
+        dva --) c: Return AoV/PoV
+    else third-party attestation or proving
+        c ->> pdc3: Request AoV/PoV
+        pdc3 ->> dva3: Create AoV/PoV
+        dva3 --) pdc3: Return AoV/PoV
+        pdc3 --) c: Return AoV/PoV
     end
 
-    Note over cc: Policy verification & Access control
-    cc -) c: data
+    p -) pdca: Send raw data (+ AoV/PoV) for processing
+    pdca -) dvaa: Verify AoV/PoV
+    pdca ->> svca: Process data
+    svca --) pdca: Return processed data
+    pdca --) c: Notify progress
+
+    pdca -) pdcb: Send data for next processing
+    pdcb -) dvab: Verify AoV/PoV
+    pdcb ->> svcb: Process data
+    svcb --) pdcb: Return processed data
+    pdcb -) c: Notify progress
+
+    pdcb --) c: Send final processed data
 ```
 
 
@@ -693,14 +678,46 @@ The data space [orchstrator](#g_orch) may configure some basic aspects of DVA, s
 * for [AoVs](#g_aov): what [attestation](#g_att) methods (third-party, self-) are allowed
 * logging verbosity
 
+### Error Scenarios
+
+The main potential error scenarios of DVA are caused by not being able to access the data for which [AoVs](#g_aov) or [PoVs](#g_pov) should be generated or verified and by possible limitations in resources required to generate [AoVs](#g_aov) and [PoVs](#g_pov).
+
+#### Unavailable Data
+
+To be able to generate an [AoV](#g_aov) or a [PoV](#g_pov), DVA needs access to the data under assessment.
+Incomplete or corrupted data may also not be possible to properly analyze.
+[AoVs](#g_aov) and [PoVs](#g_pov) must ‘prove’ that they have been created based on the right data to be valid and reliable (this can be most simply accomplished by ‘committing’ them to a checksum).
+
+Access to the data may be necessary not only for _generation_ by [P](#g_p) but also for _verification_ by [C](#g_c).
+This is only relevant in the case of [PoVs](#g_pov), which are verifiable [proofs](#g_proof) that a given piece of data fulfils the [VLA](#g_vla) – the [proof](#g_proof) can only be checked if the original data is available.
+
+#### Resource Limitations
+
+Some DVA operations may require surprisingly high computational power.
+This is especially true for [PoVs](#g_pov), which are inherently more complex than [AoVs](#g_aov).
+
+Furthermore, DVA will not be prepared to handle extreme workloads and will likely start thrashing above a certain limit of request frequency.
+
+
 ## Third-Party Components & Licenses
 
-_TBD_
+For [verifiable-credentials-related](#g_vc) operations, DVA will rely on:
+* [Credo](https://credo.js.org/) ([Apache 2.0])
+* [walt.id](https://walt.id/) ([Apache 2.0])
 
+For performing veracity checks, DVA will use:
+* [Great Expectations](https://greatexpectations.io/) ([Apache 2.0])
+
+Other potential, less important libraries planned to be used by the implementation:
+* [toml4j](https://github.com/mwanji/toml4j) for [TOML](https://toml.io/en/) serialization ([MIT])
+* [GenSON](https://github.com/wolverdude/GenSON) for [JSON](https://www.json.org/) serialization ([MIT])
+* [snakeyaml](https://github.com/snakeyaml/snakeyaml) for [YAML](https://yaml.org/) serialization ([Apache 2.0])
+* [ktor](https://github.com/ktorio/ktor) for the REST API ([Apache 2.0])
 
 ## Implementation Details
 
-_TBD_
+The core functionality of DVA will be implemented over the JVM in Java/Kotlin.
+Some [verifiable-credential](#g_vc)-related functionality will be implemented in TypeScript.
 
 
 ## OpenAPI Specification
@@ -862,3 +879,5 @@ So far, the following usages have been identified.
 [Dataspace Connector]: https://github.com/Prometheus-X-association/dataspace-connector
 [Data Value Chain Tracker]: https://github.com/Prometheus-X-association/data-value-chain-tracker
 [data contract]: https://github.com/bitol-io/open-data-contract-standard
+[Apache 2.0]: https://opensource.org/license/apache-2-0
+[MIT]: https://opensource.org/license/mit
