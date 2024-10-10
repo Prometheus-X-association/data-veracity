@@ -716,7 +716,8 @@ Other potential, less important libraries planned to be used by the implementati
 
 ## Implementation Details
 
-_TBD_
+The core functionality of DVA will be implemented over the JVM in Java/Kotlin.
+Some [verifiable-credential](#g_vc)-related functionality will be implemented in TypeScript.
 
 
 ## OpenAPI Specification
