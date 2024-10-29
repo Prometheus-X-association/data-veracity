@@ -1,8 +1,5 @@
 # Data veracity assurance BB – Design Document
 
-<!-- START doctoc -->
-<!-- END doctoc -->
-
 > [!TIP]
 > When in doubt regarding the intended meaning of a certain term, refer to the [Glossary](#glossary).
 
