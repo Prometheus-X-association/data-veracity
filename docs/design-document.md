@@ -5,13 +5,13 @@
 
 The Data Veracity Assurance building block (_DVA_ from now on) allows data exchange participants to agree on and later [prove](#g_proof)/verify quality requirements or properties of the exchanged data.
 
-For example, if a [data producer](#g_p) (abbreviated _P_ from now on) provides simple sensor data to a [data consumer](#g_c) (_C_ from now on), DVA can facilitate [P](#g_p) to [prove](#g_proof) (or at least [claim](#g_att)) and [C](#g_c) to verify that the provided data is credible (e.g., temperature values are within a certain range).
+For example, if a [data producer](#g_p) (abbreviated _P_ from now on) provides simple sensor data to a [data consumer](#g_c) (_C_ from now on), DVA can facilitate [P](#g_p) to [prove](#g_proof) (or at least [claim](#g_att)) and [C](#g_c) to verify that the provided data is credible (e.g., temperature values are within a certain range, say in the interval _(-100 °C, +50 °C)_).
 
 DVA requires a [**veracity level agreement (VLA)**](#g_vla) between the exchange participants.
 This agreement is part of the contract and targets a specific data exchange unit (instance).
 The [VLA](#g_vla) defines a number of **veracity objectives** that each describe a **data quality aspect** (e.g., _completeness_ or _accuracy_) and an **evaluation scheme** (e.g., value is within a numerical range).
 The [VLA](#g_vla) also defines _how_ the evaluation is to be performed (e.g., with a certain algorithm or software library).
-When the data exchange occurs, in the simplest model, [P](#g_p) attaches an [attestation](#g_att) (or even a [proof](#g_proof)) regarding the exchanged data’s quality that [C](#g_c) trusts or can verify.
+When the data exchange occurs, in the simplest model, [P](#g_p) attaches an [attestation](#g_att) (or even a [proof](#g_proof)) regarding the exchanged data’s quality that [C](#g_c) can verify and trust.
 
 The high-level concepts of the DVA BB have been summarized in the knowledge graph below.
 The second graph visualizes a concrete example of using DVA in a use case where [xAPI] training data is exchanged.
@@ -163,16 +163,16 @@ The technical usage scenarios have been summarized in the following UML use case
 * **Create [AoV](#g_aov):** [P](#g_p) can create an [_attestation_](#g_att) saying that the shared data complies to the [VLA.](#g_vla)
   * **Create third-party [AoV](#g_aov):** in this case a trusted third party [attests to](#g_att) the data’s [veracity](#g_dv)
   * **Create self-attested [AoV](#g_aov):** alternatively, the [provider](#g_c) themselves may [attest to](#g_att) the data’s [veracity](#g_dv)
-  * You can find more information about [AoV](#g_aov)s later in this document.
+  * You can find more information about [AoV](#g_aov)s [later in this document](#attestations-of-veracity-aovs).
 * **Create [PoV](#g_pov):** [P](#g_p) can also create a [_proof_](#g_proof) that the data fulfils the requirements in the [VLA.](#g_vla)
   * Proofs are different from [attestations](#g_att) as they do not require trust from [C](#g_c) in either [P](#g_p) or a third party.
-  * Read more about [PoVs](#g_pov) later in this document.
+  * Read more about [PoVs](#g_pov) [later in this document](#attestations-of-veracity-aovs).
 * **Verify Verifiable Credential:** both [AoV](#g_aov)s and [PoVs](#g_pov) are issued as [verifiable credentials](https://www.w3.org/TR/vc-data-model-2.0/).
   Upon the receipt of an [AoV](#g_aov) or [PoV,](#g_pov) [C](#g_c) can verify these documents.
   * **Verify VC Metadata:** this refers to checking of the [verifiable credential](#g_vc) itself (for a valid cryptograhic signature, schema, etc.).
   * **Verify VC Content:** this refers to checking what is encoded in the _subject_ of the [verifiable credentials.](#g_vc)
     For example, in the context of a [PoV,](#g_pov) a [_proof_](#g_proof) (which could be a small binary object) is included in the file.
-    This [proof](#g_proof) can be directly verified by [C](#g_c).
+    This [proof](#g_proof) can be directly (and noninteractively) verified by [C](#g_c).
 * **Check [AoV](#g_aov):** [AoV](#g_aov)s are based on trust, but [C](#g_c) should still check the [attestation](#g_att) ‘document’ itself for validity (a [_verifiable credential_](#g_vc)).
 * **Check [PoV](#g_pov):** [PoVs](#g_pov) are meant to be verified by [C](#g_c).
   If the [proof](#g_proof) is deemed valid, it is impossible for [P](#g_p) to have generated it based on invalid data.
@@ -183,11 +183,8 @@ The technical usage scenarios have been summarized in the following UML use case
 [VLAs](#g_vla) describe exactly what data quality [P](#g_p) ‘promises’ and/or [C](#g_c) expects.
 The format and exact contents of [VLAs](#g_vla) is further detailed later in this document.
 
-It is among the primary functionalities of DVA to facilitate
-* _striking_ [VLAs](#g_vla) (by providing [templates](#g_template) for the [Contract Manager] module)
-* _querying_ [VLAs](#g_vla) for a given data exchange
-* _changing_ the terms of [VLAs](#g_vla) (if this functionality is desired)
-* _revoking_ [VLAs](#g_vla) (if this functionality is desired)
+While [VLAs](#g_vla) are struck and primarily managed by the [Contract Manager], DVA supports the process by managing [VLA](#g_vla) [templates](#g_template).
+The dataspace [orchestrator](#g_orch) is authorized to select the set of [templates](#g_template) whose usage is allowed in the dataspace.
 
 DVA of course also provides the means for [P](#g_p) to [prove](#g_proof) (or [attest](#g_att)) and [C](#g_c) to verify that the exchanged data fulfils the requirements set by the [VLA](#g_vla); see below.
 
@@ -214,16 +211,16 @@ We distinguish two major categories of [attestations](#g_att):
    Trust-wise, the additional assurance carried by self-attestations (note that a [VLA](#g_vla) is already a commitment by [P](#g_p)) is that [P](#g_p) is able to communicate partial or full results of the [veracity](#g_dv) evaluation performed by them in such [attestations](#g_att).
    In general, this can be valuable for ‘hard to compute, easy to verify’ evaluations (e.g., [NP-complete](https://en.wikipedia.org/wiki/NP-completeness) decision problems on the data); but in practice, we expect this mechanism to increase confidence in [C](#g_c) through showing compliance for a sample of the data.
 
-**[Proofs of veracity (PoVs)](#g_pov),** on the other hand, establish compliance through cryptographic, and not trust-based approaches - when this is required and feasible.
+**[Proofs of veracity (PoVs)](#g_pov),** on the other hand, establish compliance through cryptographic, and not trust-based approaches – when this is required and feasible.
 Such [proofs](#g_proof) are _sound,_ meaning that a cheating [P](#g_p) cannot forge a [PoV](#g_pov) for a piece of data that does not adhere to the [VLA](#g_vla)’s requirements.
 (Mathematically and succinctly) verifiable zero-knowledge as well as non-zero knowledge [proofs](#g_proof) on data have been an emerging field of mathematics in the last two decades, with increasingly rapid development in the last few years.
 However, as algorithms, standards, software frameworks, and use cases are still evolving, the DVA building block will provide a highly extensible framework for [PoVs](#g_pov), driven by the use cases of the project.
 
-DVA defines what [proofs](#g_proof) and [attestations](#g_att) are (see later in this document) and provides means to generate [PoVs,](#g_pov) [AoVs,](#g_aov) and to verify veracity.
+DVA defines what [proofs](#g_proof) and [attestations](#g_att) are (see [later in this document](#attestations-of-veracity-aovs) and provides means to generate [PoVs,](#g_pov) [AoVs,](#g_aov) and to verify veracity.
 
 #### Logging of Results
 
-DVA also keeps track of veracity verification results for traceability purposes.
+DVA also keeps track of veracity verification results for traceability and auditing purposes.
 
 
 ## Requirements
@@ -355,7 +352,7 @@ _No direct integrations._
 
 ### Data Format Standards
 
-* [VLAs](#g_vla) will be encoded in [YAML](https://yaml.org/).
+* [VLAs](#g_vla) will be encoded in [YAML](https://yaml.org/) (and embedded in contracts).
 * DVA will parse and/or serialize into [JSON](https://www.json.org/) or [JSON-LD](https://json-ld.org/) files for interoperability.
 * For configuration, DVA will use [TOML](https://toml.io/en/).
 
