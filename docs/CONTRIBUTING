@@ -19,6 +19,11 @@ Then, you would do the following:
 
 **Please use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).**
 
+You can configure Git locally to use the template in this directory like this:
+```shell-session
+$ git config commit.template docs/commit-message-template.txt
+```
+
 We use the following commit types:
 * `feat` – for modifications in functional features, often breaking changes
 * `fix` – for commits that fix bugs or minor issues
@@ -26,8 +31,10 @@ We use the following commit types:
 * `test` – commits related to testing
 * `docs` – changes to documentation
 * `build` – changes related to the (local) build environment/process, dependencies, etc
-* `ops` – changes to the CI pipeline
+* `ci` – changes to the CI pipeline
 * `chore` – miscellaneous, like adding a line to .gitignore
+* `revert` – for revert commits
+* `merge` – for merge commits
 
 For now, we do not use scopes.
 
@@ -48,6 +55,11 @@ We have decided to use the new features introduced in Java 21 such as [foo] and 
 ```
 chore: add target directory to gitignore
 ```
+
+### Generic coding conventions
+
+Please include [SPDX License IDs](https://spdx.dev/learn/handling-license-info/) in code files.
+This project is using the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) license.
 
 ### Java Coding Conventions
 
