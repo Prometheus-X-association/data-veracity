@@ -1,6 +1,6 @@
 plugins {
-    // Apply common Java conventions
-    id("buildlogic.java-common-conventions")
+    // Apply common Kotlin conventions
+    id("buildlogic.kotlin-common-conventions")
 
     // Apply the application plugin to add support for building a CLI application in Java.
     application
