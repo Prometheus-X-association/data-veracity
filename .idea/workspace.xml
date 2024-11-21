@@ -39,6 +39,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Kotlin Class" />
+        <option value="Kotlin Data Class" />
       </list>
     </option>
   </component>
@@ -74,6 +75,7 @@
     "git-widget-placeholder": "mockup",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/bp99/Desktop/ORGANIZE/edgeskills/repo/model",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -92,11 +94,18 @@
   }
 }]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\model" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\server\src\main\kotlin\hu\bme\mit\ftsrg\dva\server" />
       <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\server\src\main\kotlin" />
     </key>
+    <key name="CreateKotlinClassDialog.RecentsKey">
+      <recent name="hu.bme.mit.ftsrg.dva.model" />
+    </key>
     <key name="MoveKotlinTopLevelDeclarationsDialog.RECENTS_KEY">
+      <recent name="hu.bme.mit.ftsrg.dva.model.vla" />
       <recent name="hu.bme.mit.ftsrg.dva.server" />
     </key>
   </component>
@@ -182,7 +191,7 @@
       <updated>1732116683399</updated>
       <workItem from="1732116686895" duration="2394000" />
       <workItem from="1732178725941" duration="71000" />
-      <workItem from="1732179302290" duration="4984000" />
+      <workItem from="1732179302290" duration="9109000" />
     </task>
     <servers />
   </component>

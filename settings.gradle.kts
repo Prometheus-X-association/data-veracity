@@ -3,4 +3,4 @@ plugins {
 }
 
 rootProject.name = "dva"
-include("app", "server", "utilities")
+include("model", "app", "server", "utilities")
