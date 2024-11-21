@@ -1,6 +1,6 @@
 ktor:
   deployment:
-    port: 8080
+    port: 9090
   application:
     modules:
       - hu.bme.mit.ftsrg.dva.server.ServerKt.module

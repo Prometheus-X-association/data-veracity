@@ -4,8 +4,8 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.ktor.server.core)
-    implementation(libs.ktor.server.cio)
+    implementation(libs.bundles.ktor.server)
+    implementation(libs.ktor.server.html.builder)
     implementation(libs.slf4j.api)
     runtimeOnly(libs.penna.core)
     testImplementation(libs.ktor.server.test.host)
