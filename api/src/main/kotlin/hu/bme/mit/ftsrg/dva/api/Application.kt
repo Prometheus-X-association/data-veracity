@@ -1,4 +1,4 @@
-package hu.bme.mit.ftsrg.dva.server
+package hu.bme.mit.ftsrg.dva.api
 
 import io.ktor.http.*
 import io.ktor.server.application.*

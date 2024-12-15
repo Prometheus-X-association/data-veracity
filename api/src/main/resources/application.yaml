@@ -3,4 +3,4 @@ ktor:
     port: 9090
   application:
     modules:
-      - hu.bme.mit.ftsrg.dva.server.ServerKt.module
+      - hu.bme.mit.ftsrg.dva.api.ApplicationKt.module
