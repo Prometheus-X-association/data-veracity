@@ -1,24 +1,29 @@
 [versions]
 kotlin = "2.1.0-RC2"
-kotlin-gradle-plugin = "1.9.20"
+kotlin-gradle-plugin = "2.0.0-RC1"
 ktor = "3.0.1"
-slf4j = "2.0.16"
 penna = "0.8.1"
+slf4j = "2.0.16"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle-plugin" }
-ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
-ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml", version.ref = "ktor" }
-ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
-ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
-ktor-server-swagger = { module = "io.ktor:ktor-server-swagger", version.ref = "ktor" }
-ktor-server-html-builder = { module = "io.ktor:ktor-server-html-builder", version.ref = "ktor" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
+ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml", version.ref = "ktor" }
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-html-builder = { module = "io.ktor:ktor-server-html-builder", version.ref = "ktor" }
+ktor-server-swagger = { module = "io.ktor:ktor-server-swagger", version.ref = "ktor" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 penna-core = { module = "com.hkupty.penna:penna-core", version.ref = "penna" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 
 [bundles]
-ktor-server = ["ktor-server-core", "ktor-server-config-yaml", "ktor-server-cio", "ktor-server-swagger"]
+ktor-server = [
+    "ktor-server-cio",
+    "ktor-server-config-yaml",
+    "ktor-server-core",
+    "ktor-server-swagger",
+]
 
 [plugins]
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
