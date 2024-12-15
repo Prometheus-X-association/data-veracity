@@ -14,6 +14,7 @@ ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml", version.ref = "ktor" }
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-html-builder = { module = "io.ktor:ktor-server-html-builder", version.ref = "ktor" }
+ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
 ktor-server-swagger = { module = "io.ktor:ktor-server-swagger", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 penna-core = { module = "com.hkupty.penna:penna-core", version.ref = "penna" }
@@ -27,6 +28,7 @@ ktor-server = [
     "ktor-server-cio",
     "ktor-server-config-yaml",
     "ktor-server-core",
+    "ktor-server-status-pages",
     "ktor-server-swagger",
 ]
 penna = [

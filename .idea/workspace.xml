@@ -64,8 +64,8 @@
       <list>
         <option value="Kotlin Class" />
         <option value="Kotlin Data Class" />
-        <option value="Kotlin File" />
         <option value="Ktor Test Class" />
+        <option value="Kotlin File" />
       </list>
     </option>
   </component>
@@ -152,7 +152,7 @@
       <command value="gradle dependencies" />
     </option>
   </component>
-  <component name="RunManager" selected="Gradle.DocRoutesTest">
+  <component name="RunManager" selected="Kotlin.ApplicationKt (1)">
     <configuration name="ApplicationTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
@@ -276,8 +276,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.DocRoutesTest" />
         <item itemvalue="Kotlin.ApplicationKt (1)" />
+        <item itemvalue="Gradle.DocRoutesTest" />
         <item itemvalue="Gradle.repo:api [test]" />
         <item itemvalue="Gradle.ApplicationTest" />
         <item itemvalue="Kotlin.ApplicationKt" />
