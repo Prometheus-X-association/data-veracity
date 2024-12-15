@@ -14,10 +14,6 @@ fun Application.docRoutes() {
   }
 }
 
-fun Route.swaggerRoute() {
-  swaggerUI("swagger", swaggerFile = "spec/openapi.yaml")
-}
-
 fun Route.rootRoute() {
   get("/") {
     val name = "DVA"
@@ -41,4 +37,8 @@ fun Route.rootRoute() {
       }
     }
   }
+}
+
+fun Route.swaggerRoute() {
+  swaggerUI("swagger", swaggerFile = "api/spec/openapi.yaml")
 }
