@@ -7,6 +7,7 @@ dependencies {
     implementation(libs.bundles.ktor.server)
     implementation(libs.ktor.server.html.builder)
     implementation(libs.slf4j.api)
+    implementation(project(":dto"))
 
     runtimeOnly(libs.bundles.penna)
 
