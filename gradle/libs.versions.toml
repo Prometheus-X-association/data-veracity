@@ -4,6 +4,7 @@ kotlin-gradle-plugin = "2.0.0-RC1"
 ktor = "3.0.1"
 penna = "0.8.1"
 slf4j = "2.0.16"
+snakeyaml-engine = "2.8"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle-plugin" }
@@ -16,7 +17,9 @@ ktor-server-html-builder = { module = "io.ktor:ktor-server-html-builder", versio
 ktor-server-swagger = { module = "io.ktor:ktor-server-swagger", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 penna-core = { module = "com.hkupty.penna:penna-core", version.ref = "penna" }
+penna-yaml-config = { module = "com.hkupty.penna:penna-yaml-config", version.ref = "penna" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+snakeyaml-engine = { module = "org.snakeyaml:snakeyaml-engine", version.ref = "snakeyaml-engine" }
 
 [bundles]
 ktor-server = [
@@ -25,6 +28,11 @@ ktor-server = [
     "ktor-server-config-yaml",
     "ktor-server-core",
     "ktor-server-swagger",
+]
+penna = [
+    "penna-core",
+    "penna-yaml-config",
+    "snakeyaml-engine"
 ]
 
 [plugins]
