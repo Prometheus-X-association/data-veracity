@@ -84,7 +84,7 @@
     "git-widget-placeholder": "mockup",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/bp99/Desktop/ORGANIZE/edgeskills/repo/model",
+    "last_opened_file_path": "C:/Users/bp99/Desktop/ORGANIZE/edgeskills/repo.bak",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -124,7 +124,7 @@
       <command value="gradle dependencies" />
     </option>
   </component>
-  <component name="RunManager" selected="Kotlin.ServerKt">
+  <component name="RunManager" selected="Kotlin.ApplicationKt">
     <configuration name="repo [dependencies --configuration compile]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
@@ -239,8 +239,8 @@
       <RunAsTest>false</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="ServerKt" type="JetRunConfigurationType" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="hu.bme.mit.ftsrg.dva.server.ServerKt" />
+    <configuration name="ApplicationKt" type="JetRunConfigurationType" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="hu.bme.mit.ftsrg.dva.api.ApplicationKt" />
       <module name="dva.server.main" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -248,7 +248,7 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Kotlin.ServerKt" />
+        <item itemvalue="Kotlin.ApplicationKt" />
         <item itemvalue="Gradle.repo:server [dependencies]" />
         <item itemvalue="Gradle.repo [dependencies --configuration compile]" />
         <item itemvalue="Gradle.repo [dependencies]" />
@@ -275,6 +275,7 @@
       <workItem from="1732116686895" duration="2394000" />
       <workItem from="1732178725941" duration="71000" />
       <workItem from="1732179302290" duration="13494000" />
+      <workItem from="1734284105572" duration="530000" />
     </task>
     <servers />
   </component>
