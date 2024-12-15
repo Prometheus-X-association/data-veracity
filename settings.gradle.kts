@@ -5,7 +5,5 @@ plugins {
 rootProject.name = "dva"
 include(
     "api",
-    "app",
     "model",
-    "utilities",
 )
