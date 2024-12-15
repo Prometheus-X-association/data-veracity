@@ -14,3 +14,7 @@ dependencies {
 application {
     mainClass = "hu.bme.mit.ftsrg.dva.server.ServerKt"
 }
+
+tasks.withType<Test> {
+    workingDir = layout.projectDirectory.dir("../").asFile
+}

@@ -24,12 +24,33 @@
         <task path="$PROJECT_DIR$/server">
           <activation />
         </task>
+        <task path="$PROJECT_DIR$/api">
+          <activation />
+        </task>
         <projects_view>
           <tree_state>
             <expand>
               <path>
                 <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
                 <item name="dva" type="f1a62948:ProjectNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="dva" type="f1a62948:ProjectNode" />
+                <item name="api" type="2d1252cf:ModuleNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="dva" type="f1a62948:ProjectNode" />
+                <item name="api" type="2d1252cf:ModuleNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="dva" type="f1a62948:ProjectNode" />
+                <item name="api" type="2d1252cf:ModuleNode" />
+                <item name="Tasks" type="e4a08cd1:TasksNode" />
+                <item name="verification" type="c8890929:TasksNode$1" />
               </path>
             </expand>
             <select />
@@ -44,6 +65,7 @@
         <option value="Kotlin Class" />
         <option value="Kotlin Data Class" />
         <option value="Kotlin File" />
+        <option value="Ktor Test Class" />
       </list>
     </option>
   </component>
@@ -68,46 +90,50 @@
     <option name="showLibraryContents" value="true" />
     <option name="showVisibilityIcons" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_ADD_EXTERNAL_FILES": "true",
-    "Gradle.ApplicationTest.executor": "Run",
-    "Gradle.ApplicationTest.testRoot.executor": "Run",
-    "Gradle.Build repo.executor": "Run",
-    "Gradle.repo [dependencies --configuration compile].executor": "Run",
-    "Gradle.repo [dependencies] (1).executor": "Run",
-    "Gradle.repo [dependencies].executor": "Run",
-    "Gradle.repo [dependencyInsight].executor": "Run",
-    "Gradle.repo:server [dependencies].executor": "Run",
-    "Kotlin.ServerKt.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "mockup",
-    "ignore.virus.scanning.warn.message": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/bp99/Desktop/ORGANIZE/edgeskills/repo.bak",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Project",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.30114943",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;Gradle.ApplicationTest.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.ApplicationTest.testRoot.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.Build repo.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.DocRoutesTest.executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.repo [dependencies --configuration compile].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.repo [dependencies] (1).executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.repo [dependencies].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.repo [dependencyInsight].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.repo:api [test].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.repo:server [dependencies].executor&quot;: &quot;Run&quot;,
+    &quot;Kotlin.ApplicationKt (1).executor&quot;: &quot;Run&quot;,
+    &quot;Kotlin.ServerKt.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;mockup&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/bp99/Desktop/ORGANIZE/edgeskills/repo.bak&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.30114943&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "kotlin-gradle-user-dirs": [
-      "C:\\Users\\bp99\\.gradle"
+  &quot;keyToStringList&quot;: {
+    &quot;kotlin-gradle-user-dirs&quot;: [
+      &quot;C:\\Users\\bp99\\.gradle&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\model" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\api" />
       <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\server\src\main\kotlin\hu\bme\mit\ftsrg\dva\server" />
       <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\server\src\main\kotlin" />
     </key>
@@ -125,8 +151,56 @@
       <command value="gradle dependencies" />
     </option>
   </component>
-  <component name="RunManager" selected="Kotlin.ApplicationKt">
-    <configuration name="repo [dependencies --configuration compile]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+  <component name="RunManager" selected="Gradle.repo:api [test]">
+    <configuration name="ApplicationTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":api:test" />
+            <option value="--tests" />
+            <option value="&quot;hu.bme.mit.ftsrg.dva.api.ApplicationTest&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="DocRoutesTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":api:test" />
+            <option value="--tests" />
+            <option value="&quot;hu.bme.mit.ftsrg.dva.api.route.DocRoutesTest&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="repo [dependencies]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -150,56 +224,10 @@
       <RunAsTest>false</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="repo [dependencies]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="repo:api [test]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value="dependencies" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>false</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="repo [dependencies]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value="dependencies" />
-            <option value="--configuration" />
-            <option value="compile" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>false</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="repo [dependencyInsight]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$/api" />
         <option name="externalSystemIdString" value="GRADLE" />
         <option name="scriptParameters" />
         <option name="taskDescriptions">
@@ -207,7 +235,7 @@
         </option>
         <option name="taskNames">
           <list>
-            <option value="dependencyInsight" />
+            <option value="test" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -218,27 +246,12 @@
       <RunAsTest>false</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="repo:server [dependencies]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$/server" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value="dependencies" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>false</RunAsTest>
-      <method v="2" />
+    <configuration name="ApplicationKt (1)" type="JetRunConfigurationType" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="hu.bme.mit.ftsrg.dva.api.ApplicationKt" />
+      <module name="dva.api.main" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
     </configuration>
     <configuration name="ApplicationKt" type="JetRunConfigurationType" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="hu.bme.mit.ftsrg.dva.api.ApplicationKt" />
@@ -247,13 +260,26 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="dva.api.main" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="dva.api.main" />
+      <option name="filePath" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Gradle.repo:api [test]" />
+        <item itemvalue="Gradle.DocRoutesTest" />
+        <item itemvalue="Kotlin.ApplicationKt (1)" />
+        <item itemvalue="Gradle.ApplicationTest" />
         <item itemvalue="Kotlin.ApplicationKt" />
-        <item itemvalue="Gradle.repo:server [dependencies]" />
-        <item itemvalue="Gradle.repo [dependencies --configuration compile]" />
-        <item itemvalue="Gradle.repo [dependencies]" />
-        <item itemvalue="Gradle.repo [dependencies]" />
       </list>
     </recent_temporary>
   </component>
@@ -276,7 +302,7 @@
       <workItem from="1732116686895" duration="2394000" />
       <workItem from="1732178725941" duration="71000" />
       <workItem from="1732179302290" duration="13494000" />
-      <workItem from="1734284105572" duration="1391000" />
+      <workItem from="1734284105572" duration="3963000" />
     </task>
     <servers />
   </component>
