@@ -12,7 +12,7 @@ dependencies {
 }
 
 application {
-    mainClass = "hu.bme.mit.ftsrg.dva.server.ServerKt"
+    mainClass = "hu.bme.mit.ftsrg.dva.api.ApplicationKt"
 }
 
 tasks.withType<Test> {
