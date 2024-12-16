@@ -147,6 +147,9 @@
       <recent name="hu.bme.mit.ftsrg.dva.model.vla" />
       <recent name="hu.bme.mit.ftsrg.dva.server" />
     </key>
+    <key name="CopyKotlinDeclarationDialog.RECENTS_KEY">
+      <recent name="hu.bme.mit.ftsrg.dva.api" />
+    </key>
   </component>
   <component name="RunAnythingCache">
     <option name="myCommands">
@@ -154,7 +157,7 @@
       <command value="gradle dependencies" />
     </option>
   </component>
-  <component name="RunManager" selected="Kotlin.ApplicationKt (1)">
+  <component name="RunManager" selected="Gradle.ApplicationTest">
     <configuration name="ApplicationTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
@@ -278,10 +281,10 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Gradle.ApplicationTest" />
         <item itemvalue="Kotlin.ApplicationKt (1)" />
         <item itemvalue="Gradle.DocRoutesTest" />
         <item itemvalue="Gradle.repo:api [test]" />
-        <item itemvalue="Gradle.ApplicationTest" />
         <item itemvalue="Kotlin.ApplicationKt" />
       </list>
     </recent_temporary>
