@@ -21,6 +21,7 @@ ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml", version.
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-html-builder = { module = "io.ktor:ktor-server-html-builder", version.ref = "ktor" }
+ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
 ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
 ktor-server-swagger = { module = "io.ktor:ktor-server-swagger", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
@@ -38,6 +39,7 @@ ktor-server = [
     "ktor-server-config-yaml",
     "ktor-server-content-negotiation",
     "ktor-server-core",
+    "ktor-server-resources",
     "ktor-server-status-pages",
     "ktor-server-swagger",
 ]

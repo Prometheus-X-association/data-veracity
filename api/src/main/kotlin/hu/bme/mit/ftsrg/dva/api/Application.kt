@@ -2,6 +2,9 @@ package hu.bme.mit.ftsrg.dva.api
 
 import hu.bme.mit.ftsrg.dva.api.error.addHandlers
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
+import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
+import hu.bme.mit.ftsrg.dva.persistence.repository.VLATemplateRepository
+import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeVLATemplateRepository
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -10,12 +13,20 @@ import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
+import io.ktor.server.resources.*
 import kotlinx.serialization.json.Json
 import org.slf4j.event.Level
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
+  val templateRepository = FakeVLATemplateRepository()
+
+  installPlugins()
+  addRoutes(templateRepository)
+}
+
+fun Application.installPlugins() {
   install(CallLogging) {
     level = Level.DEBUG
     format { call ->
@@ -35,6 +46,10 @@ fun Application.module() {
 
   install(ContentNegotiation) { json(Json { explicitNulls = true }) }
 
+  install(Resources)
+}
 
+fun Application.addRoutes(templateRepository: VLATemplateRepository) {
   docRoutes()
+  templateRoutes(templateRepository)
 }
