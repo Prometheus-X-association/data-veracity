@@ -7,4 +7,5 @@ include(
     "api",
     "dto",
     "model",
+    "persistence",
 )
