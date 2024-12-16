@@ -1,6 +1,6 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
-import hu.bme.mit.ftsrg.dva.api.module
+import hu.bme.mit.ftsrg.dva.api.testutil.testModule
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -12,7 +12,7 @@ class DocRoutesTest {
 
   @Test
   fun `should return HTML page when root route is requested`() = testApplication {
-    application { module() }
+    setupApplication()
     client.get("/").apply {
       assertEquals(HttpStatusCode.OK, status)
       assertTrue {
@@ -23,12 +23,19 @@ class DocRoutesTest {
 
   @Test
   fun `should return swagger documentation page when slash swagger is requested`() = testApplication {
-    application { module() }
+    setupApplication()
     client.get("/swagger").apply {
       assertEquals(HttpStatusCode.OK, status)
       assertTrue {
         headers["Content-Type"]?.contains(ContentType.Text.Html.toString()) ?: false
       }
     }
+  }
+}
+
+private fun ApplicationTestBuilder.setupApplication() {
+  application {
+    testModule()
+    docRoutes()
   }
 }

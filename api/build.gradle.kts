@@ -1,6 +1,7 @@
 plugins {
     id("buildlogic.kotlin-application-conventions")
     alias(libs.plugins.ktor)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 dependencies {
@@ -8,6 +9,8 @@ dependencies {
     implementation(libs.ktor.server.html.builder)
     implementation(libs.slf4j.api)
     implementation(project(":dto"))
+    implementation(project(":model"))
+    implementation(project(":persistence"))
 
     runtimeOnly(libs.bundles.penna)
 
