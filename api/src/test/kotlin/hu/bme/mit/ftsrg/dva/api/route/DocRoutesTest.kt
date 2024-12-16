@@ -12,9 +12,7 @@ class DocRoutesTest {
 
   @Test
   fun `should return HTML page when root route is requested`() = testApplication {
-    application {
-      module()
-    }
+    application { module() }
     client.get("/").apply {
       assertEquals(HttpStatusCode.OK, status)
       assertTrue {
@@ -25,9 +23,7 @@ class DocRoutesTest {
 
   @Test
   fun `should return swagger documentation page when slash swagger is requested`() = testApplication {
-    application {
-      module()
-    }
+    application { module() }
     client.get("/swagger").apply {
       assertEquals(HttpStatusCode.OK, status)
       assertTrue {

@@ -11,6 +11,7 @@ dependencies {
 
     runtimeOnly(libs.bundles.penna)
 
+    testImplementation(libs.ktor.client.content.negotiation)
     testImplementation(libs.ktor.server.test.host)
 }
 
