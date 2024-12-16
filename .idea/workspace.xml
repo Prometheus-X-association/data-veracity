@@ -27,6 +27,9 @@
         <task path="$PROJECT_DIR$/api">
           <activation />
         </task>
+        <task path="$PROJECT_DIR$/persistence">
+          <activation />
+        </task>
         <projects_view>
           <tree_state>
             <expand>
@@ -37,11 +40,18 @@
               <path>
                 <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
                 <item name="dva" type="f1a62948:ProjectNode" />
+                <item name="persistence" type="2d1252cf:ModuleNode" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="dva" type="f1a62948:ProjectNode" />
+                <item name="persistence" type="2d1252cf:ModuleNode" />
                 <item name="Tasks" type="e4a08cd1:TasksNode" />
               </path>
               <path>
                 <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
                 <item name="dva" type="f1a62948:ProjectNode" />
+                <item name="persistence" type="2d1252cf:ModuleNode" />
                 <item name="Tasks" type="e4a08cd1:TasksNode" />
                 <item name="verification" type="c8890929:TasksNode$1" />
               </path>
@@ -60,6 +70,7 @@
         <option value="Kotlin File" />
         <option value="Kotlin Enum" />
         <option value="Kotlin Class" />
+        <option value="JUnit5 Test Class" />
       </list>
     </option>
   </component>
@@ -98,15 +109,18 @@
     "Gradle.repo [dependencyInsight].executor": "Run",
     "Gradle.repo [test].executor": "Run",
     "Gradle.repo:api [test].executor": "Run",
+    "Gradle.repo:persistence [test].executor": "Run",
     "Gradle.repo:server [dependencies].executor": "Run",
     "Kotlin.ApplicationKt (1).executor": "Run",
     "Kotlin.ServerKt.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrary": "JUnit5",
+    "com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit5": "",
     "git-widget-placeholder": "mockup",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/bp99/Desktop/ORGANIZE/edgeskills/repo/dto/src/main/kotlin/hu/bme/mit/ftsrg/dva/dto/vla",
+    "last_opened_file_path": "C:/Users/bp99/Desktop/ORGANIZE/edgeskills/repo",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -126,8 +140,9 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\dto\src\main\kotlin\hu\bme\mit\ftsrg\dva\dto\vla" />
       <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo" />
+      <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\dto" />
+      <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\dto\src\main\kotlin\hu\bme\mit\ftsrg\dva\dto\vla" />
       <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\model" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -136,14 +151,22 @@
       <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\server\src\main\kotlin\hu\bme\mit\ftsrg\dva\server" />
       <recent name="C:\Users\bp99\Desktop\ORGANIZE\edgeskills\repo\server\src\main\kotlin" />
     </key>
+    <key name="CreateTestDialog.Recents.Supers">
+      <recent name="" />
+    </key>
     <key name="CreateKotlinClassDialog.RecentsKey">
       <recent name="hu.bme.mit.ftsrg.dva.model" />
     </key>
     <key name="MoveKotlinTopLevelDeclarationsDialog.RECENTS_KEY">
+      <recent name="hu.bme.mit.ftsrg.dva.persistence.error" />
       <recent name="hu.bme.mit.ftsrg.dva.model.vla" />
       <recent name="hu.bme.mit.ftsrg.dva.server" />
     </key>
+    <key name="CreateTestDialog.RecentsKey">
+      <recent name="hu.bme.mit.ftsrg.dva.persistence.repository.fake" />
+    </key>
     <key name="CopyKotlinDeclarationDialog.RECENTS_KEY">
+      <recent name="hu.bme.mit.ftsrg.dva.persistence.error" />
       <recent name="hu.bme.mit.ftsrg.dva.dto.vla" />
       <recent name="hu.bme.mit.ftsrg.dva.api" />
     </key>
@@ -154,7 +177,7 @@
       <command value="gradle dependencies" />
     </option>
   </component>
-  <component name="RunManager" selected="Gradle.repo [test]">
+  <component name="RunManager" selected="Gradle.repo:persistence [test]">
     <configuration name="ApplicationTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
@@ -203,34 +226,32 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="DocRoutesTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="repo [test]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
+        <option name="scriptParameters" />
         <option name="taskDescriptions">
           <list />
         </option>
         <option name="taskNames">
           <list>
-            <option value=":api:test" />
-            <option value="--tests" />
-            <option value="&quot;hu.bme.mit.ftsrg.dva.api.route.DocRoutesTest&quot;" />
+            <option value="test" />
           </list>
         </option>
         <option name="vmOptions" />
       </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
       <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
       <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
+      <RunAsTest>false</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="repo [test]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="repo:persistence [test]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$/persistence" />
         <option name="externalSystemIdString" value="GRADLE" />
         <option name="scriptParameters" />
         <option name="taskDescriptions">
@@ -271,11 +292,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Gradle.repo:persistence [test]" />
         <item itemvalue="Gradle.repo [test]" />
         <item itemvalue="Gradle.CriterionTypeDTOTest" />
         <item itemvalue="Gradle.ApplicationTest" />
         <item itemvalue="Kotlin.ApplicationKt (1)" />
-        <item itemvalue="Gradle.DocRoutesTest" />
       </list>
     </recent_temporary>
   </component>
