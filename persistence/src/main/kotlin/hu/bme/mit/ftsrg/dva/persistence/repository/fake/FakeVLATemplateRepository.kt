@@ -29,17 +29,17 @@ class FakeVLATemplateRepository : VLATemplateRepository {
     ),
   )
 
-  override fun allTemplates(): List<VLATemplate> = templates.values.toList()
+  override fun all(): List<VLATemplate> = templates.values.toList()
 
-  override fun templateById(id: String): VLATemplate? = templates[id]
+  override fun byID(id: String): VLATemplate? = templates[id]
 
-  override fun addTemplate(template: VLATemplate) {
-    if (templateById(template.id) != null) throw EntityExistsException("Template with id ${template.id} already exists")
-    templates[template.id] = template
+  override fun add(entity: VLATemplate) {
+    if (byID(entity.id) != null) throw EntityExistsException("Template with id ${entity.id} already exists")
+    templates[entity.id] = entity
   }
 
-  override fun removeTemplate(id: String) {
-    if (templateById(id) == null) throw EntityNotFoundException("Template with id $id does not exist")
+  override fun remove(id: String) {
+    if (byID(id) == null) throw EntityNotFoundException("Template with id $id does not exist")
     templates.remove(id)
   }
 }
