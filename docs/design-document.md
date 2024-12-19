@@ -740,7 +740,7 @@ The DVA BB test acceptance critieria are, informally, and without striving for c
 * DVA can successfully communicate with the [Dataspace Connector] and be a part of the data exchange flow.
 * [AoVs](#g_aov) and [PoVs](#g_pov) can be created via DVA.
 * No [PoVs](#g_pov) can be created for data that does not fulfil the [VLA.](#g_vla)
-
+<!--- 
 ### Internal Unit Tests
 
 _TBD_
@@ -752,7 +752,7 @@ _TBD_
 ### UI test
 
 _TBD_
-
+-->
 
 ## Partners & Roles
 
