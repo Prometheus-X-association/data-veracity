@@ -8,6 +8,7 @@ dependencies {
     implementation(libs.bundles.ktor.server)
     implementation(libs.ktor.server.html.builder)
     implementation(libs.slf4j.api)
+    implementation(project(":dto"))
     implementation(project(":model"))
     implementation(project(":persistence"))
 

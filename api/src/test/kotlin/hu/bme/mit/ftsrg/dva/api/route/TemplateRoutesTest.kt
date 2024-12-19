@@ -1,9 +1,9 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
-import hu.bme.mit.ftsrg.dva.api.dto.ErrorDTO
-import hu.bme.mit.ftsrg.dva.api.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.api.error.ErrorType
 import hu.bme.mit.ftsrg.dva.api.testutil.testModule
+import hu.bme.mit.ftsrg.dva.dto.ErrorDTO
+import hu.bme.mit.ftsrg.dva.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.model.vla.*
 import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeVLATemplateRepository
 import io.ktor.client.*
