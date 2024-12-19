@@ -1,0 +1,16 @@
+package hu.bme.mit.ftsrg.contractmanager.contract.model
+
+import hu.bme.mit.ftsrg.odrl.model.policy.Policy
+
+/**
+ * Dummy contract schema.
+ */
+data class Contract(
+  val dataProvider: String,
+  val dataConsumer: String,
+  val serviceOffering: String,
+  val purpose: List<Purpose>,
+  val negotiators: List<Negotiator>,
+  val status: Status,
+  val policy: List<Policy>,
+)
