@@ -31,34 +31,34 @@ class FakeVLATemplateRepositoryTest {
 
   @Test
   fun `should contain default entities after initialization`() {
-    assertEquals(2, repository.allTemplates().size)
+    assertEquals(2, repository.all().size)
   }
 
   @Test
   fun `should be able to create new templates`() {
-    repository.addTemplate(testTemplate)
-    val retrieved: VLATemplate? = repository.templateById(testTemplate.id)
+    repository.add(testTemplate)
+    val retrieved: VLATemplate? = repository.byID(testTemplate.id)
     assertEquals(testTemplate, retrieved)
   }
 
   @Test
   fun `should throw entity exists exception when creating entity with existing ID`() {
-    assertThrows<EntityExistsException> { repository.addTemplate(repository.templateById("template-0001")!!) }
+    assertThrows<EntityExistsException> { repository.add(repository.byID("template-0001")!!) }
   }
 
   @Test
   fun `should return null when nonexistent entity requested`() {
-    assertNull(repository.templateById("non-existing"))
+    assertNull(repository.byID("non-existing"))
   }
 
   @Test
   fun `should throw entity not found exception when asking to delete entity with nonexisent ID`() {
-    assertThrows<EntityNotFoundException> { repository.removeTemplate("non-existing") }
+    assertThrows<EntityNotFoundException> { repository.remove("non-existing") }
   }
 
   @Test
   fun `should remove templates`() {
-    repository.allTemplates().map { it.id }.forEach(repository::removeTemplate)
-    assertEquals(0, repository.allTemplates().size)
+    repository.all().map { it.id }.forEach(repository::remove)
+    assertEquals(0, repository.all().size)
   }
 }

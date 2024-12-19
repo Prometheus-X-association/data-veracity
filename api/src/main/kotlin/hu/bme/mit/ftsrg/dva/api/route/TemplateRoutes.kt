@@ -26,7 +26,7 @@ fun Route.templateRoute(repository: VLATemplateRepository) {
    * Get all VLA templates.
    */
   get<Templates> {
-    val templates: List<VLATemplate> = repository.allTemplates()
+    val templates: List<VLATemplate> = repository.all()
     call.respond(templates)
   }
 
@@ -35,7 +35,7 @@ fun Route.templateRoute(repository: VLATemplateRepository) {
    */
   post<Templates> {
     val template: VLATemplate = call.receive()
-    repository.addTemplate(template)
+    repository.add(template)
     call.respond(IDDTO(template.id))
   }
 
@@ -43,7 +43,7 @@ fun Route.templateRoute(repository: VLATemplateRepository) {
    * Get a VLA template by its ID.
    */
   get<Templates.Id> { template ->
-    repository.templateById(template.id)?.apply {
+    repository.byID(template.id)?.apply {
       call.respond(this)
     } ?: throw NotFoundError("Template with id ${template.id} not found")
   }
@@ -57,7 +57,7 @@ fun Route.templateRoute(repository: VLATemplateRepository) {
    * Delete a VLA template by its ID.
    */
   delete<Templates.Id> { template ->
-    repository.removeTemplate(template.id)
+    repository.remove(template.id)
     call.response.status(HttpStatusCode.OK)
   }
 }
