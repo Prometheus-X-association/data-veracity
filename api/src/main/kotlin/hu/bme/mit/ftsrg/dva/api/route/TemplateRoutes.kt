@@ -1,6 +1,6 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
-import hu.bme.mit.ftsrg.dva.api.dto.IDDTO
+import hu.bme.mit.ftsrg.dva.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.api.error.NotFoundError
 import hu.bme.mit.ftsrg.dva.api.error.UnimplementedError
 import hu.bme.mit.ftsrg.dva.api.resource.Templates

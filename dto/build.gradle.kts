@@ -4,7 +4,6 @@ plugins {
 }
 
 dependencies {
-  api(libs.jena.iri)
-  implementation(libs.bundles.text.case.converter)
   implementation(libs.kotlinx.serialization.json)
+  implementation(project(":model"))
 }

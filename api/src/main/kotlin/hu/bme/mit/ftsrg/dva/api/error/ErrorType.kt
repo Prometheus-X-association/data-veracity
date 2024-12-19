@@ -1,6 +1,6 @@
 package hu.bme.mit.ftsrg.dva.api.error
 
-import hu.bme.mit.ftsrg.dva.api.dto.ErrorDTO
+import hu.bme.mit.ftsrg.dva.dto.ErrorDTO
 import java.net.URI
 
 enum class ErrorType(val uri: URI, val title: String) {
