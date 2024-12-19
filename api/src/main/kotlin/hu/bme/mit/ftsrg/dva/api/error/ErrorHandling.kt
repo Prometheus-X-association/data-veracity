@@ -1,7 +1,7 @@
 package hu.bme.mit.ftsrg.dva.api.error
 
 import hu.bme.mit.ftsrg.dva.api.error.ErrorType.*
-import hu.bme.mit.ftsrg.dva.dto.generic.ErrorDTO
+import hu.bme.mit.ftsrg.dva.api.dto.ErrorDTO
 import hu.bme.mit.ftsrg.dva.persistence.error.EntityExistsException
 import hu.bme.mit.ftsrg.dva.persistence.error.EntityNotFoundException
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
