@@ -1,10 +1,9 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
+import hu.bme.mit.ftsrg.dva.api.dto.ErrorDTO
+import hu.bme.mit.ftsrg.dva.api.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.api.error.ErrorType
 import hu.bme.mit.ftsrg.dva.api.testutil.testModule
-import hu.bme.mit.ftsrg.dva.dto.generic.ErrorDTO
-import hu.bme.mit.ftsrg.dva.dto.generic.IDDTO
-import hu.bme.mit.ftsrg.dva.dto.vla.VLATemplateDTO
 import hu.bme.mit.ftsrg.dva.model.vla.*
 import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeVLATemplateRepository
 import io.ktor.client.*
@@ -27,9 +26,9 @@ class TemplateRoutesTest {
     val client = setupClient()
 
     client.get("/template").apply {
-      val dtos: List<VLATemplateDTO> = body()
+      val templates: List<VLATemplate> = body()
       assertEquals(HttpStatusCode.OK, status)
-      assertTrue { dtos.isNotEmpty() }
+      assertTrue { templates.isNotEmpty() }
     }
   }
 
@@ -48,11 +47,10 @@ class TemplateRoutesTest {
         targetAspect = QualityAspect.SYNTAX,
       ),
     )
-    val dto = VLATemplateDTO.fromBO(template)
 
     client.post("/template") {
       contentType(ContentType.Application.Json)
-      setBody(dto)
+      setBody(template)
     }.apply {
       val idDTO: IDDTO = body()
       assertEquals(HttpStatusCode.OK, status)
@@ -75,11 +73,10 @@ class TemplateRoutesTest {
         targetAspect = QualityAspect.SYNTAX,
       ),
     )
-    val dto = VLATemplateDTO.fromBO(template)
 
     client.post("/template") {
       contentType(ContentType.Application.Json)
-      setBody(dto)
+      setBody(template)
     }.apply {
       val err: ErrorDTO = body()
       assertEquals(HttpStatusCode.BadRequest, status)
@@ -94,9 +91,9 @@ class TemplateRoutesTest {
 
     val id = "template-0001"
     client.get("/template/$id").apply {
-      val dto: VLATemplateDTO = body()
+      val template: VLATemplate = body()
       assertEquals(HttpStatusCode.OK, status)
-      assertEquals(id, dto.id)
+      assertEquals(id, template.id)
     }
   }
 

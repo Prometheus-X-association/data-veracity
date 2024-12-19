@@ -1,7 +1,7 @@
 package hu.bme.mit.ftsrg.dva.api
 
 import hu.bme.mit.ftsrg.dva.api.error.ErrorType
-import hu.bme.mit.ftsrg.dva.dto.generic.ErrorDTO
+import hu.bme.mit.ftsrg.dva.api.dto.ErrorDTO
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*

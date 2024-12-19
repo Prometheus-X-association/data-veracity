@@ -1,10 +1,10 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
+import hu.bme.mit.ftsrg.dva.api.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.api.error.NotFoundError
 import hu.bme.mit.ftsrg.dva.api.error.UnimplementedError
 import hu.bme.mit.ftsrg.dva.api.resource.Templates
-import hu.bme.mit.ftsrg.dva.dto.generic.IDDTO
-import hu.bme.mit.ftsrg.dva.dto.vla.VLATemplateDTO
+import hu.bme.mit.ftsrg.dva.model.vla.VLATemplate
 import hu.bme.mit.ftsrg.dva.persistence.repository.VLATemplateRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -26,18 +26,17 @@ fun Route.templateRoute(repository: VLATemplateRepository) {
    * Get all VLA templates.
    */
   get<Templates> {
-    val templates = repository.allTemplates()
-    val dtos = templates.map(VLATemplateDTO::fromBO)
-    call.respond(dtos)
+    val templates: List<VLATemplate> = repository.allTemplates()
+    call.respond(templates)
   }
 
   /**
    * Create a new VLA template.
    */
   post<Templates> {
-    val dto: VLATemplateDTO = call.receive()
-    repository.addTemplate(dto.toBO())
-    call.respond(IDDTO(dto.id))
+    val template: VLATemplate = call.receive()
+    repository.addTemplate(template)
+    call.respond(IDDTO(template.id))
   }
 
   /**
@@ -45,7 +44,7 @@ fun Route.templateRoute(repository: VLATemplateRepository) {
    */
   get<Templates.Id> { template ->
     repository.templateById(template.id)?.apply {
-      call.respond(VLATemplateDTO.fromBO(this))
+      call.respond(this)
     } ?: throw NotFoundError("Template with id ${template.id} not found")
   }
 
