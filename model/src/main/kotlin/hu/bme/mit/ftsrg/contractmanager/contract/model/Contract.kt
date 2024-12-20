@@ -1,10 +1,12 @@
 package hu.bme.mit.ftsrg.contractmanager.contract.model
 
 import hu.bme.mit.ftsrg.odrl.model.policy.Policy
+import kotlinx.serialization.Serializable
 
 /**
  * Dummy contract schema.
  */
+@Serializable
 data class Contract(
   val dataProvider: String,
   val dataConsumer: String,
