@@ -1,9 +1,12 @@
 package hu.bme.mit.ftsrg.dva.api
 
 import hu.bme.mit.ftsrg.dva.api.error.addHandlers
+import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
 import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
+import hu.bme.mit.ftsrg.dva.persistence.repository.AttestationRequestRepository
 import hu.bme.mit.ftsrg.dva.persistence.repository.VLATemplateRepository
+import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeAttestationRequestRepository
 import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeVLATemplateRepository
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -21,9 +24,13 @@ fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
   val templateRepository = FakeVLATemplateRepository()
+  val aovRequestRepository = FakeAttestationRequestRepository()
 
   installPlugins()
-  addRoutes(templateRepository)
+  addRoutes(
+    templateRepository = templateRepository,
+    aovRequestRepository = aovRequestRepository,
+  )
 }
 
 fun Application.installPlugins() {
@@ -49,7 +56,11 @@ fun Application.installPlugins() {
   install(Resources)
 }
 
-fun Application.addRoutes(templateRepository: VLATemplateRepository) {
+fun Application.addRoutes(
+  templateRepository: VLATemplateRepository,
+  aovRequestRepository: AttestationRequestRepository
+) {
   docRoutes()
   templateRoutes(templateRepository)
+  aovRoutes(aovRequestRepository)
 }
