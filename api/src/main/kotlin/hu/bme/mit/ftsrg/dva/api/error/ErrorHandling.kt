@@ -47,4 +47,8 @@ private fun ApplicationCall.toErrorDTO(
   cause: Throwable? = null,
   init: ErrorDTO.() -> Unit = {}
 ): ErrorDTO =
-  errorDTO(type) { instance = request.path() }.apply { if (cause != null) detail = cause.message }.apply(init)
+  errorDTO(type) {
+    instance = request.path()
+  }.apply {
+    if (cause != null) detail = "${cause.message}\n\nStack Trace:\n${cause.stackTraceToString()}"
+  }.apply(init)
