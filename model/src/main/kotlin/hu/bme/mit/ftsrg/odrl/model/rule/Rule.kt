@@ -1,9 +1,15 @@
+@file:UseSerializers(IRISerializer::class)
+
 package hu.bme.mit.ftsrg.odrl.model.rule
 
 import hu.bme.mit.ftsrg.odrl.model.asset.Asset
 import hu.bme.mit.ftsrg.odrl.model.party.Party
+import hu.bme.mit.ftsrg.serialization.IRISerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import org.apache.jena.iri.IRI
 
+@Serializable
 data class Rule(
   override val action: Action,
   override val relation: Asset? = null,

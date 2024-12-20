@@ -1,9 +1,14 @@
+@file:UseSerializers(IRISerializer::class)
+
 package hu.bme.mit.ftsrg.odrl.model.policy
 
 import hu.bme.mit.ftsrg.odrl.model.rule.IRule
-import hu.bme.mit.ftsrg.odrl.model.rule.Rule
+import hu.bme.mit.ftsrg.serialization.IRISerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import org.apache.jena.iri.IRI
 
+@Serializable
 data class Policy(
   override val uid: IRI,
   override val permission: List<IRule> = emptyList(),
