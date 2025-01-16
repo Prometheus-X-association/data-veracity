@@ -3,7 +3,7 @@ package hu.bme.mit.ftsrg.dva.persistence.repository.fake
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Contract
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Negotiator
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Status
-import hu.bme.mit.ftsrg.dva.dto.AttestationRequest
+import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
 import hu.bme.mit.ftsrg.odrl.model.asset.Asset
 import hu.bme.mit.ftsrg.odrl.model.policy.Policy
 import hu.bme.mit.ftsrg.odrl.model.rule.Action
@@ -19,7 +19,7 @@ class FakeAttestationRequestRepositoryTest {
 
   private lateinit var repository: FakeAttestationRequestRepository
 
-  private val testRequest = AttestationRequest(
+  private val testRequest = AttestationRequestDTO(
     attesterID = "attester-0000",
     contract = Contract(
       dataProvider = "/catalog/participants/provider-test-id",
@@ -60,7 +60,7 @@ class FakeAttestationRequestRepositoryTest {
   @Test
   fun `should enqueue new attestation request`() {
     val id = repository.enqueue(testRequest)
-    val retrieved: AttestationRequest? = repository.byID(id)
+    val retrieved: AttestationRequestDTO? = repository.byID(id)
     assertEquals(testRequest.copy(id = id), retrieved)
   }
 
@@ -72,7 +72,7 @@ class FakeAttestationRequestRepositoryTest {
   @Test
   fun `should dequeue enqueued requests`() {
     val id = repository.enqueue(testRequest)
-    val retrieved: AttestationRequest? = repository.dequeue()
+    val retrieved: AttestationRequestDTO? = repository.dequeue()
     assertEquals(testRequest.copy(id = id), retrieved)
     assertTrue(repository.all().isEmpty())
   }

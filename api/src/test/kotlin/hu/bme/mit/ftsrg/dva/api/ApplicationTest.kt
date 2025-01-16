@@ -1,6 +1,7 @@
 package hu.bme.mit.ftsrg.dva.api
 
 import hu.bme.mit.ftsrg.dva.api.error.ErrorType
+import hu.bme.mit.ftsrg.dva.api.testutil.testModule
 import hu.bme.mit.ftsrg.dva.dto.ErrorDTO
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -15,7 +16,7 @@ class ApplicationTest {
 
   @Test
   fun `should respond with not found error on nonexistent path requested`() = testApplication {
-    application { module() }
+    application { testModule() }
     val client = createClient { install(ClientContentNegotiation) { json() } }
     client.get("/nonexistent").apply {
       assertEquals(HttpStatusCode.NotFound, status)
