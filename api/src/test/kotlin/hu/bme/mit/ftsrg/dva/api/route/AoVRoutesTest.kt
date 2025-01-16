@@ -1,11 +1,11 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
+import com.github.fridujo.rabbitmq.mock.MockConnectionFactory
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Contract
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Negotiator
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Status
 import hu.bme.mit.ftsrg.dva.api.testutil.testModule
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
-import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeAttestationRequestRepository
 import hu.bme.mit.ftsrg.odrl.model.asset.Asset
 import hu.bme.mit.ftsrg.odrl.model.policy.Policy
 import hu.bme.mit.ftsrg.odrl.model.rule.Action
@@ -68,8 +68,10 @@ class AoVRoutesTest {
 }
 
 private fun ApplicationTestBuilder.setupApplication() = application {
+  val mockFactory = MockConnectionFactory()
+
   testModule()
-  aovRoutes(FakeAttestationRequestRepository())
+  aovRoutes(rmqConnection = mockFactory.newConnection())
 }
 
 private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {
