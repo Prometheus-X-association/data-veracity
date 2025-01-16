@@ -5,5 +5,6 @@ plugins {
 
 dependencies {
   implementation(libs.kotlinx.serialization.json)
-  implementation(project(":model"))
+
+  api(project(":model"))
 }

@@ -1,12 +1,12 @@
 package hu.bme.mit.ftsrg.dva.api
 
+import com.rabbitmq.client.Connection
+import com.rabbitmq.client.ConnectionFactory
 import hu.bme.mit.ftsrg.dva.api.error.addHandlers
 import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
 import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
-import hu.bme.mit.ftsrg.dva.persistence.repository.AttestationRequestRepository
 import hu.bme.mit.ftsrg.dva.persistence.repository.VLATemplateRepository
-import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeAttestationRequestRepository
 import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeVLATemplateRepository
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -24,12 +24,14 @@ fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
   val templateRepository = FakeVLATemplateRepository()
-  val aovRequestRepository = FakeAttestationRequestRepository()
+
+  val rmqConnectionFactory = ConnectionFactory()
+  val rmqConnection = rmqConnectionFactory.newConnection()
 
   installPlugins()
   addRoutes(
     templateRepository = templateRepository,
-    aovRequestRepository = aovRequestRepository,
+    rmqConnection = rmqConnection,
   )
 }
 
@@ -58,9 +60,9 @@ fun Application.installPlugins() {
 
 fun Application.addRoutes(
   templateRepository: VLATemplateRepository,
-  aovRequestRepository: AttestationRequestRepository
+  rmqConnection: Connection,
 ) {
   docRoutes()
   templateRoutes(templateRepository)
-  aovRoutes(aovRequestRepository)
+  aovRoutes(rmqConnection)
 }

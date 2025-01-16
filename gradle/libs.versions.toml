@@ -2,11 +2,15 @@
 jena-iri = "5.2.0"
 kotlin = "2.1.0-RC2"
 kotlin-gradle-plugin = "2.0.0-RC1"
+kotlinx-coroutines = "1.10.1"
 kotlinx-serialization-json = "1.7.3"
 kover = "0.9.0"
 ktor = "3.0.1"
 penna = "0.8.1"
-slf4j = "2.0.16"
+rabbitmq-amqp-client = "5.24.0"
+rabbitmq-kotlin = "0.7.0-SNAPSHOT"
+rabbitmq-mock = "1.2.0"
+slf4j = "2.0.14"
 snakeyaml-engine = "2.8"
 text-case-converter = "2.0.0"
 
@@ -14,9 +18,13 @@ text-case-converter = "2.0.0"
 jena-iri = { module = "org.apache.jena:jena-iri", version.ref = "jena-iri" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle-plugin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 kover-gradle-plugin = { module = "org.jetbrains.kotlinx.kover:org.jetbrains.kotlinx.kover.gradle.plugin", version.ref = "kover" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging", version.ref = "ktor" }
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
@@ -28,14 +36,26 @@ ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref 
 ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
 ktor-server-swagger = { module = "io.ktor:ktor-server-swagger", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
+logevents = { module = "org.logevents:logevents", version.ref = "logevents" }
 penna-core = { module = "com.hkupty.penna:penna-core", version.ref = "penna" }
 penna-yaml-config = { module = "com.hkupty.penna:penna-yaml-config", version.ref = "penna" }
+rabbitmq-amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "rabbitmq-amqp-client" }
+rabbitmq-kotlin = { module = "io.github.viartemev:rabbitmq-kotlin", version.ref = "rabbitmq-kotlin" }
+rabbitmq-mock = { module = "com.github.fridujo:rabbitmq-mock", version.ref = "rabbitmq-mock" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 snakeyaml-engine = { module = "org.snakeyaml:snakeyaml-engine", version.ref = "snakeyaml-engine" }
 text-case-converter = { module = "dev.turingcomplete:text-case-converter", version.ref = "text-case-converter" }
 text-case-converter-kotlin-extension = { module = "dev.turingcomplete:text-case-converter-kotlin-extension", version.ref = "text-case-converter" }
 
 [bundles]
+ktor-client = [
+    "kotlinx-serialization-json",
+    "ktor-client-logging",
+    "ktor-client-cio",
+    "ktor-client-content-negotiation",
+    "ktor-client-core",
+    "ktor-serialization-kotlinx-json",
+]
 ktor-server = [
     "kotlinx-serialization-json",
     "ktor-serialization-kotlinx-json",
