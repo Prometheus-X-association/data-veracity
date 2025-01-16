@@ -4,6 +4,7 @@ import hu.bme.mit.ftsrg.dva.api.error.ErrorType.*
 import hu.bme.mit.ftsrg.dva.dto.ErrorDTO
 import hu.bme.mit.ftsrg.dva.persistence.error.EntityExistsException
 import hu.bme.mit.ftsrg.dva.persistence.error.EntityNotFoundException
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.InternalServerError
 import io.ktor.http.HttpStatusCode.Companion.NotFound
@@ -13,12 +14,20 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 
+private val logger = KotlinLogging.logger {}
+
 fun StatusPagesConfig.addHandlers() {
   exception<Throwable>(::handleException)
   status(NotFound) { call, _ -> handleNotFound(call) }
 }
 
 suspend fun handleException(call: ApplicationCall, cause: Throwable) {
+  logger.atWarn {
+    message = "Handling exception: $cause"
+    this.cause = cause
+    payload = mapOf("stacktrace" to cause.stackTraceToString())
+  }
+
   when (cause) {
     is EntityExistsException -> {
       call.respond(message = call.toErrorDTO(ALREADY_EXISTS, cause), status = BadRequest)
