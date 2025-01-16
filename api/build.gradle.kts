@@ -5,6 +5,7 @@ plugins {
 }
 
 dependencies {
+    implementation(libs.bundles.logging)
     implementation(libs.bundles.ktor.server)
     implementation(libs.ktor.server.html.builder)
     implementation(libs.rabbitmq.amqp.client)
@@ -14,7 +15,7 @@ dependencies {
     implementation(project(":model"))
     implementation(project(":persistence"))
 
-    runtimeOnly(libs.bundles.penna)
+    runtimeOnly(libs.logevents)
 
     testImplementation(libs.ktor.client.content.negotiation)
     testImplementation(libs.ktor.server.test.host)

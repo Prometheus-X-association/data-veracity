@@ -5,11 +5,10 @@ plugins {
 
 dependencies {
   implementation(libs.bundles.ktor.client)
+  implementation(libs.bundles.logging)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.rabbitmq.amqp.client)
   implementation(libs.rabbitmq.kotlin)
   implementation(project(":dto"))
-
-  runtimeOnly(libs.bundles.penna)
 }

@@ -1,4 +1,0 @@
----
-watch: true
-loggers:
-  '': { level: debug }
