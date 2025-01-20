@@ -36,6 +36,6 @@ class DocRoutesTest {
 private fun ApplicationTestBuilder.setupApplication() {
   application {
     testModule()
-    docRoutes()
+    docRoutes(openapiPath = "api/spec/openapi.yaml")
   }
 }
