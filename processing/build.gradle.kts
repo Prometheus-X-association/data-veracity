@@ -1,5 +1,5 @@
 plugins {
-  id("buildlogic.kotlin-library-conventions")
+  id("buildlogic.kotlin-application-conventions")
   alias(libs.plugins.kotlin.serialization)
 }
 
@@ -11,4 +11,8 @@ dependencies {
   implementation(libs.rabbitmq.amqp.client)
   implementation(libs.rabbitmq.kotlin)
   implementation(project(":dto"))
+}
+
+application {
+  mainClass = "hu.bme.mit.ftsrg.dva.processing.ApplicationKt"
 }
