@@ -8,7 +8,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 fun main(): Unit = runBlocking {
-  val connectionFactory = ConnectionFactory()
+  val connectionFactory = ConnectionFactory().apply {
+    host = System.getenv("DVA_RABBITMQ_HOST") ?: "localhost"
+  }
+
   startProcessors(connectionFactory.newConnection())
 }
 

@@ -4,3 +4,9 @@ ktor:
   application:
     modules:
       - hu.bme.mit.ftsrg.dva.api.ApplicationKt.module
+
+swagger:
+  openapiFile: $DVA_OPENAPI_FILE
+
+rabbitmq:
+  host: $DVA_RABBITMQ_HOST

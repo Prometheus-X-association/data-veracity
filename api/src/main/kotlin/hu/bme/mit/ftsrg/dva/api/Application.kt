@@ -25,7 +25,9 @@ fun main(args: Array<String>): Unit = EngineMain.main(args)
 fun Application.module() {
   val templateRepository = FakeVLATemplateRepository()
 
-  val rmqConnectionFactory = ConnectionFactory()
+  val rmqConnectionFactory = ConnectionFactory().apply {
+    host = environment.config.propertyOrNull("rabbitmq.host")?.getString() ?: "localhost"
+  }
   val rmqConnection = rmqConnectionFactory.newConnection()
 
   installPlugins()
@@ -62,7 +64,7 @@ fun Application.addRoutes(
   templateRepository: VLATemplateRepository,
   rmqConnection: Connection,
 ) {
-  docRoutes()
+  docRoutes(environment.config.propertyOrNull("swagger.openapiFile")?.getString() ?: "api/spec/openapi.yaml")
   templateRoutes(templateRepository)
   aovRoutes(rmqConnection)
 }

@@ -7,10 +7,10 @@ import io.ktor.server.plugins.swagger.*
 import io.ktor.server.routing.*
 import kotlinx.html.*
 
-fun Application.docRoutes() {
+fun Application.docRoutes(openapiPath: String) {
   routing {
     rootRoute()
-    swaggerRoute()
+    swaggerRoute(openapiPath)
   }
 }
 
@@ -39,6 +39,6 @@ fun Route.rootRoute() {
   }
 }
 
-fun Route.swaggerRoute() {
-  swaggerUI("swagger", swaggerFile = "api/spec/openapi.yaml")
+fun Route.swaggerRoute(openapiPath: String) {
+  swaggerUI("swagger", swaggerFile = openapiPath)
 }
