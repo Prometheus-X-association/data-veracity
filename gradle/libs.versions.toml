@@ -5,14 +5,14 @@ kotlin-gradle-plugin = "2.0.0-RC1"
 kotlin-logging = "7.0.3"
 kotlinx-coroutines = "1.10.1"
 kotlinx-serialization-json = "1.7.3"
-kover = "0.9.0"
+kover = "0.9.1"
 ktor = "3.0.1"
 logevents = "0.5.6"
 rabbitmq-amqp-client = "5.24.0"
 rabbitmq-kotlin = "0.7.0-SNAPSHOT"
-rabbitmq-mock = "1.2.0"
 slf4j = "2.0.14"
 snakeyaml-engine = "2.8"
+testcontainers = "1.20.4"
 text-case-converter = "2.0.0"
 
 [libraries]
@@ -41,9 +41,11 @@ ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref 
 logevents = { module = "org.logevents:logevents", version.ref = "logevents" }
 rabbitmq-amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "rabbitmq-amqp-client" }
 rabbitmq-kotlin = { module = "io.github.viartemev:rabbitmq-kotlin", version.ref = "rabbitmq-kotlin" }
-rabbitmq-mock = { module = "com.github.fridujo:rabbitmq-mock", version.ref = "rabbitmq-mock" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 snakeyaml-engine = { module = "org.snakeyaml:snakeyaml-engine", version.ref = "snakeyaml-engine" }
+testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-rabbitmq = { module = "org.testcontainers:rabbitmq", version.ref = "testcontainers" }
 text-case-converter = { module = "dev.turingcomplete:text-case-converter", version.ref = "text-case-converter" }
 text-case-converter-kotlin-extension = { module = "dev.turingcomplete:text-case-converter-kotlin-extension", version.ref = "text-case-converter" }
 
@@ -70,6 +72,11 @@ ktor-server = [
 ]
 logging = ["kotlin-logging", "slf4j-api"]
 text-case-converter = ["text-case-converter", "text-case-converter-kotlin-extension"]
+testcontainers-rabbitmq = [
+    "testcontainers",
+    "testcontainers-junit-jupiter",
+    "testcontainers-rabbitmq",
+]
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

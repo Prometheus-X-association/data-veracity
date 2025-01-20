@@ -17,9 +17,9 @@ dependencies {
 
     runtimeOnly(libs.logevents)
 
+    testImplementation(libs.bundles.testcontainers.rabbitmq)
     testImplementation(libs.ktor.client.content.negotiation)
     testImplementation(libs.ktor.server.test.host)
-    testImplementation(libs.rabbitmq.mock)
 }
 
 application {
