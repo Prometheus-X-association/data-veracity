@@ -1,0 +1,15 @@
+#!/bin/sh -euC
+
+: "${DVA_PREFIX:="/app"}"
+: "${DVA_API_JAR_NAME:="api-all.jar"}"
+: "${DVA_PROCESSING_JAR_NAME:="processing-all.jar"}"
+
+erho() { >&2 echo "$@"; }
+usage() { erho "usage: $0 [-h] api|processing"; }
+
+case "$1" in
+-h*) usage; exit 0;;
+api) exec java -jar "$DVA_PREFIX/$DVA_API_JAR_NAME";;
+processing) exec java -jar "$DVA_PREFIX/$DVA_PROCESSING_JAR_NAME";;
+*) usage; exit 1;;
+esac
