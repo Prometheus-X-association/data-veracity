@@ -1,0 +1,32 @@
+services:
+
+  dva-api:
+    build: .
+    command: api
+    ports: [9090:9090]
+    init: true
+    environment:
+      DVA_RABBITMQ_HOST: rabbit
+    depends_on:
+      rabbit:
+        condition: service_healthy
+
+  dva-processing:
+    build: .
+    command: processing
+    init: true
+    environment:
+      DVA_RABBITMQ_HOST: rabbit
+    depends_on:
+      rabbit:
+        condition: service_healthy
+
+  rabbit:
+    image: rabbitmq:4-management-alpine
+    ports:
+      - 9080:15672
+    healthcheck:
+      test: rabbitmq-diagnostics -q check_port_connectivity
+      interval: 15s
+      timeout: 30s
+      retries: 3
