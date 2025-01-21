@@ -11,6 +11,8 @@ dependencies {
   implementation(libs.rabbitmq.amqp.client)
   implementation(libs.rabbitmq.kotlin)
   implementation(project(":dto"))
+
+  runtimeOnly(libs.logevents)
 }
 
 application {
