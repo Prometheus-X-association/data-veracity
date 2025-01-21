@@ -3,6 +3,7 @@ package hu.bme.mit.ftsrg.dva.api.route
 import com.rabbitmq.client.ConnectionFactory
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Contract
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Negotiator
+import hu.bme.mit.ftsrg.contractmanager.contract.model.Purpose
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Status
 import hu.bme.mit.ftsrg.dva.api.testutil.testModule
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
@@ -43,7 +44,12 @@ class AoVRoutesTest {
         dataProvider = "/catalog/participants/provider-test-id",
         dataConsumer = "/catalog/participants/consumer-test-did",
         serviceOffering = "/catalog/serviceofferings/serviceoffering-test-did",
-        purpose = emptyList(),
+        purpose = listOf(
+          Purpose(
+            purpose = "/catalog/serviceofferings",
+            piiCategory = emptyList(),
+          ),
+        ),
         negotiators = listOf(
           Negotiator("/catalog/participants/provider-test-id"),
           Negotiator("/catalog/participants/consumer-test-did"),
