@@ -35,8 +35,7 @@ suspend fun processAttestationRequests(rmqConnection: Connection) {
 
 suspend fun newRequestCallback(delivery: Delivery) {
   val request: AttestationRequestDTO = Json.decodeFromString(delivery.body.toString(Charsets.UTF_8))
-  //logger.info { "Received attestation request with ID ${request.id}" }
-  println("Received attestation request with ID ${request.id}")
+  logger.info { "Received attestation request with ID ${request.id}" }
 
   val attestation = AttestationOfVeracity(
     aovID = UUID.randomUUID().toString(),
