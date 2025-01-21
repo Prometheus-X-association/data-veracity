@@ -1,5 +1,9 @@
 package hu.bme.mit.ftsrg.odrl.model.rule
 
+import hu.bme.mit.ftsrg.serialization.ActionSerializer
+import kotlinx.serialization.Serializable
+
+@Serializable(with = ActionSerializer::class)
 enum class Action(val w3cInstance: String) {
   ATTRIBUTION("Attribution"),
   COMMERCIAL_USE("Commercial Use"),
