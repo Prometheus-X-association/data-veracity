@@ -7,6 +7,7 @@ import hu.bme.mit.ftsrg.contractmanager.contract.model.Purpose
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Status
 import hu.bme.mit.ftsrg.dva.api.testutil.testModule
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
+import hu.bme.mit.ftsrg.dva.model.vla.*
 import hu.bme.mit.ftsrg.odrl.model.asset.Asset
 import hu.bme.mit.ftsrg.odrl.model.policy.Policy
 import hu.bme.mit.ftsrg.odrl.model.rule.Action
@@ -18,6 +19,8 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.apache.jena.iri.IRIFactory
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -65,9 +68,21 @@ class AoVRoutesTest {
               )
             ),
           )
-        )
+        ),
+        vla = listOf(
+          VLATemplate(
+            id = "template-0001",
+            objective = VeracityObjective(
+              evaluationScheme = EvaluationScheme(
+                evaluationMethod = "syntax_check",
+                criterionType = CriterionType.VALID_INVALID,
+              ),
+              targetAspect = QualityAspect.SYNTAX,
+            ),
+          )
+        ),
       ),
-      data = byteArrayOf(),
+      data = Json.encodeToString(listOf("a", "b", "c")).toByteArray(Charsets.UTF_8),
       callbackURL = URI("http://example.com/callback").toURL(),
     )
 
