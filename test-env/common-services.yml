@@ -1,24 +1,19 @@
 ---
 services:
 
-  dva-api:
+  dva-jvm:
     build:
       context: ../
       dockerfile: ./dva-jvm/Dockerfile
-    command: api
-    ports: [9090:9090]
     init: true
-    environment:
-      DVA_RABBITMQ_HOST: rabbit
     depends_on:
       rabbit:
         condition: service_healthy
 
-  dva-processing:
+  dva-python:
     build:
       context: ../
-      dockerfile: ./dva-jvm/Dockerfile
-    command: processing
+      dockerfile: ./dva-python/Dockerfile
     init: true
     environment:
       DVA_RABBITMQ_HOST: rabbit
@@ -34,6 +29,3 @@ services:
       interval: 15s
       timeout: 30s
       retries: 3
-
-  callback-dummy:
-    image: kennethreitz/httpbin
