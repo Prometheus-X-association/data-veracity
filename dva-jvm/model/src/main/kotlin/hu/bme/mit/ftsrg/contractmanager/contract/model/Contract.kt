@@ -1,8 +1,8 @@
 package hu.bme.mit.ftsrg.contractmanager.contract.model
 
-import hu.bme.mit.ftsrg.dva.model.vla.VLATemplate
 import hu.bme.mit.ftsrg.odrl.model.policy.Policy
 import kotlinx.serialization.Serializable
+import hu.bme.mit.ftsrg.odcs.model.Contract as ODCSContract
 
 /**
  * Dummy contract schema.
@@ -16,5 +16,5 @@ data class Contract(
   val negotiators: List<Negotiator>,
   val status: Status,
   val policy: List<Policy>,
-  val vla: List<VLATemplate>,
+  val vla: ODCSContract,
 )

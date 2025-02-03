@@ -3,7 +3,7 @@
 package hu.bme.mit.ftsrg.odrl.model.policy
 
 import hu.bme.mit.ftsrg.odrl.model.rule.IRule
-import hu.bme.mit.ftsrg.serialization.IRISerializer
+import hu.bme.mit.ftsrg.serialization.jena.IRISerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import org.apache.jena.iri.IRI

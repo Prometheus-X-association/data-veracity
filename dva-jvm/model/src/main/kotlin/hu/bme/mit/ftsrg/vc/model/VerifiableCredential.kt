@@ -2,7 +2,7 @@
 
 package hu.bme.mit.ftsrg.vc.model
 
-import hu.bme.mit.ftsrg.serialization.ZonedDateTimeSerializer
+import hu.bme.mit.ftsrg.serialization.java.ZonedDateTimeSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import java.time.ZonedDateTime

@@ -1,6 +1,6 @@
 package hu.bme.mit.ftsrg.odrl.model.asset
 
-import hu.bme.mit.ftsrg.serialization.AssetSerializer
+import hu.bme.mit.ftsrg.serialization.odrl.AssetSerializer
 import kotlinx.serialization.Serializable
 import org.apache.jena.iri.IRI
 
