@@ -3,7 +3,7 @@
 package hu.bme.mit.ftsrg.odrl.model.asset
 
 import hu.bme.mit.ftsrg.odrl.model.constraint.Constraint
-import hu.bme.mit.ftsrg.serialization.IRISerializer
+import hu.bme.mit.ftsrg.serialization.jena.IRISerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import org.apache.jena.iri.IRI
