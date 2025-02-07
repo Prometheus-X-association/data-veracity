@@ -13,7 +13,6 @@ rabbitmq-amqp-client = "5.24.0"
 rabbitmq-kotlin = "0.7.0-SNAPSHOT"
 shadow = "8.3.5"
 slf4j = "2.0.14"
-snakeyaml-engine = "2.8"
 testcontainers = "1.20.4"
 text-case-converter = "2.0.0"
 
@@ -46,7 +45,6 @@ rabbitmq-amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "rab
 rabbitmq-kotlin = { module = "io.github.viartemev:rabbitmq-kotlin", version.ref = "rabbitmq-kotlin" }
 shadow-gradle-plugin = { module = "com.gradleup.shadow:com.gradleup.shadow.gradle.plugin", version.ref = "shadow" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
-snakeyaml-engine = { module = "org.snakeyaml:snakeyaml-engine", version.ref = "snakeyaml-engine" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-rabbitmq = { module = "org.testcontainers:rabbitmq", version.ref = "testcontainers" }
