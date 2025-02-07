@@ -1,0 +1,12 @@
+ktor:
+  deployment:
+    port: 9090
+  application:
+    modules:
+      - hu.bme.mit.ftsrg.dva.api.ApplicationKt.module
+
+swagger:
+  openapiFile: "$DVA_OPENAPI_FILE:../docs/spec/openapi.yaml"
+
+rabbitmq:
+  host: "$DVA_RABBITMQ_HOST:localhost"

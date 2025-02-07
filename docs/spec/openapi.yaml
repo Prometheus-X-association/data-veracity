@@ -1,0 +1,507 @@
+---
+openapi: 3.0.3
+
+
+info:
+  title: Data Veracity Assurance
+  description: |-
+    This is the API specification of the
+    [data veracity assurance building block (DVA)](https://github.com/Prometheus-X-association/data-veracity).
+  contact:
+    email: bpeter@edu.bme.hu
+  version: 0.2.0
+
+
+servers:
+  - url: http://localhost:9090
+    description: Local development server running on default port
+  - url: '{server}'
+    description: Custom parameterizable server
+    variables:
+      server:
+        default: http://example.com:1234
+        description: Custom server URL
+
+
+tags:
+  - name: VLA
+    description: Endpoints related to veracity level agreements (VLAs)
+  - name: AoV
+    description: Endpoints related to attestations of veracity (AoVs)
+  - name: PoV
+    description: Endpoints related to proofs of veracity (PoVs)
+
+
+paths:
+
+  /template:
+    post:
+      tags: [ VLA ]
+      summary: Create new VLA template
+      description: >
+        Add a new **VLA template** to the database.
+        You need to specify the ID of the template yourself.
+        A `201 CREATED` response is given if the template has been successfully created.
+        Otherwise, you will get a `400 BAD REQUEST` (in case of invalid request data).
+      operationId: createTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreate'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/InvalidData'
+    get:
+      tags: [ VLA ]
+      summary: Get all VLA templates
+      description: >
+        Returns all available **VLA templates** from the database as an array.
+      operationId: getTemplates
+      responses:
+        '200':
+          description: The list of available VLA templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateArray'
+
+  /template/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+        description: A VLA template’s ID
+    get:
+      tags: [ VLA ]
+      summary: Get VLA template by ID
+      description: >
+        Queries a specific **VLA template** by its unique ID.
+        Responds either with `200 OK` and the contents of the requested template or with `404 NOT FOUND` if no VLA template with the specified ID exists.
+      operationId: getTemplate
+      responses:
+        '200':
+          description: Returning requested VLA template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [ VLA ]
+      summary: Update VLA template
+      description: >
+        Used to update an existing **VLA template** specified by its ID.
+        The request body should contain a partial VLA template object – only specified fields will be updated, if possible.
+        Responds with `200 OK` if the update operation was successful or `404 NOT FOUND` if no VLA template with the specified ID exists.
+      operationId: updateTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateUpdate'
+      responses:
+        '200':
+          $ref: '#/components/responses/Updated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [ VLA ]
+      summary: Delete VLA template
+      description: >
+        Delete a **VLA template** specified by its ID.
+        Responds `200 OK` if the template was successfully deleted or `400 NOT FOUND` if no template with the specified ID exists.
+      operationId: deleteTemplate
+      responses:
+        '200':
+          $ref: '#/components/responses/Deleted'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /attestation:
+    post:
+      tags: [ AoV ]
+      summary: Submit an attestation request
+      description: >
+        Create a new **AoV request** for a given data exchange.
+        Requests are processed asynchronously.
+        If your request has been accepted for processing, the response will be `202 ACCEPTED`.
+        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST` error.
+      operationId: requestAov
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttestationRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '400':
+          $ref: '#/components/responses/InvalidData'
+      callbacks:
+        created:
+          '${request.body#/callbackUrl}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/Aov'
+              responses:
+                '200':
+                  description: AoV received
+
+  /attestation/verify:
+    post:
+      tags: [ AoV ]
+      summary: Submit an AoV verification request
+      description: >
+        Create a new **AoV verification request** for a given AoV.
+        Requests are processed asynchronously.
+        If your request has been accepted for processing, the response will be `202 ACCEPTED`.
+        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST` error.
+      operationId: requestAovVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Aov'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '400':
+          $ref: '#/components/responses/InvalidData'
+      callbacks:
+        created:
+          '${request.body#/callbackUrl}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/VerificationResult'
+              responses:
+                '200':
+                  description: Verification result received
+
+  /proof:
+    post:
+      tags: [ PoV ]
+      summary: Submit proof generation request
+      description: >
+        Create a new **PoV request** for a given data exchange.
+        Requests are processed asynchronously.
+        If your request has been accepted for processing, the response will be `202 ACCEPTED`.
+        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST` error.
+      operationId: requestPov
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProofRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '400':
+          $ref: '#/components/responses/InvalidData'
+      callbacks:
+        created:
+          '${request.body#/callbackUrl}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/Pov'
+              responses:
+                '200':
+                  description: PoV received
+
+  /proof/verify:
+    post:
+      tags: [ PoV ]
+      summary: Submit PoV verification request
+      description: >
+        Create a new **PoV verification request** for a given PoV.
+        Requests are processed asynchronously.
+        If your request has been accepted for processing, the response will be `202 ACCEPTED`.
+        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST` error.
+      operationId: requestPovVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pov'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '400':
+          $ref: '#/components/responses/InvalidData'
+      callbacks:
+        created:
+          '${request.body#/callbackUrl}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/VerificationResult'
+              responses:
+                '200':
+                  description: Verification result received
+
+
+components:
+
+  schemas:
+    Id:
+      type: string
+      example: 'template-0001'
+    IdObject:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+      required: [ id ]
+      example:
+        id: 'template-0001'
+
+    TemplateArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/Template'
+    Template:
+      type: object
+      required: [ id ]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        objective:
+          $ref: '#/components/schemas/Objective'
+      example:
+        id: template-0001
+        objective:
+          evaluationScheme:
+            evaluationMethod: 'setMembershipCheck'
+            criterionType: 'validInvalid'
+            targetAspect: 'syntax'
+    TemplateCreate:
+      allOf:
+        - $ref: '#/components/schemas/Template'
+      required: [ objective ]
+    TemplateUpdate:
+      allOf:
+        - $ref: '#/components/schemas/Template'
+      minProperties: 2
+    Objective:
+      type: object
+      properties:
+        evaluationScheme:
+          $ref: '#/components/schemas/EvaluationScheme'
+        targetAspect:
+          $ref: '#/components/schemas/QualityAspect'
+    EvaluationScheme:
+      type: object
+      properties:
+        evaluationMethod:
+          $ref: '#/components/schemas/EvaluationMethod'
+        criterionType:
+          $ref: '#/components/schemas/CriterionType'
+    EvaluationMethod:
+      type: string
+    CriterionType:
+      type: string
+      enum: [ 'validInvalid', 'withinRange', 'greaterOrLessThan' ]
+    QualityAspect:
+      type: string
+      enum: [ 'syntax', 'timeliness', 'accuracy', 'completeness', 'consistency' ]
+
+    AttestationRequest:
+      type: object
+      required: [contract, data, attesterId, callbackUrl]
+      properties:
+        contract:
+          type: object
+        data:
+          type: string
+          format: binary
+        attesterId:
+          type: string
+        callbackUrl:
+          type: string
+          format: uri
+      example:
+        contract:
+          dataProvider: /catalog/participants/provider-test-id
+          dataConsumer: /catalog/participants/consumer-test-did
+          serviceOffering: /catalog/serviceofferings/serviceoffering-test-did
+          purpose: []
+          negotiators:
+            - did: /catalog/participants/provider-test-id
+            - did: /catalog/participants/consumer-test-did
+          status: PENDING
+          policy:
+            - uid: /policy/policy-0-uid
+              permission:
+                - type: hu.bme.mit.ftsrg.odrl.model.rule.Permission
+                  target:
+                    uid: /target/3f8d1b0e-8e2e-4b69-9b1f-089fe2f3e9d7
+                  rule:
+                    action: USE
+        data: []
+        attesterID: attester-0000
+        callbackURL: http://example.com/callback
+
+    ProofRequest:
+      type: object
+      required: [contract, data, attesterId, callbackUrl]
+      properties:
+        contract:
+          type: object
+        data:
+          type: string
+          format: binary
+        proverId:
+          type: string
+        callbackUrl:
+          type: string
+          format: uri
+
+    VerifiableCredential:
+      type: object
+      required: [id, type, validFrom, credentialSubject, issuer]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        type:
+          type: string
+        validFrom:
+          type: string
+          format: date-time
+        credentialSubject:
+          type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+        issuer:
+          type: string
+
+    Aov:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/VerifiableCredential'
+      properties:
+        credentialSubject:
+          type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+            contractId:
+              type: string
+            evaluations:
+              type: array
+              items:
+                description: Evaluation ID
+                type: string
+
+    Pov:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/VerifiableCredential'
+      properties:
+        credentialSubject:
+          type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+            contractId:
+              type: string
+            proof:
+              type: string
+              format: binary
+
+    VerificationResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [ type ]
+
+  responses:
+    Created:
+      description: The resource has been created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/IdObject'
+    Updated:
+      description: The resource has been updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/IdObject'
+    Deleted:
+      description: The resource has been deleted successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/IdObject'
+    Accepted:
+      description: The request has been accepted for processing
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/IdObject'
+
+    NotFound:
+      description: The requested resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            Template:
+              value:
+                type: NOT_FOUND
+                message: Could not find VLA template with id 'foo-123'
+            AoV:
+              value:
+                type: NOT_FOUND
+                message: Could not find AoV with id 'bar-123'
+    InvalidData:
+      description: The request body was invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            Template:
+              value:
+                type: INVALID_DATA
+                message: Invalid template data supplied
+            AoV:
+              value:
+                type: INVALID_DATA
+                message: Invalid AoV data supplied

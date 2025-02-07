@@ -1,0 +1,38 @@
+---
+services:
+
+  dva-api:
+    extends:
+      file: common-services.yml
+      service: dva-jvm
+    command: api
+    ports: [9090:9090]
+
+  # dva-processing-java:
+  #   extends:
+  #     file: common-services.yml
+  #     service: dva-jvm
+  #   command: processing
+
+  dva-processing-python:
+    extends:
+      file: common-services.yml
+      service: dva-python
+    environment:
+      DVA_LOG_LEVEL: debug
+    develop:
+      watch:
+        - action: sync
+          path: ../dva-python/
+          target: /app/
+          ignore: [.venv/]
+        - action: rebuild
+          path: ./pyproject.toml
+
+  rabbit:
+    extends:
+      file: common-services.yml
+      service: rabbit
+
+  callback-dummy:
+    image: kennethreitz/httpbin
