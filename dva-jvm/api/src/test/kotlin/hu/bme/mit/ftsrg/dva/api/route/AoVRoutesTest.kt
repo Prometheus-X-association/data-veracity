@@ -135,7 +135,7 @@ class AoVRoutesTest {
                   dataQuality = DataQuality(type = DataQualityType.CUSTOM),
                   engine = "greatExpectations",
                   implementation = """
-                        type: expect_column_values_to_be_between
+                        type: ExpectColumnValuesToBeBetween
                         kwargs:
                           column: timestamp
                           min_value: '2025-01-01T00:00:00Z'
