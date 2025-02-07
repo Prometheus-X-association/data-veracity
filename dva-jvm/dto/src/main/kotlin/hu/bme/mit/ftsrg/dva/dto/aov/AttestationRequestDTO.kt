@@ -14,5 +14,6 @@ data class AttestationRequestDTO(
   val contract: Contract,
   val data: ByteArray,
   val attesterID: String,
-  val callbackURL: URL
+  val callbackURL: URL,
+  val mapping: Map<String, String>,
 )

@@ -187,6 +187,12 @@ class AoVRoutesTest {
         }
       """.trimIndent().toByteArray(charset = Charsets.UTF_8),
       callbackURL = URI("http://example.com/callback").toURL(),
+      mapping = mapOf(
+        "$.actor.name" to "actor",
+        "$.verb.id" to "verb",
+        "$.object.id" to "object",
+        "$.timestamp" to "timestamp"
+      ),
     )
     client.post("/attestation") {
       contentType(ContentType.Application.Json)

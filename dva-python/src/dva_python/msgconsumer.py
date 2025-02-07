@@ -10,6 +10,7 @@ from structlog import get_logger
 
 from .serialization import parse_aov_req_json
 from .config import QUEUE_NAME, RABBITMQ_HOST
+from .qc import validate_data
 
 logger = get_logger()
 
@@ -36,51 +37,34 @@ def consume_loop():
         logger.debug(f"Data in request: {data_string}",
                      request_data=data_string)
 
+        mapping = req.mapping
+
         contract = req.contract
-        for vla in contract.vla:
-            logger.debug(f"Now checking VLA element {vla.id}",
-                         vla_id=vla.id)
-
-            match vla.objective.targetAspect:
-                case 'SYNTAX':
-                    logger.debug(
-                        f"{vla.id} is a syntax check; checking"
-                    )
-
-                    try:
-                        json.loads(data_string)
-                    except ValueError:
-                        logger.warning(
-                            f"{data_string} failed syntax check")
-                        requests.post(f"{req.callbackURL}/error")
-
-                    logger.debug(f"{data_string} passed syntax check")
-
-                    aov = {
-                        'aovID': uuid.uuid4(),
-                        'contractID': uuid.uuid4(),
-                        'evaluations': [],
-                        'vc': {
-                            'id': uuid.uuid4(),
-                            'type': 'VerifiableCredential',
-                            'validFrom': datetime.now().isoformat(),
-                            'subject': {
-                                'id': contract.dataProvider,
-                            },
-                            'issuer': req.attesterID,
-                        }
-                    }
-                    requests.post(req.callbackURL, data=aov)
-
-
-                case _:
-                    logger.warning(
-                        f"""{vla.id} is for an unsupported aspect
-                        {vla.objective.targetAspect}; skipping""",
-                        vla_id=vla.id,
-                        target_aspect=vla.objective.targetAspect
-                    )
-
+        vla = contract.vla
+        try:
+            results = validate_data(json.loads(data_string), vars(mapping), vla)
+            if results['success']:
+                logger.info("Successful validation", results=results)
+            else:
+                logger.warning("Failed validation", results=results)
+            aov = {
+                'aovID': uuid.uuid4(),
+                'contractID': uuid.uuid4(),
+                'evaluations': [],
+                'vc': {
+                    'id': uuid.uuid4(),
+                    'type': 'VerifiableCredential',
+                    'validFrom': datetime.now().isoformat(),
+                    'subject': {
+                        'id': contract.dataProvider,
+                    },
+                    'issuer': req.attesterID,
+                }
+            }
+            requests.post(req.callbackURL, data=aov)
+        except Exception as ex:
+            logger.error(f"validation failed due to {ex}")
+            requests.post(f'{req.callbackURL}/error')
 
 
     chan.basic_consume(queue=QUEUE_NAME,
