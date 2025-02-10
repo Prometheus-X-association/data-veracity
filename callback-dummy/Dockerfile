@@ -13,5 +13,5 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install \
 
 FROM base
 COPY --from=prod-deps /app/node_modules /app/node_modules
-EXPOSE 9098
+EXPOSE 80
 CMD ["pnpm", "start"]

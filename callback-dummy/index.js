@@ -5,13 +5,10 @@ import pino from 'pino'
 
 const logger = pino()
 
-const host = process.env.CALLBACK_DUMMY_HOST || 'localhost'
-const port = process.env.CALLBACK_DUMMY_PORT || 9098
-
 const reqs = []
 
 const init = async () => {
-  const server = hapi.server({ port, host })
+  const server = hapi.server({ port: 80 })
 
   server.route([
     {
@@ -70,7 +67,9 @@ const init = async () => {
   ])
 
   await server.start()
-  logger.info(`Server listening on ${host}:${port}`)
+  logger.info(
+    `Server listening on ${server.info.host}:${server.info.port}`
+  )
 }
 
 process.on('unhandledRejection', (err) => {
