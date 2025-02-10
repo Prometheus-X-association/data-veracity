@@ -50,6 +50,9 @@ Example requests to test functionality manually:
 | `/template/{id}` | `DELETE`      | `id`: A VLA template ID        | `200 OK`                                |
 | `/attestation`   | `POST`        | an AoV request as per the spec | `200 OK` and an ID                      |
 
+> [!TIP]
+> Example input data can be found in the `test-data/` subdirectory.
+
 > [!NOTE]
 > AoV requests are processed asynchronously.
 > So you should simply receive an ID in a `200 OK` response but also later receive a callback to the URL you specified from the DVA processing module.
