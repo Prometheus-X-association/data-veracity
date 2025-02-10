@@ -46,7 +46,7 @@ const init = async () => {
 
         const r = reqs.at(idx)
 	if (r === undefined) {
-	  logger.warning(`Requested request at index ${idx} does not exist`)
+	  logger.warn(`Requested request at index ${idx} does not exist`)
 	  return h.response().code(404)
 	} else {
 	  return h.response(r)
