@@ -11,6 +11,8 @@ services:
     depends_on:
       dva-api:
         condition: service_healthy
+      callback-dummy:
+        condition: service_healthy
 
   dva-api:
     build:
@@ -53,3 +55,8 @@ services:
 
   callback-dummy:
     build: ../callback-dummy
+    healthcheck:
+      test: node healthcheck.js
+      interval: 15s
+      timeout: 30s
+      retries: 3
