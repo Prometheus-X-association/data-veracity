@@ -55,6 +55,11 @@ const init = async () => {
     },
     {
       method: '*',
+      path: '/ping',
+      handler: (_req, _h) => 'pong',
+    },
+    {
+      method: '*',
       path: '/{any*}',
       handler: (req, h) => {
         logger.info(
