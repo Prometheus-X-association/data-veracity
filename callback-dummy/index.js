@@ -1,5 +1,3 @@
-'use strict'
-
 import hapi from '@hapi/hapi'
 import pino from 'pino'
 
