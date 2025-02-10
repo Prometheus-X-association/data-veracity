@@ -19,16 +19,16 @@ const init = async () => {
           mime: req.mime,
           params: req.params,
           path: req.path,
-          payload: req.payload,
+          payload: req.payload
         })
 
         logger.info(
           { path: req.path, method: req.method, idx },
-          `Received ${req.method} request to ${req.path}; saving data`,
+          `Received ${req.method} request to ${req.path}; saving data`
         )
 
         return { index: idx }
-      },
+      }
     },
     {
       method: 'GET',
@@ -39,22 +39,22 @@ const init = async () => {
 
         logger.info(
           { idx },
-          `Received request to retrieve request ${idx}`,
+          `Received request to retrieve request ${idx}`
         )
 
         const r = reqs.at(idx)
-	if (r === undefined) {
-	  logger.warn(`Requested request at index ${idx} does not exist`)
-	  return h.response().code(404)
-	} else {
-	  return h.response(r)
-	}
-      },
+        if (r === undefined) {
+          logger.warn(`Requested request at index ${idx} does not exist`)
+          return h.response().code(404)
+        } else {
+          return h.response(r)
+        }
+      }
     },
     {
       method: '*',
       path: '/ping',
-      handler: (_req, _h) => 'pong',
+      handler: (_req, _h) => 'pong'
     },
     {
       method: '*',
@@ -62,11 +62,11 @@ const init = async () => {
       handler: (req, h) => {
         logger.info(
           { path: req.path },
-          `Received request to unhandled path ${req.path}`,
+          `Received request to unhandled path ${req.path}`
         )
         return h.response().code(404)
-      },
-    },
+      }
+    }
   ])
 
   await server.start()
