@@ -36,6 +36,7 @@ fun Route.templateRoute(repository: VLATemplateRepository) {
   post<Templates> {
     val template: VLATemplate = call.receive()
     repository.add(template)
+    call.response.status(HttpStatusCode.Created)
     call.respond(IDDTO(template.id))
   }
 

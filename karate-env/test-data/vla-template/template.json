@@ -1,0 +1,10 @@
+{
+  "id": "template-test-0",
+  "objective": {
+    "evaluationScheme": {
+      "evaluationMethod": "syntax_check",
+      "criterionType": "VALID_INVALID"
+    },
+    "targetAspect": "SYNTAX"
+  }
+}
