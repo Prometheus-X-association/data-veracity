@@ -45,7 +45,6 @@ services:
 
   rabbit:
     image: rabbitmq:4-management-alpine
-    ports: [9080:15672]
     healthcheck:
       test: rabbitmq-diagnostics -q check_port_connectivity
       interval: 15s
@@ -53,4 +52,4 @@ services:
       retries: 3
 
   callback-dummy:
-    image: kennethreitz/httpbin
+    build: ../callback-dummy
