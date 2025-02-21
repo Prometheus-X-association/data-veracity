@@ -37,7 +37,7 @@ services:
       retries: 3
 
   callback-dummy:
-    build: ../callback-dummy/
+    build: callback-dummy/
     healthcheck:
       test: node healthcheck.js
       interval: 5s
