@@ -6,6 +6,8 @@ services:
       context: ../
       dockerfile: ./dva-jvm/Dockerfile
     init: true
+    environment:
+      DVA_RABBITMQ_HOST: rabbit
     depends_on:
       rabbit:
         condition: service_healthy
