@@ -35,4 +35,5 @@ services:
       service: rabbit
 
   callback-dummy:
-    image: kennethreitz/httpbin
+    build: ../callback-dummy/
+    profiles: [dev]
