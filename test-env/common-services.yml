@@ -8,6 +8,11 @@ services:
     init: true
     environment:
       DVA_RABBITMQ_HOST: rabbit
+    healthcheck:
+      test: nc -z localhost 9090
+      interval: 5s
+      timeout: 5s
+      retries: 3
     depends_on:
       rabbit:
         condition: service_healthy
@@ -25,9 +30,29 @@ services:
 
   rabbit:
     image: rabbitmq:4-management-alpine
-    ports: [9080:15672]
     healthcheck:
       test: rabbitmq-diagnostics -q check_port_connectivity
-      interval: 15s
-      timeout: 30s
+      interval: 5s
+      timeout: 5s
       retries: 3
+
+  callback-dummy:
+    build: ../callback-dummy/
+    healthcheck:
+      test: node healthcheck.js
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  karate:
+    build: karate/
+    volumes:
+      - ./karate-features:/app/features:ro
+      - ./test-data:/app/test-data:ro
+      - ./karate-reports:/app/target/karate-reports
+    command: ./features/
+    depends_on:
+      dva-api:
+        condition: service_healthy
+      callback-dummy:
+        condition: service_healthy
