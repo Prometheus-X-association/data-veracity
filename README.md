@@ -11,18 +11,16 @@ See the design document [here](docs/design-document.md).
 At the moment, DVA has two subcomponents which must be both running: the API server and the processing module.
 These can be found in the `dva-jvm/` and `dva-python` subdirectories, respectively.
 
-Both have been prepared for containerization using Docker; i.e., you can use the following commands to build the images:
+Both have been prepared for containerization using Docker but note that the build context must be the root of the repository.
+You can use the following commands to build the images:
 
 ```console
-$ cd /path/to/dva-jvm/
-$ docker buildx build -t dva-api:latest .
-
-$ cd /path/to/dva-python/
-$ docker buildx build -t dva-processing:latest
+$ docker buildx build -t dva-api:latest -f dva-jvm/Dockerfile ./
+$ docker buildx build -t dva-processing:latest -f dva-python/Dockerfile ./
 ```
 
 > [!NOTE]
-> The resulting `dva-api` image needs to receive a command parameter when running.
+> The resulting `dva-api` image currently needs to receive a command parameter when running.
 > Currently, the only used parameter is `api`.
 
 > [!IMPORTANT]
