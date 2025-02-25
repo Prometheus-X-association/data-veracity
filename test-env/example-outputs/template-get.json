@@ -1,0 +1,22 @@
+[
+  {
+    "id": "template-0001",
+    "objective": {
+      "evaluationScheme": {
+        "evaluationMethod": "syntax_check",
+        "criterionType": "VALID_INVALID"
+      },
+      "targetAspect": "SYNTAX"
+    }
+  },
+  {
+    "id": "template-0002",
+    "objective": {
+      "evaluationScheme": {
+        "evaluationMethod": "age_check",
+        "criterionType": "WITHIN_RANGE"
+      },
+      "targetAspect": "TIMELINESS"
+    }
+  }
+]
