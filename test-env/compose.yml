@@ -39,6 +39,7 @@ services:
     extends:
       file: common-services.yml
       service: callback-dummy
+    ports: [9099:80]
 
   karate:
     profiles: [karate]
