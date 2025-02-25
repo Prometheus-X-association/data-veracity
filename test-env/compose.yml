@@ -35,4 +35,14 @@ services:
       service: rabbit
 
   callback-dummy:
-    image: kennethreitz/httpbin
+    profiles: [dev, karate]
+    extends:
+      file: common-services.yml
+      service: callback-dummy
+    ports: [9099:80]
+
+  karate:
+    profiles: [karate]
+    extends:
+      file: common-services.yml
+      service: karate
