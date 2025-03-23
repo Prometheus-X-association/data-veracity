@@ -37,6 +37,7 @@ _nothing_
    By default, DVA is preloaded with two sample VLA templates.
    <details>
      <summary>After a clean start, the response body should match (click to open)</summary>
+
      ```json
      [
        {
@@ -138,6 +139,7 @@ _nothing_
    The `evaluations` array inside the AoV payload should indicate **passing** checks.
   <details>
     <summary>Click to see an example response from `callback-dummy`</summary>
+
     ```
     HTTP/1.1 200 OK
     Accept-Ranges: bytes
@@ -213,6 +215,7 @@ _nothing_
    The `evaluations` array inside the AoV payload should indicate **failing** checks.
   <details>
     <summary>Click to see an example response from `callback-dummy`</summary>
+
     ```
     HTTP/1.1 200 OK
     Accept-Ranges: bytes
