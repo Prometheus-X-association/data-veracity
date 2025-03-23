@@ -182,7 +182,7 @@ _nothing_
 
 > [!WARNING]
 > Currently, evaluations will always be empty arrays.
-> The feature of including evaluations in the AoVs is being tracked in #31.
+> The feature of including evaluations in the AoVs is being tracked in [#31](https://github.com/Prometheus-X-association/data-veracity/issues/31).
 
 ### [Scenario] Submit an AoV request with failing data
 
@@ -257,23 +257,23 @@ _nothing_
 
 > [!WARNING]
 > Currently, evaluations will always be empty arrays.
-> The feature of including evaluations in the AoVs is being tracked in #31.
+> The feature of including evaluations in the AoVs is being tracked in [#31](https://github.com/Prometheus-X-association/data-veracity/issues/31).
 
 ### [Scenario] Verify a valid AoV
 
 > [!NOTE]
 > Not yet implemented.
-> Feature tracked in #10.
+> Feature tracked in [#10](https://github.com/Prometheus-X-association/data-veracity/issues/10).
 
 ### [Scenario] Verify an invalid AoV
 
 > [!NOTE]
 > Not yet implemented.
-> Feature tracked in #10.
+> Feature tracked in [#10](https://github.com/Prometheus-X-association/data-veracity/issues/10).
 
 
 ## [Feature] Proof of Veracity (PoV) handling
 
 > [!NOTE]
 > Not yet implemented.
-> Feature tracked in #16.
+> Feature tracked in [#10](https://github.com/Prometheus-X-association/data-veracity/issues/16).
