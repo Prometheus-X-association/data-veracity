@@ -3,18 +3,18 @@
 Component-level tests for DVA are implemented as [Karate](https://karatelabs.github.io/karate/) features and scenarios.
 
 > [!TIP]
-> You can find a test environment that is also capable of running all of these tests automatically in [`test-env/`](test-env/).
+> You can find a test environment that is also capable of running all of these tests automatically in [`test-env/`](../test-env/).
 > There, you probably want to use at least the `dev` profile or even the `karate` one that also automatically runs all Karate tests.
 
 > [!TIP]
 > The documentation below only refers to endpoints, relative to wherever the DVA API is running.
-> Using test environment in [`test-env/`](test-env/), these paths are relative to [`localhost:9090`](http://localhost:9090/).
+> Using test environment in [`test-env/`](../test-env/), these paths are relative to [`localhost:9090`](http://localhost:9090/).
 
 ## [Feature] Veracity Level Agreement (VLA) template management
 
 > [!NOTE]
 > **Corresponding Karate feature file:**
-> [`templates.feature`](test-env/karate-features/templates.feature)
+> [`templates.feature`](../test-env/karate-features/templates.feature)
 
 ### [Scenario] Retrieve all VLA templates
 
@@ -81,14 +81,14 @@ No VLA template with ID `template-test-0` should exist in the database.
 **Steps:**
 
 1. **Action:**
-   Send a `POST` HTTP request to the `/template` endpoint with [this](test-env/test-data/vla-template/template.json) body.  
+   Send a `POST` HTTP request to the `/template` endpoint with [this](../test-env/test-data/vla-template/template.json) body.  
    **Expected result:**
    The response is a `201 CREATED` message with a JSON in the body that has an `id` property (a UUID) → we’ll refer to this as `${id}`.
 
 2. **Action:**
    Send a `GET` HTTP request to the `/template/${id}` endpoint.  
    **Expected result:**
-   The [previously submitted VLA template](test-env/test-data/vla-template/template.json) is returned in a `200 OK` response.
+   The [previously submitted VLA template](../test-env/test-data/vla-template/template.json) is returned in a `200 OK` response.
 
 3. **Action:**
    Send a `DELETE` HTTP request to the `/template/${id}` endpoint.  
@@ -105,7 +105,7 @@ No VLA template with ID `template-test-0` should exist in the database.
 
 > [!NOTE]
 > **Corresponding Karate feature file:**
-> [`aov.feature`](test-env/karate-features/aov.feature)
+> [`aov.feature`](../test-env/karate-features/aov.feature)
 
 ### [Scenario] Submit an AoV request with passing data
 
@@ -124,7 +124,7 @@ _nothing_
 **Steps:**
 
 1. **Action:**
-   Send a `POST` HTTP request to the `/attestation` endpoint with [this](test-env/test-data/aov/request-good.json) body.  
+   Send a `POST` HTTP request to the `/attestation` endpoint with [this](../test-env/test-data/aov/request-good.json) body.  
    **Expected result:**
    A `200 OK` response with a JSON body that has an `id` property (a UUID) → we’ll refer to it as `${id}`.
 
@@ -132,7 +132,7 @@ _nothing_
    Wait a few seconds.
 
 3. **Action:**
-   Verify that an AoV has been submitted to the callback URL in the [submitted AoV request](test-env/test-data/aov/request-good.json) (`http://callback-dummy/callback`) by sending a `GET` HTTP request to the `/get/last` endpoint **of the callback dummy component in the test network** (normally mapped to `localhost:9099`).
+   Verify that an AoV has been submitted to the callback URL in the [submitted AoV request](../test-env/test-data/aov/request-good.json) (`http://callback-dummy/callback`) by sending a `GET` HTTP request to the `/get/last` endpoint **of the callback dummy component in the test network** (normally mapped to `localhost:9099`).
    **Expected result:**
    A `200 OK` response from the _callback-dummy_ component with an AoV in the `payload` property of the response body.
    The `evaluations` array inside the AoV payload should indicate **passing** checks.
@@ -199,7 +199,7 @@ _nothing_
 **Steps:**
 
 1. **Action:**
-   Send a `POST` HTTP request to the `/attestation` endpoint with [this](test-env/test-data/aov/request-bad.json) body.  
+   Send a `POST` HTTP request to the `/attestation` endpoint with [this](../test-env/test-data/aov/request-bad.json) body.  
    **Expected result:**
    A `200 OK` response with a JSON body that has an `id` property (a UUID) → we’ll refer to it as `${id}`.
 
@@ -207,7 +207,7 @@ _nothing_
    Wait a few seconds.
 
 3. **Action:**
-   Verify that an AoV has been submitted to the callback URL in the [submitted AoV request](test-env/test-data/aov/request-good.json) (`http://callback-dummy/callback`) by sending a `GET` HTTP request to the `/get/last` endpoint **of the callback dummy component in the test network** (normally mapped to `localhost:9099`).
+   Verify that an AoV has been submitted to the callback URL in the [submitted AoV request](../test-env/test-data/aov/request-good.json) (`http://callback-dummy/callback`) by sending a `GET` HTTP request to the `/get/last` endpoint **of the callback dummy component in the test network** (normally mapped to `localhost:9099`).
    **Expected result:**
    A `200 OK` response from the _callback-dummy_ component with an AoV in the `payload` property of the response body.
    The `evaluations` array inside the AoV payload should indicate **failing** checks.
