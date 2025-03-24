@@ -33,10 +33,20 @@ A test environment has been prepared in the `test-env` subdirectory.
 
 A simple `docker compose up` should be sufficient to start the test environment.
 
+By default, the test environment will include only what is strictly necessary for the DVA BB: `dva-api`, `dva-processing`, and a `rabbitmq` instance.
+
+In addition, the following Docker Compose profiles are also available:
+
+* `dev`: also includes a `callback-dummy` component that can be used to verify callbacks sent by `dva-api` (used in Karate-based tests).  
+   Use `docker compose --profile dev up --detach` to start a test environment with a `callback-dummy`.
+* `karate`: in addition to `dev`, this also includes an ephemeral `karate` container that executes availble Karate tests.  
+   Use `docker compose --profile karate up --detach` to start a test environment and run all Karate tests.
+   Check the `karate` container’s logs and/or the `karate-reports/` directory inside `test-env/` to analyze the results.
+
 ## Example usage
 
 > [!TIP]
-> A more detailed testing guide can be found [here](docs/testing.md).
+> More detailed test definitions can be found [here](docs/test-definitions.md).
 
 The currently implemented endpoints are `/template` and `/attestation`.
 See the [OpenAPI specification](docs/spec/openapi.yaml) for more information.
