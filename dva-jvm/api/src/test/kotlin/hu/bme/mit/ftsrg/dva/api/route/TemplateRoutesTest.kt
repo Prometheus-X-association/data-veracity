@@ -53,7 +53,7 @@ class TemplateRoutesTest {
       setBody(template)
     }.apply {
       val idDTO: IDDTO = body()
-      assertEquals(HttpStatusCode.OK, status)
+      assertEquals(HttpStatusCode.Created, status)
       assertEquals(template.id, idDTO.id)
     }
   }
