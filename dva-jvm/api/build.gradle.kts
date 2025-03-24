@@ -25,3 +25,9 @@ dependencies {
 application {
     mainClass = "hu.bme.mit.ftsrg.dva.api.ApplicationKt"
 }
+
+tasks.withType<Test> {
+    testLogging {
+        events("passed", "skipped", "failed");
+    }
+}
