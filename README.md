@@ -111,16 +111,48 @@ In the test output, you should see all JUnit tests passing.
   TemplateRoutesTest > should respond with existing template if exists() PASSED
   [...]
   ```
-</details>
+</details>.
 
 ### DVA Processing Module (`dva-python`)
 
 > [!WARNING]
-> `dva-python` does not have unit tests yet.
+> `dva-python` does not -have unit tests yet.
 
 
 ## Component-level testing
 
 ### Setup test environment
+
+_No setup needed, but you need to have Docker- and Docker Compose installed._
+
 ### Run tests
+
+Change your working directory to `test-env/` and run the following:
+
+```console
+$ docker compose --profile karate up
+```
+
 ### Expected results
+
+All container should start successfully and the `karate` container should exit with code `0`.
+`karate`’s summary table in the log should show the same number next to `scenarios` as `passed` (ie, all scenarios pass).
+
+<details>
+  <summary>Click to see any example of `karate`’s summary table</summary>
+
+  ```
+  karate-1  | Karate version: 1.5.0
+  karate-1  | ======================================================
+  karate-1  | elapsed:   2.84 | threads:    1 | thread time: 1.64
+  karate-1  | features:     2 | skipped:    0 | efficiency: 0.58
+  karate-1  | scenarios:    4 | passed:     4 | failed: 0
+  karate-1  | ======================================================
+  karate-1  |
+  karate-1  | HTML report: (paste into browser to view) | Karate version: 1.5.0
+  karate-1  | file:///app/target/karate-reports/karate-summary.html
+  karate-1  | ===================================================================
+  ```
+</details>
+
+In addition, you can check `karate` test results by checking the files generated in `test-env/karate-reports/`, such as `karate-summary.html` – you can open this in a browser.
