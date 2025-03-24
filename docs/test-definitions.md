@@ -138,7 +138,7 @@ _nothing_
    A `200 OK` response from the _callback-dummy_ component with an AoV in the `payload` property of the response body.
    The `evaluations` array inside the AoV payload should indicate **passing** checks.
   <details>
-    <summary>Click to see an example response from `callback-dummy`</summary>
+    <summary>Click to see an example response from <code>callback-dummy</code></summary>
 
     ```
     HTTP/1.1 200 OK
@@ -214,7 +214,7 @@ _nothing_
    A `200 OK` response from the _callback-dummy_ component with an AoV in the `payload` property of the response body.
    The `evaluations` array inside the AoV payload should indicate **failing** checks.
   <details>
-    <summary>Click to see an example response from `callback-dummy`</summary>
+    <summary>Click to see an example response from <code>callback-dummy</code></summary>
 
     ```
     HTTP/1.1 200 OK
