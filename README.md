@@ -73,12 +73,54 @@ Example requests to test functionality manually:
 > AoV requests (`POST /attestation`) are processed asynchronously.
 > So you should simply receive an ID in a `200 OK` response but also later receive a callback to the URL you specified from the DVA processing module.
 
+
 ## Unit testing
-### Setup test environment
-### Run tests
-### Expected results
+
+### DVA API (`dva-jvm`)
+
+#### Setup test environment
+
+_No setup needed._
+
+#### Run tests
+
+Set your working directory to `dva-jvm/` and execute:
+```console
+$ ./gradlew test
+```
+
+#### Expected results
+
+In the test output, you should see all JUnit tests passing.
+
+<details>
+  <summary>Example output segment (click to open)</summary>
+
+  ```
+  [...]
+  ApplicationTest > should respond with not found error on nonexistent path requested() PASSED
+  AoVRoutesTest > should create attestation request() PASSED
+  DocRoutesTest > should return swagger documentation page when slash swagger is requested() PASSED
+  DocRoutesTest > should return HTML page when root route is requested() PASSED
+  TemplateRoutesTest > should delete existing template() PASSED
+  TemplateRoutesTest > should not allow creation of template with existing ID() PASSED
+  TemplateRoutesTest > should respond with not found error when attempting to read nonexistent template() PASSED
+  TemplateRoutesTest > should respond with list of templates() PASSED
+  TemplateRoutesTest > should create new template() PASSED
+  TemplateRoutesTest > should respond with not found error when attempting to delete nonexistent () PASSED
+  TemplateRoutesTest > should respond with existing template if exists() PASSED
+  [...]
+  ```
+</details>
+
+### DVA Processing Module (`dva-python`)
+
+> [!WARNING]
+> `dva-python` does not have unit tests yet.
+
 
 ## Component-level testing
+
 ### Setup test environment
 ### Run tests
 ### Expected results
