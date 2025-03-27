@@ -9,7 +9,7 @@ from pika import BlockingConnection, ConnectionParameters
 from structlog import get_logger
 
 from .serialization import parse_aov_req_json
-from .config import QUEUE_NAME, RABBITMQ_HOST
+from .config import ATTESTATION_QUEUE_NAME, VERIFICATION_QUEUE_NAME, RABBITMQ_HOST
 from .qc import validate_data
 
 logger = get_logger()
@@ -26,9 +26,10 @@ def run():
 def consume_loop():
     conn = BlockingConnection(ConnectionParameters(RABBITMQ_HOST))
     chan = conn.channel()
-    chan.queue_declare(queue=QUEUE_NAME)
+    chan.queue_declare(queue=ATTESTATION_QUEUE_NAME)
+    chan.queue_declare(queue=VERIFICATION_QUEUE_NAME)
 
-    def callback(chan, method, props, body):
+    def attest_callback(chan, method, props, body):
         req = parse_aov_req_json(body)
         logger.info(f"Received request", callback_url=req.callbackURL)
 
@@ -67,9 +68,23 @@ def consume_loop():
             requests.post(f'{req.callbackURL}/error')
 
 
-    chan.basic_consume(queue=QUEUE_NAME,
+    chan.basic_consume(queue=ATTESTATION_QUEUE_NAME,
                        auto_ack=True,
-                       on_message_callback=callback)
+                       on_message_callback=attest_callback)
 
-    logger.info("Waiting for messages")
+    logger.info("Waiting for new messages")
+
+
+    
+
+    def verify_callback(chan, method, props, body):
+        
+        logger.info(f"Received AoV/PoV verification request")
+
+        
+    chan.basic_consume(queue=VERIFICATION_QUEUE_NAME,
+                       auto_ack=True,
+                       on_message_callback=verify_callback)
+
+    logger.info("Waiting for verification messages")
     chan.start_consuming()
