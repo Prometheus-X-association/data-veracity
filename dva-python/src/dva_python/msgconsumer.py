@@ -79,7 +79,7 @@ def consume_loop():
 
     def verify_callback(chan, method, props, body):
         
-        logger.info(f"Received AoV/PoV verification request")
+        logger.info(f"Received verification request")
 
         
     chan.basic_consume(queue=VERIFICATION_QUEUE_NAME,
