@@ -6,6 +6,7 @@ import hu.bme.mit.ftsrg.dva.api.error.UnimplementedError
 import hu.bme.mit.ftsrg.dva.api.resource.Attestations
 import hu.bme.mit.ftsrg.dva.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
+import hu.bme.mit.ftsrg.dva.dto.aov.AttestationVerificationRequestDTO
 import io.github.viartemev.rabbitmq.channel.confirmChannel
 import io.github.viartemev.rabbitmq.channel.publish
 import io.github.viartemev.rabbitmq.publisher.OutboundMessage
@@ -43,9 +44,20 @@ fun Route.aovRoute(rmqConnection: Connection) {
     call.respond(IDDTO(id))
   }
 
-  /* TODO: Implement verification */
   post<Attestations.Verify> {
-    throw UnimplementedError
+    val request: AttestationVerificationRequestDTO = call.receive()
+
+    val id = UUID.randomUUID().toString()
+    val requestWithID: AttestationVerificationRequestDTO = request.copy(id = id)
+
+    rmqConnection.confirmChannel {
+      declareQueue(QueueSpecification("ATTESTATION_VERIFICATION_REQUESTS"))
+      publish {
+        publishWithConfirm(createMessage(Json.encodeToString(requestWithID)))
+      }
+    }
+
+    call.respond(IDDTO(id))
   }
 }
 

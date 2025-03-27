@@ -7,6 +7,8 @@ import hu.bme.mit.ftsrg.contractmanager.contract.model.Purpose
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Status
 import hu.bme.mit.ftsrg.dva.api.testutil.testModule
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
+import hu.bme.mit.ftsrg.dva.dto.aov.AttestationVerificationRequestDTO
+import hu.bme.mit.ftsrg.dva.model.aov.AttestationOfVeracity
 import hu.bme.mit.ftsrg.odcs.model.fundamentals.APIVersion
 import hu.bme.mit.ftsrg.odcs.model.fundamentals.FileKind
 import hu.bme.mit.ftsrg.odcs.model.quality.DataQuality
@@ -21,6 +23,8 @@ import hu.bme.mit.ftsrg.odrl.model.policy.Policy
 import hu.bme.mit.ftsrg.odrl.model.rule.Action
 import hu.bme.mit.ftsrg.odrl.model.rule.Permission
 import hu.bme.mit.ftsrg.odrl.model.rule.Rule
+import hu.bme.mit.ftsrg.vc.model.CredentialSubject
+import hu.bme.mit.ftsrg.vc.model.VerifiableCredential
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -34,6 +38,7 @@ import org.testcontainers.containers.RabbitMQContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.net.URI
+import java.time.ZonedDateTime
 import java.util.*
 import hu.bme.mit.ftsrg.odcs.model.Contract as ODCSContract
 
@@ -200,6 +205,34 @@ class AoVRoutesTest {
     }.apply {
       Assertions.assertEquals(HttpStatusCode.OK, status)
     }
+  }
+
+  fun `should create attestation verification request`() = testApplication {
+    setupApplication()
+    val client = setupClient()
+
+    val request = AttestationVerificationRequestDTO(
+      aov = AttestationOfVeracity(
+        vc =  VerifiableCredential(
+          id =  UUID.randomUUID().toString(),
+          type =  "AttestationOfVeracity",
+          issuer = "issuer",
+          subject = CredentialSubject(id = "subject"),
+          validFrom = ZonedDateTime.now(),
+        ),
+        aovID = UUID.randomUUID().toString(),
+        contractId =  UUID.randomUUID().toString(),
+        evaluations = emptyList(),
+      ),
+      callbackURL = URI("http://example.com/callback").toURL(),
+    );
+    client.post("/attestation/verify") {
+      contentType(ContentType.Application.Json)
+      setBody(request)
+    }.apply {
+      Assertions.assertEquals(HttpStatusCode.OK, status)
+    }
+
   }
 
   private fun ApplicationTestBuilder.setupApplication() = application {
