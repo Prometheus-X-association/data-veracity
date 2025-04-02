@@ -11,6 +11,7 @@ from structlog import get_logger
 from .serialization import parse_aov_req_json
 from .config import ATTESTATION_QUEUE_NAME, VERIFICATION_QUEUE_NAME, RABBITMQ_HOST
 from .qc import validate_data
+from .prove import verify_attestation
 
 logger = get_logger()
 
@@ -29,7 +30,7 @@ def consume_loop():
     chan.queue_declare(queue=ATTESTATION_QUEUE_NAME)
     chan.queue_declare(queue=VERIFICATION_QUEUE_NAME)
 
-    def attest_callback(chan, method, props, body):
+    def attestation_callback(chan, method, props, body):
         req = parse_aov_req_json(body)
         logger.info(f"Received request", callback_url=req.callbackURL)
 
@@ -58,7 +59,7 @@ def consume_loop():
                     'validFrom': datetime.now().isoformat(),
                     'subject': {
                         'id': contract.dataProvider,
-                    },
+                        },
                     'issuer': req.attesterID,
                 }
             }
@@ -67,24 +68,42 @@ def consume_loop():
             logger.error(f"validation failed due to {ex}")
             requests.post(f'{req.callbackURL}/error')
 
-
-    chan.basic_consume(queue=ATTESTATION_QUEUE_NAME,
-                       auto_ack=True,
-                       on_message_callback=attest_callback)
-
-    logger.info("Waiting for new messages")
-
-
     
 
-    def verify_callback(chan, method, props, body):
+    def verification_callback(chan, method, props, body):
+        req = parse_aov_req_json(body)
+        logger.info("Received verification request", callback_url=req.callbackURL)
+
+        attestation = json.loads(req.attestation)  # Attestation to verify
+        public_key = req.publicKey                 # Provider's public key
+
+        try:
+            verified_payload = verify_attestation(attestation, public_key)
+            verification_result = {
+                'verificationID': uuid.uuid4(),
+                'isValid': verified_payload is not None,
+                'details': verified_payload
+            }
+            requests.post(req.callbackURL, json=verification_result)
+            logger.info("Verification response sent successfully.")
+        except Exception as ex:
+            logger.error(f"Verification failed: {ex}")
+            requests.post(f'{req.callbackURL}/error', json={'error': str(ex)})
         
         logger.info(f"Received verification request")
 
         
+    chan.basic_consume(queue=ATTESTATION_QUEUE_NAME,
+                       auto_ack=True,
+                       on_message_callback=attestation_callback)
+
+    logger.info("Waiting for new attestation messages")
+
+    
     chan.basic_consume(queue=VERIFICATION_QUEUE_NAME,
                        auto_ack=True,
-                       on_message_callback=verify_callback)
+                       on_message_callback=verification_callback)
 
     logger.info("Waiting for verification messages")
+    
     chan.start_consuming()

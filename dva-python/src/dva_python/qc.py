@@ -2,7 +2,7 @@ import great_expectations as gx
 
 from structlog import get_logger
 
-from .serialization import json_to_df, parse_ge_yaml
+from serialization import json_to_df, parse_ge_yaml
 
 logger = get_logger()
 
