@@ -92,7 +92,7 @@ def consume_loop():
         
         logger.info(f"Received verification request")
 
-        
+        #register handlers for both queues
     chan.basic_consume(queue=ATTESTATION_QUEUE_NAME,
                        auto_ack=True,
                        on_message_callback=attestation_callback)

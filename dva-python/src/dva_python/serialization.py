@@ -11,6 +11,11 @@ def parse_aov_req_json(aov_req_json):
     return json.loads(aov_req_json,
                       object_hook=lambda j: SimpleNamespace(**j))
 
+# # Optional (serialization.py)
+# def parse_verification_req_json(verification_req_json):
+#     return json.loads(verification_req_json,
+#                       object_hook=lambda j: SimpleNamespace(**j))
+
 def parse_ge_yaml(ge_yaml):
     return SimpleNamespace(**(yaml.safe_load(ge_yaml)))
 
