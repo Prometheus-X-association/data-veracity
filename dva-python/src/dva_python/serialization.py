@@ -28,7 +28,4 @@ def json_to_df(json_dict, mapping):
         df_dict[column_name] = [matches[0].value]
 
     df = pd.DataFrame.from_dict(df_dict)
-    # FIXME generalize
-    df['timestamp'] = df['timestamp'].apply(lambda x:
-                                            pd.to_datetime(x))
     return df
