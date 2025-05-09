@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Provider VC Control Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2em;
+            background-color: #f9f9f9;
+        }
+
+        h1,
+        h2 {
+            color: #333;
+        }
+
+        form {
+            margin-bottom: 2em;
+            padding: 1em;
+            background-color: #eef;
+            border-radius: 5px;
+        }
+
+        label {
+            display: block;
+            margin-top: 0.5em;
+        }
+
+        input,
+        select,
+        button {
+            padding: 0.4em;
+            width: 100%;
+            margin-top: 0.3em;
+        }
+
+        button {
+            margin-top: 1em;
+            background-color: #0044cc;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #003399;
+        }
+
+        pre {
+            background-color: #eee;
+            padding: 1em;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Provider VC Control Panel</h1>
+
+    <form id="initSelfForm">
+        <h2>Init Self Connection & Schema</h2>
+        <button type="submit">Init Self</button>
+    </form>
+
+    <form id="connectForm">
+        <h2>Connect to Consumer</h2>
+        <button type="submit">Connect</button>
+    </form>
+
+    <form id="getSelfConnForm">
+        <h2>Get Self Connection ID</h2>
+        <button type="submit">Get Self Connection</button>
+    </form>
+
+    <form id="generateVCForm">
+        <h2>Generate AOV</h2>
+        <label for="subject">Subject:</label>
+        <input type="text" id="subject" name="subject" required>
+
+        <label for="issuer_id">Issuer ID:</label>
+        <input type="text" id="issuer_id" name="issuer_id" required>
+
+        <label for="comment">Comment (key: value ; ...):</label>
+        <input type="text" id="comment" name="comment" required>
+        <label for="target">Target:</label>
+        <select id="target" name="target" required>
+            <option value="self">self</option>
+            <option value="consumer">consumer</option>
+        </select>
+
+        <button type="submit">Generate AOV</button>
+    </form>
+
+    <h2>Response:</h2>
+    <pre id="responseBox">Waiting for interaction...</pre>
+
+    <script>
+        const responseBox = document.getElementById("responseBox");
+
+        async function postFormAsQuery(formId, endpoint) {
+            const form = document.getElementById(formId);
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const params = new URLSearchParams();
+                formData.forEach((value, key) => params.append(key, value));
+
+                try {
+                    const res = await fetch(`${endpoint}?${params.toString()}`, {
+                        method: "POST"
+                    });
+                    const json = await res.json();
+                    responseBox.textContent = JSON.stringify(json, null, 2);
+                } catch (err) {
+                    responseBox.textContent = "Hiba: " + err;
+                }
+            });
+        }
+
+        async function postForm(formId, endpoint) {
+            const form = document.getElementById(formId);
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                try {
+                    const res = await fetch(endpoint, {
+                        method: "POST",
+                        body: formData
+                    });
+                    const json = await res.json();
+                    responseBox.textContent = JSON.stringify(json, null, 2);
+                } catch (err) {
+                    responseBox.textContent = "Hiba: " + err;
+                }
+            });
+        }
+
+        async function postNoPayload(formId, endpoint) {
+            const form = document.getElementById(formId);
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                try {
+                    const res = await fetch(endpoint, { method: "POST" });
+                    const json = await res.json();
+                    responseBox.textContent = JSON.stringify(json, null, 2);
+                } catch (err) {
+                    responseBox.textContent = "Hiba: " + err;
+                }
+            });
+        }
+
+        async function getRequest(formId, endpoint) {
+            const form = document.getElementById(formId);
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                try {
+                    const res = await fetch(endpoint);
+                    const json = await res.json();
+                    responseBox.textContent = JSON.stringify(json, null, 2);
+                } catch (err) {
+                    responseBox.textContent = "Hiba: " + err;
+                }
+            });
+        }
+
+        postFormAsQuery("generateVCForm", "/generate_aov");
+        postNoPayload("initSelfForm", "/init_all_self");
+        postNoPayload("connectForm", "/connect_provider_consumer");
+        getRequest("getSelfConnForm", "/connections/self");
+    </script>
+</body>
+
+</html>

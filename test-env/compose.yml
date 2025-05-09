@@ -1,12 +1,12 @@
 ---
 services:
 
-  dva-api:
-    extends:
-      file: common-services.yml
-      service: dva-jvm
-    command: api
-    ports: [9090:9090]
+#  dva-api:
+#   extends:
+#      file: common-services.yml
+#      service: dva-jvm
+#    command: api
+#    ports: [9090:9090]
 
   # dva-processing-java:
   #   extends:
@@ -14,35 +14,71 @@ services:
   #     service: dva-jvm
   #   command: processing
 
-  dva-processing-python:
+#  dva-processing-python:
+#    extends:
+#      file: common-services.yml
+#      service: dva-python
+#    environment:
+#      DVA_LOG_LEVEL: debug
+#    develop:
+#      watch:
+#        - action: sync
+#          path: ../dva-python/
+#          target: /app/
+#          ignore: [.venv/]
+#        - action: rebuild
+#          path: ./pyproject.toml
+
+  dva-provider-side-aca-py:
     extends:
       file: common-services.yml
-      service: dva-python
+      service: dva-provider-side-aca-py
+    ports:
+      - "8020:8020"
+      - "8031:8031"
+    depends_on:
+      - dva-provider-side-controller
+
+  dva-consumer-side-aca-py:
+    extends:
+      file: common-services.yml
+      service: dva-consumer-side-aca-py
+    ports:
+      - "8021:8021"
+      - "8032:8032"
+    depends_on:
+      - dva-consumer-side-controller
+
+  dva-provider-side-controller:
+    build:
+      context: ../dva-python/src/provider_side_controller
     environment:
-      DVA_LOG_LEVEL: debug
-    develop:
-      watch:
-        - action: sync
-          path: ../dva-python/
-          target: /app/
-          ignore: [.venv/]
-        - action: rebuild
-          path: ./pyproject.toml
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8051:8051"
 
-  rabbit:
-    extends:
-      file: common-services.yml
-      service: rabbit
+  dva-consumer-side-controller: 
+    build:
+      context: ../dva-python/src/consumer_side_controller
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8052:8052"
 
-  callback-dummy:
-    profiles: [dev, karate]
-    extends:
-      file: common-services.yml
-      service: callback-dummy
-    ports: [9099:80]
+#  rabbit:
+#    extends:
+#      file: common-services.yml
+#      service: rabbit
 
-  karate:
-    profiles: [karate]
-    extends:
-      file: common-services.yml
-      service: karate
+#  callback-dummy:
+#    profiles: [dev, karate]
+#    extends:
+#      file: common-services.yml
+#      service: callback-dummy
+#    ports: [9099:80]
+
+#  karate:
+#    profiles: [karate]
+#    extends:
+#      file: common-services.yml
+#      service: karate

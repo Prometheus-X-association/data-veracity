@@ -56,3 +56,52 @@ services:
         condition: service_healthy
       callback-dummy:
         condition: service_healthy
+
+  dva-provider-side-aca-py:
+      image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.12.6
+      command: >
+          start
+          --inbound-transport http 0.0.0.0 8020
+          --outbound-transport http
+          --admin 0.0.0.0 8031
+          --admin-insecure-mode
+          --webhook-url http://dva-provider-side-controller:8051/webhooks
+          --label Provider
+          --wallet-type askar
+          --wallet-name providerwallet
+          --wallet-key providerskey123
+          --auto-provision
+          --auto-accept-invites
+          --auto-accept-requests
+          --auto-respond-credential-offer
+          --auto-respond-credential-request
+          --auto-respond-presentation-request
+          --genesis-url http://test.bcovrin.vonx.io/genesis
+          --seed 0000000000000000000ProviderSeed1
+          --ledger-pool-name bcovrin-test
+          --endpoint http://dva-provider-side-aca-py:8020
+
+  dva-consumer-side-aca-py:
+    image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.12.6
+    command: >
+      start
+      --inbound-transport http 0.0.0.0 8021
+      --outbound-transport http
+      --admin 0.0.0.0 8032
+      --admin-insecure-mode
+      --webhook-url http://dva-consumer-side-controller:8052/webhooks
+      --label Consumer
+      --wallet-type askar
+      --wallet-name consumerwallet
+      --wallet-key consumerskey123
+      --auto-provision
+      --auto-accept-invites
+      --auto-store-credential
+      --auto-accept-requests
+      --auto-respond-credential-offer
+      --auto-respond-credential-request
+      --auto-respond-presentation-request
+      --genesis-url http://test.bcovrin.vonx.io/genesis
+      --ledger-pool-name bcovrin-test
+      --seed 0000000000000000000ConsumerSeed1
+      --endpoint http://dva-consumer-side-aca-py:8021
