@@ -31,7 +31,6 @@ FROM python:3.12-slim
 
 # Copy built project
 COPY --from=build /app/.venv/ /app/.venv/
-RUN chown -R app:app /app/.venv/
 
 # Run app
 CMD ["/app/.venv/bin/dva-python"]
