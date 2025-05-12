@@ -34,7 +34,7 @@ async def webhook_handler(topic: str, request: Request):
 
 @app.post("/receive_vc")
 async def receive_vc(payload: Dict[str, Any]):
-    print("Received forwarded VC from provider:")
+    print("Received forwarded VC from infrastructure:")
     print(json.dumps(payload, indent=2))
     time.sleep(1)
     await queue.put(payload)
@@ -64,11 +64,11 @@ async def request_aov(
             "comment": comment,
             "target": "consumer"
         }
-        print("Requesting VC from provider with params:", params)
-        response = requests.post("http://dva-provider-side-controller:8051/generate_aov", params=params)
+        print("Requesting VC from infrastructure with params:", params)
+        response = requests.post("http://dva-acapy-controller-infrastructure:8051/generate_aov", params=params)
         response.raise_for_status()
         response_data = response.json()
-        print("Received response from provider:", response_data)
+        print("Received response from infrastructure:", response_data)
 
         vc_data = response_data.get("credential_data", {})
         await queue.put(vc_data)

@@ -23,16 +23,16 @@ SELF_CONNECTION_ID = None
 SELF_SCHEMA_ID = None
 SELF_CRED_DEF_ID = None
 
-ADMIN_URL = "http://dva-acapy-wallet-provider:8031"
-ADMIN_LABEL = "dva-provider"
+ADMIN_URL = "http://dva-acapy-wallet-infrastructure:8031"
+ADMIN_LABEL = "dva-infrastructure"
 
 @app.on_event("startup")
 async def startup_event():
-    print("Provider Controller is starting...")
+    print("Infrastructure Controller is starting...")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    print("Provider Controller is shutting down...")
+    print("Infrastructure Controller is shutting down...")
 
     if webhook_logs:
         with open("log_human_readable.json", "w") as f:
@@ -81,12 +81,12 @@ async def webhook_listener(topic: str, request: Request):
 # Root endpoint
 @app.get("/")
 async def index():
-    return {"message": "Provider Controller is running."}
+    return {"message": "Infrastructure Controller is running."}
 
-# Create connection from provider to infrastructure
-@app.post("/connect_provider_infrastructure")
-async def connect_provider_infrastructure():
-    invitation_response = requests.post("http://dva-acapy-wallet-provider:8031/out-of-band/create-invitation", json={
+# Create connection from infrastructure to consumer
+@app.post("/connect_infrastructure_consumer")
+async def connect_infrastructure_consumer():
+    invitation_response = requests.post("http://dva-acapy-wallet-infrastructure:8031/out-of-band/create-invitation", json={
         "handshake_protocols": ["https://didcomm.org/didexchange/1.0"],
         "use_public_did": False
     })
@@ -96,12 +96,12 @@ async def connect_provider_infrastructure():
 
     invitation = invitation_response.json()["invitation"]
 
-    receive_response = requests.post("http://dva-acapy-wallet-infrastructure:8032/out-of-band/receive-invitation", json=invitation)
+    receive_response = requests.post("http://dva-acapy-wallet-consumer:8032/out-of-band/receive-invitation", json=invitation)
 
     if receive_response.status_code != 200:
         return {"error": "Consumer failed to receive invitation", "details": receive_response.text}
 
-    return {"message": "Connection created between provider and infrastructure"}
+    return {"message": "Connection created between infrastructure and consumer"}
 
 @app.get("/connections/self")
 async def get_self_connection():
@@ -186,8 +186,8 @@ def parse_evaluation_comment(comment: str) -> List[Dict[str, Any]]:
 async def generate_aov(
     subject: str = Query(...),
     issuer_id: str = Query(...),
-    comment: str = Query("Requested by infrastructure"),
-    target: str = Query("self", enum=["self", "infrastructure"])
+    comment: str = Query("Requested by consumer"),
+    target: str = Query("self", enum=["self", "consumer"])
 ):
     global SELF_CONNECTION_ID, SELF_CRED_DEF_ID
 
@@ -202,7 +202,7 @@ async def generate_aov(
         evaluations=Evaluation(eval=parsed_eval)
     )
 
-    if target not in ["self", "infrastructure"]:
+    if target not in ["self", "consumer"]:
         raise HTTPException(status_code=400, detail="Invalid target")
 
     if target == "self":
@@ -212,10 +212,10 @@ async def generate_aov(
         cred_def_id = SELF_CRED_DEF_ID
     else:
         conns = requests.get(f"{ADMIN_URL}/connections").json()["results"]
-        infrastructure_conn = next((c for c in conns if c["connection_id"] != SELF_CONNECTION_ID), None)
-        if not infrastructure_conn:
-            raise HTTPException(status_code=400, detail="No infrastructure connection found")
-        connection_id = infrastructure_conn["connection_id"]
+        consumer_conn = next((c for c in conns if c["connection_id"] != SELF_CONNECTION_ID), None)
+        if not consumer_conn:
+            raise HTTPException(status_code=400, detail="No consumer connection found")
+        connection_id = consumer_conn["connection_id"]
 
         try:
             with open("cred_def.txt", "r") as f:
@@ -252,14 +252,58 @@ async def generate_aov(
     if issue_resp.status_code != 200:
         return {"error": "Credential issue failed", "details": issue_resp.text}
 
-    if target == "infrastructure":
+    if target == "consumer":
         try:
             forward_resp = requests.post(
-                "http://dva-acapy-controller-infrastructure:8051/receive_vc",
-                json={"source": "provider", "credential": cred_attrs}
+                "http://dva-acapy-controller-consumer:8052/receive_vc",
+                json={"source": "infrastructure", "credential": cred_attrs}
             )
             forward_resp.raise_for_status()
-            print("Forwarded VC to infrastructure UI stream.")
+            print("Forwarded VC to consumer UI stream.")
         except Exception as e:
-            print(f"Failed to forward VC to infrastructure UI: {e}")
+            print(f"Failed to forward VC to consumer UI: {e}")
     return {"message": f"Custom VC issued to {target}", "credential_data": cred_attrs}
+
+
+@app.post("/receive_vc")
+async def receive_vc(payload: Dict[str, Any]):
+    print("Received forwarded VC from provider:")
+    print(json.dumps(payload, indent=2))
+    time.sleep(1)
+    await queue.put(payload)
+    return {"status": "ok"}
+
+@app.get("/stream")
+async def stream():
+    async def event_generator():
+        while True:
+            data = await queue.get()
+            yield f"data: {json.dumps(data)}\n\n"
+    
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@app.get("/request_aov")
+async def request_aov(
+    subject: str = Query("InfrastructureApp"),
+    issuer_id: str = Query("dva-infrastructure"),
+    comment: str = Query("Requested dynamically")
+):
+    try:
+        params = {
+            "subject": subject,
+            "issuer_id": issuer_id,
+            "comment": comment,
+            "target": "consumer"
+        }
+        print("Requesting VC from provider with params:", params)
+        response = requests.post("http://dva-acapy-controller-provider:8051/generate_aov", params=params)
+        response.raise_for_status()
+        response_data = response.json()
+        print("Received response from provider:", response_data)
+
+        vc_data = response_data.get("credential_data", {})
+        await queue.put(vc_data)
+        return {"received_vc": vc_data}
+    except Exception as e:
+        print(f"VC request failed: {e}")
+        return {"error": str(e)}
