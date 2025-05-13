@@ -2,10 +2,11 @@ package hu.bme.mit.ftsrg.dva.api.route
 
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.MessageProperties
+import com.sun.org.apache.xalan.internal.res.XSLMessages.createMessage
 import hu.bme.mit.ftsrg.connector.model.DataExchange
 import hu.bme.mit.ftsrg.dva.api.error.UnimplementedError
 import hu.bme.mit.ftsrg.dva.api.resource.Attestations
-import hu.bme.mit.ftsrg.dva.dto.SuccessDTO
+import hu.bme.mit.ftsrg.dva.dto.ResultDTO
 import io.github.viartemev.rabbitmq.channel.confirmChannel
 import io.github.viartemev.rabbitmq.channel.publish
 import io.github.viartemev.rabbitmq.publisher.OutboundMessage
@@ -18,6 +19,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 
 fun Application.aovRoutes(rmqConnection: Connection) {
   routing {
@@ -36,12 +39,12 @@ fun Route.aovRoute(rmqConnection: Connection) {
       }
     }
 
-    call.respond(SuccessDTO("OK"))
+    call.respond(ResultDTO(Json.encodeToJsonElement("OK")))
   }
 
   /* TODO: Implement verification */
   post<Attestations.Verify> {
-    throw UnimplementedError
+    call.respond(ResultDTO(Json.encodeToJsonElement("Unimplemented")))
   }
 }
 
