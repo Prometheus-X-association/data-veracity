@@ -5,8 +5,11 @@ import com.rabbitmq.client.ConnectionFactory
 import hu.bme.mit.ftsrg.dva.api.error.addHandlers
 import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
+import hu.bme.mit.ftsrg.dva.api.route.infoRoutes
 import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
+import hu.bme.mit.ftsrg.dva.persistence.repository.DataExchangeRepository
 import hu.bme.mit.ftsrg.dva.persistence.repository.VLATemplateRepository
+import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeDataExchangeRepository
 import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeVLATemplateRepository
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -24,6 +27,7 @@ fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
   val templateRepository = FakeVLATemplateRepository()
+  val exchangeRepository = FakeDataExchangeRepository()
 
   val rmqConnectionFactory = ConnectionFactory().apply {
     host = environment.config.property("rabbitmq.host").getString()
@@ -34,6 +38,7 @@ fun Application.module() {
   installPlugins()
   addRoutes(
     templateRepository = templateRepository,
+    exchangeRepository = exchangeRepository,
     rmqConnection = rmqConnection,
   )
 }
@@ -63,9 +68,11 @@ fun Application.installPlugins() {
 
 fun Application.addRoutes(
   templateRepository: VLATemplateRepository,
+  exchangeRepository: DataExchangeRepository,
   rmqConnection: Connection,
 ) {
   docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
   templateRoutes(templateRepository)
-  aovRoutes(rmqConnection)
+  aovRoutes(rmqConnection, exchangeRepository)
+  infoRoutes(exchangeRepository)
 }

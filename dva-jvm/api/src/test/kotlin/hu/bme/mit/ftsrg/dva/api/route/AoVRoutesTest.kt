@@ -7,6 +7,7 @@ import hu.bme.mit.ftsrg.contractmanager.contract.model.Purpose
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Status
 import hu.bme.mit.ftsrg.dva.api.testutil.testModule
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
+import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeDataExchangeRepository
 import hu.bme.mit.ftsrg.odcs.model.fundamentals.APIVersion
 import hu.bme.mit.ftsrg.odcs.model.fundamentals.FileKind
 import hu.bme.mit.ftsrg.odcs.model.quality.DataQuality
@@ -209,7 +210,7 @@ class AoVRoutesTest {
     }
 
     testModule()
-    aovRoutes(rmqConnection = rmqConnectionFactory.newConnection())
+    aovRoutes(rmqConnection = rmqConnectionFactory.newConnection(), exchangeRepository = FakeDataExchangeRepository())
   }
 
   private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {
