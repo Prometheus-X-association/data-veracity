@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default async function Home() {
   const endpoint = `${process.env.DVA_API_HOST}/info/attestations`
-  let exchanges: Any[] = []
+  let exchanges: any[] = []
   try {
     const exchangeData = await fetch(endpoint)
     exchanges = await exchangeData.json()
