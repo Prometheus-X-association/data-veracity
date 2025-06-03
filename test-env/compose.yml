@@ -1,6 +1,12 @@
 ---
 services:
 
+  dva-mongo:
+    extends:
+      file: common-services.yml
+      service: dva-mongo
+    ports: [27017:27017]
+
   dva-api:
     extends:
       file: common-services.yml

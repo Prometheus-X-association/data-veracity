@@ -1,6 +1,15 @@
 ---
 services:
 
+  dva-mongo:
+    build:
+      context: ../
+      dockerfile: ./dva-mongo/Dockerfile
+    restart: always
+    init: true
+    volumes:
+      - ./init-mongo:/docker-entrypoint-initdb.d
+
   dva-jvm:
     build:
       context: ../
@@ -16,6 +25,8 @@ services:
     depends_on:
       rabbit:
         condition: service_healthy
+      dva-mongo:
+        condition: service_healthy
 
   dva-python:
     build:
@@ -26,6 +37,8 @@ services:
       DVA_RABBITMQ_HOST: rabbit
     depends_on:
       rabbit:
+        condition: service_healthy
+      dva-mongo:
         condition: service_healthy
 
   rabbit:

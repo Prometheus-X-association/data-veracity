@@ -8,6 +8,7 @@ import hu.bme.mit.ftsrg.dva.api.route.docRoutes
 import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
 import hu.bme.mit.ftsrg.dva.persistence.repository.VLATemplateRepository
 import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeVLATemplateRepository
+import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -19,6 +20,8 @@ import io.ktor.server.request.*
 import io.ktor.server.resources.*
 import kotlinx.serialization.json.Json
 import org.slf4j.event.Level
+import org.litote.kmongo.coroutine.*
+import org.litote.kmongo.reactivestreams.KMongo
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
@@ -31,10 +34,15 @@ fun Application.module() {
 
   val rmqConnection = rmqConnectionFactory.newConnection()
 
+  val mongoClient = KMongo.createClient("mongodb://localhost:27017").coroutine
+  val database = mongoClient.getDatabase("dva")
+  val requestsCollection = database.getCollection<AttestationRequestDTO>("requests")
+
   installPlugins()
   addRoutes(
     templateRepository = templateRepository,
     rmqConnection = rmqConnection,
+    requests = requestsCollection,
   )
 }
 
@@ -64,8 +72,9 @@ fun Application.installPlugins() {
 fun Application.addRoutes(
   templateRepository: VLATemplateRepository,
   rmqConnection: Connection,
+  requests: CoroutineCollection<AttestationRequestDTO>
 ) {
   docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
   templateRoutes(templateRepository)
-  aovRoutes(rmqConnection)
+  aovRoutes(rmqConnection, requests)
 }

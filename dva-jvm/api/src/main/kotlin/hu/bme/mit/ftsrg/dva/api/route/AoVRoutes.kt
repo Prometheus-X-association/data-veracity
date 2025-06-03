@@ -19,19 +19,22 @@ import io.ktor.server.routing.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.*
+import org.litote.kmongo.coroutine.*
 
-fun Application.aovRoutes(rmqConnection: Connection) {
+fun Application.aovRoutes(rmqConnection: Connection, requests: CoroutineCollection<AttestationRequestDTO>) {
   routing {
-    aovRoute(rmqConnection)
+    aovRoute(rmqConnection, requests)
   }
 }
 
-fun Route.aovRoute(rmqConnection: Connection) {
+fun Route.aovRoute(rmqConnection: Connection, requests: CoroutineCollection<AttestationRequestDTO>) {
   post<Attestations> {
     val request: AttestationRequestDTO = call.receive()
 
     val id = UUID.randomUUID().toString()
     val requestWithID: AttestationRequestDTO = request.copy(id = id)
+
+    val insertResult = insertRequest(requests, requestWithID)
 
     rmqConnection.confirmChannel {
       declareQueue(QueueSpecification("ATTESTATION_REQUESTS"))
@@ -56,3 +59,14 @@ private fun createMessage(body: String): OutboundMessage =
     properties = MessageProperties.PERSISTENT_BASIC,
     msg = body
   )
+
+private suspend fun insertRequest(
+  requests: CoroutineCollection<AttestationRequestDTO>, req: AttestationRequestDTO
+): Boolean {
+  return try {
+    requests.insertOne(req)
+    true
+  } catch (e: Exception) {
+    false
+  }
+}

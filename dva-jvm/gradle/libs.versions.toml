@@ -15,6 +15,7 @@ shadow = "8.3.5"
 slf4j = "2.0.14"
 testcontainers = "1.20.4"
 text-case-converter = "2.0.0"
+kmongo-version = "4.11.0"
 
 [libraries]
 jena-iri = { module = "org.apache.jena:jena-iri", version.ref = "jena-iri" }
@@ -50,6 +51,7 @@ testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", ve
 testcontainers-rabbitmq = { module = "org.testcontainers:rabbitmq", version.ref = "testcontainers" }
 text-case-converter = { module = "dev.turingcomplete:text-case-converter", version.ref = "text-case-converter" }
 text-case-converter-kotlin-extension = { module = "dev.turingcomplete:text-case-converter-kotlin-extension", version.ref = "text-case-converter" }
+kmongo = { module = "org.litote.kmongo:kmongo-coroutine", version.ref = "kmongo-version" }
 
 [bundles]
 ktor-client = [
@@ -71,6 +73,7 @@ ktor-server = [
     "ktor-server-resources",
     "ktor-server-status-pages",
     "ktor-server-swagger",
+    "kmongo",
 ]
 logging = ["kotlin-logging", "slf4j-api"]
 text-case-converter = ["text-case-converter", "text-case-converter-kotlin-extension"]
