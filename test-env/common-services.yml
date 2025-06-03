@@ -1,15 +1,6 @@
 ---
 services:
 
-  dva-mongo:
-    build:
-      context: ../
-      dockerfile: ./dva-mongo/Dockerfile
-    restart: always
-    init: true
-    volumes:
-      - ./init-mongo:/docker-entrypoint-initdb.d
-
   dva-jvm:
     build:
       context: ../
@@ -25,7 +16,7 @@ services:
     depends_on:
       rabbit:
         condition: service_healthy
-      dva-mongo:
+      mongo:
         condition: service_healthy
 
   dva-python:
@@ -38,7 +29,7 @@ services:
     depends_on:
       rabbit:
         condition: service_healthy
-      dva-mongo:
+      mongo:
         condition: service_healthy
 
   rabbit:
@@ -48,6 +39,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
+
+  mongo:
+    image: mongo:8.0.9
+    volumes:
+      - ./init-mongo:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: >
+        echo 'db.runCommand("ping").ok'
+        | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 10s
+      retries: 5
 
   callback-dummy:
     build: callback-dummy/

@@ -1,12 +1,6 @@
 ---
 services:
 
-  dva-mongo:
-    extends:
-      file: common-services.yml
-      service: dva-mongo
-    ports: [27017:27017]
-
   dva-api:
     extends:
       file: common-services.yml
@@ -39,6 +33,12 @@ services:
     extends:
       file: common-services.yml
       service: rabbit
+
+  mongo:
+    extends:
+      file: common-services.yml
+      service: mongo
+    ports: [27017:27017]
 
   callback-dummy:
     profiles: [dev, karate]
