@@ -4,9 +4,10 @@ db.createCollection('requests', {
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: ["data", "attesterID", "callbackURL", "mapping"],
+      required: ["id", "vlaId", "data", "attesterID", "callbackURL", "mapping"],
       properties: {
         "id": { "bsonType": "string" },
+        "vlaId": { "bsonType": "string" },
         "data": { "bsonType": "binData" },
         "attesterID": { "bsonType": "string" },
         "callbackURL": { "bsonType": "string" },

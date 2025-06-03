@@ -21,6 +21,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.*
 import org.litote.kmongo.coroutine.*
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.KLogger
 
 fun Application.aovRoutes(rmqConnection: Connection, requests: CoroutineCollection<AttestationRequestDTOMongo>) {
   routing {
@@ -44,7 +46,8 @@ fun Route.aovRoute(rmqConnection: Connection, requests: CoroutineCollection<Atte
         mapping = requestWithID.mapping
     )
 
-    val insertResult = insertRequest(requests, requestForMongo)
+    val logger = KotlinLogging.logger {}
+    insertRequest(requests, requestForMongo, logger)
 
     rmqConnection.confirmChannel {
       declareQueue(QueueSpecification("ATTESTATION_REQUESTS"))
@@ -73,12 +76,17 @@ private fun createMessage(body: String): OutboundMessage =
 private suspend fun insertRequest(
   requests: CoroutineCollection<AttestationRequestDTOMongo>,
   req: AttestationRequestDTOMongo,
-): Boolean {
-  return try {
+  logger: KLogger,
+) {
+  if(req.id == null) {
+    logger.error { "AttestationRequestDTOMongo id field is missing!" }
+    return
+  }
+
+  try {
     requests.insertOne(req)
-    true
+    logger.info { "Succesful insertion of ${req.id}" }
   } catch (e: Exception) {
-    e.printStackTrace()
-    false
+    logger.error { "Couldn't insert ${req.id} into 'requests' collection!" }
   }
 }
