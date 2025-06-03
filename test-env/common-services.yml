@@ -11,12 +11,24 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
+    depends_on:
+      rabbit:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
 
   dva-python:
     build:
       context: ../
       dockerfile: ./dva-python/Dockerfile
     init: true
+    environment:
+      DVA_RABBITMQ_HOST: rabbit
+    depends_on:
+      rabbit:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
 
   rabbit:
     image: rabbitmq:4-management-alpine
@@ -27,11 +39,16 @@ services:
       retries: 3
 
   mongo:
-    build:
-      context: ../
-      dockerfile: ./dva-mongo/Dockerfile
+    image: mongo:8.0.9
     volumes:
-      - ./init-mongo:/docker-entrypoint-initdb.d
+      - ./init-mongo:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: >
+        echo 'db.runCommand("ping").ok'
+        | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 10s
+      retries: 5
 
   callback-dummy:
     build: callback-dummy/
