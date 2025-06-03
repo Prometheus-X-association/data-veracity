@@ -9,6 +9,7 @@ import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
 import hu.bme.mit.ftsrg.dva.persistence.repository.VLATemplateRepository
 import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeVLATemplateRepository
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
+import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTOMongo
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -34,9 +35,9 @@ fun Application.module() {
 
   val rmqConnection = rmqConnectionFactory.newConnection()
 
-  val mongoClient = KMongo.createClient("mongodb://localhost:27017").coroutine
+  val mongoClient = KMongo.createClient("mongodb://mongo:27017").coroutine
   val database = mongoClient.getDatabase("dva")
-  val requestsCollection = database.getCollection<AttestationRequestDTO>("requests")
+  val requestsCollection = database.getCollection<AttestationRequestDTOMongo>("requests")
 
   installPlugins()
   addRoutes(
@@ -72,7 +73,7 @@ fun Application.installPlugins() {
 fun Application.addRoutes(
   templateRepository: VLATemplateRepository,
   rmqConnection: Connection,
-  requests: CoroutineCollection<AttestationRequestDTO>
+  requests: CoroutineCollection<AttestationRequestDTOMongo>
 ) {
   docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
   templateRoutes(templateRepository)
