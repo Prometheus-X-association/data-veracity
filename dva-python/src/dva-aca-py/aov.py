@@ -3,11 +3,6 @@ from datetime import datetime
 from typing import List, Dict, Any
 from pydantic import BaseModel
 
-
-class Evaluation(BaseModel):
-    eval: List[Dict[str, Any]] = []
-    raw_json: str = None
-
 """
 https://docs.pydantic.dev/latest/api/base_model/
 """
@@ -18,4 +13,10 @@ class AOV(BaseModel):
     issuer_id: str
     record_id: str
     contract_id: str
-    evaluations: Evaluation
+    payload: str
+
+class AOVRequest(BaseModel):
+    subject: str
+    issuer_id: str
+    payload: Dict[str, Any]
+    target: str = "self"
