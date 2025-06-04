@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 from fastapi import FastAPI, Request, Body, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
-from aov import AOV, Evaluation
+from aov import AOV, AOVRequest
 from datetime import datetime
 from pathlib import Path
 
@@ -143,7 +143,7 @@ async def init_all_self():
             "attributes": [
                 "vc_id", "valid_since", "subject",
                 "issuer_id", "record_id",
-                "contract_id", "evaluations"
+                "contract_id", "payload"
             ]
         }
     )
@@ -177,7 +177,7 @@ async def init_all_self():
         "issuer_id": "Provider",
         "record_id": str(uuid.uuid4()),
         "contract_id": "contract123",
-        "evaluations": "[]"
+        "payload": "[]"
     }
 
     issue_payload = {
@@ -207,42 +207,23 @@ async def init_all_self():
         "self_cred_def_id": SELF_CRED_DEF_ID
     }
 
-
-def parse_evaluation_comment(comment: str) -> List[Dict[str, Any]]:
-    """
-    "lorem: ipsum ; sit : amet ; dolor: sit amet"
-    -> [{"lorem": "ipsum"}, {"sit": "amet"}, {"dolor": "sit amet"}]
-    """
-    entries = [entry.strip() for entry in comment.split(';') if ':' in entry]
-    parsed = []
-    for entry in entries:
-        try:
-            key, value = [x.strip() for x in entry.split(':', 1)]
-            parsed.append({key: value})
-        except ValueError:
-            continue
-    return parsed
-
 @app.post("/generate_aov")
-async def generate_aov(
-    subject: str = Query(...),
-    issuer_id: str = Query(...),
-    raw_json_format: str = Query(...),
-    evaluation: str = Query(...),
-    target: str = Query("self", enum=["self", "consumer"])
-):
+async def generate_aov(payload: AOVRequest):
     global SELF_CONNECTION_ID, SELF_CRED_DEF_ID
+
+    payload_str = json.dumps(payload.payload, indent=2)
 
     record = AOV(
         vc_id=str(uuid.uuid4()),
         valid_since=datetime.utcnow(),
-        subject=subject,
-        issuer_id=issuer_id,
+        subject=payload.subject,
+        issuer_id=payload.issuer_id,
         record_id=str(uuid.uuid4()),
         contract_id=uuid.uuid4().hex,
-        evaluations=Evaluation(raw_json=raw_json_format, eval=parse_evaluation_comment(evaluation))
+        payload=payload_str
     )
 
+    target = payload.target
     if target not in ["self", f"{PEER_LABEL}"]:
         raise HTTPException(status_code=400, detail="Invalid target")
 
@@ -253,7 +234,6 @@ async def generate_aov(
         cred_def_id = SELF_CRED_DEF_ID
     else:
         conns = requests.get(f"{ADMIN_URL}:{ADMIN_PORT}/connections").json()["results"]
-        
         peer_conn = next((c for c in conns if c["connection_id"] != SELF_CONNECTION_ID), None)
         if not peer_conn:
             raise HTTPException(status_code=400, detail=f"No {PEER_LABEL} connection found")
@@ -273,7 +253,7 @@ async def generate_aov(
         "issuer_id": record.issuer_id,
         "record_id": record.record_id,
         "contract_id": record.contract_id,
-        "evaluations": record.evaluations.json()
+        "payload": record.payload
     }
 
     issue_payload = {
@@ -308,30 +288,82 @@ async def generate_aov(
 
 @app.post("/request_presentation_from_peer")
 async def request_presentation_from_peer():
-    conns = requests.get(f"{ADMIN_URL}:{ADMIN_PORT}/connections").json()["results"]
-    peer_conn = next(
-        (c for c in conns if c["state"] == "active"),
-        None
-    )
-    if not peer_conn:
-        raise HTTPException(status_code=400, detail="No active connection found with peer.")
+    conns = requests.get(f"{ADMIN_URL}:{ADMIN_PORT}/connections").json().get("results", [])
+    consumer_conn = next((c for c in conns if c["state"] == "active" and c.get("their_label","").lower() == PEER_LABEL.lower()), None)
 
-    connection_id = peer_conn["connection_id"]
+    if not consumer_conn:
+        create_inv_resp = requests.post(
+            f"{ADMIN_URL}:{ADMIN_PORT}/out-of-band/create-invitation",
+            json={
+                "handshake_protocols": ["https://didcomm.org/didexchange/1.0"],
+                "use_public_did": False
+            }
+        )
+        if create_inv_resp.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to create invitation on Consumer ACA-Py")
+
+        invitation = create_inv_resp.json().get("invitation")
+        if not invitation:
+            raise HTTPException(status_code=500, detail="No invitation returned by Consumer ACA-Py")
+
+        provider_agent_host = PEER_CONTROLLER_URL.replace("-controller", "-aca-py")
+        provider_admin = f"{provider_agent_host}:{PEER_CONTROLLER_PORT_IN}"
+
+        receive_inv_resp = requests.post(
+            f"{provider_admin}/out-of-band/receive-invitation",
+            json=invitation
+        )
+        if receive_inv_resp.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to send invitation to Provider ACA-Py")
+
+        consumer_active = False
+        for _ in range(15):
+            conns = requests.get(f"{ADMIN_URL}:{ADMIN_PORT}/connections").json().get("results", [])
+            consumer_conn = next((c for c in conns if c["state"] == "active" and c.get("their_label","").lower() == PEER_LABEL.lower()), None)
+            if consumer_conn:
+                consumer_active = True
+                break
+            time.sleep(1)
+
+        if not consumer_active:
+            raise HTTPException(status_code=500, detail="Consumer connection did not become active in time")
+
+    provider_agent_host = PEER_CONTROLLER_URL.replace("-controller", "-aca-py")
+    provider_admin = f"{provider_agent_host}:{PEER_CONTROLLER_PORT_IN}"
+
+    provider_active = False
+    provider_conn = None
+    for _ in range(15):
+        resp = requests.get(f"{provider_admin}/connections")
+        if resp.status_code == 200:
+            prow = resp.json().get("results", [])
+            provider_conn = next((c for c in prow
+                                  if c.get("their_label","").lower() == ADMIN_LABEL.lower()
+                                     and c.get("state") == "active"), None)
+            if provider_conn:
+                provider_active = True
+                break
+        time.sleep(1)
+
+    if not provider_active or not provider_conn:
+        raise HTTPException(status_code=500, detail="Provider connection did not become active in time")
+
+    provider_connection_id = provider_conn.get("connection_id")
 
     pres_request = {
-        "connection_id": connection_id,
+        "connection_id": provider_connection_id,
         "presentation_request": {
             "indy": {
                 "name": "PleasePresentAOV",
                 "version": "1.0",
                 "requested_attributes": {
-                    "attr_subject": {"name": "subject", "restrictions": [{}]},
-                    "attr_issuer_id": {"name": "issuer_id", "restrictions": [{}]},
-                    "attr_vc_id": {"name": "vc_id", "restrictions": [{}]},
-                    "attr_valid_since": {"name": "valid_since", "restrictions": [{}]},
-                    "attr_record_id": {"name": "record_id", "restrictions": [{}]},
-                    "attr_contract_id": {"name": "contract_id", "restrictions": [{}]},
-                    "attr_evaluations": {"name": "evaluations", "restrictions": [{}]}
+                    "attr_subject":    {"name": "subject",       "restrictions": [{}]},
+                    "attr_issuer_id":  {"name": "issuer_id",     "restrictions": [{}]},
+                    "attr_vc_id":      {"name": "vc_id",         "restrictions": [{}]},
+                    "attr_valid_since":{"name": "valid_since",   "restrictions": [{}]},
+                    "attr_record_id":  {"name": "record_id",     "restrictions": [{}]},
+                    "attr_contract_id":{"name": "contract_id",   "restrictions": [{}]},
+                    "attr_payload":    {"name": "payload",       "restrictions": [{}]}
                 },
                 "requested_predicates": {}
             }
@@ -339,15 +371,15 @@ async def request_presentation_from_peer():
     }
 
     resp = requests.post(
-        f"{ADMIN_URL}:{ADMIN_PORT}/present-proof-2.0/send-request",
+        f"{provider_admin}/present-proof-2.0/send-request",
         json=pres_request
     )
     if resp.status_code != 200:
-        raise HTTPException(status_code=500, detail="Failed to send proof request via ACA-Py")
-    
+        raise HTTPException(status_code=500, detail="Failed to send proof request to Provider ACA-Py")
     resp.raise_for_status()
     data = resp.json()
-    return {"message": "Presentation proof received.", "aov": data}
+
+    return {"message": "Presentation request sent to provider.", "aov": data}
     
 @app.get("/request_aov")
 async def request_aov(
@@ -402,7 +434,7 @@ async def present_custom_vc():
                     "attr_valid_since": {"name": "valid_since", "restrictions": [{}]},
                     "attr_record_id": {"name": "record_id", "restrictions": [{}]},
                     "attr_contract_id": {"name": "contract_id", "restrictions": [{}]},
-                    "attr_evaluations": {"name": "evaluations", "restrictions": [{}]}
+                    "attr_payload": {"name": "payload", "restrictions": [{}]}
                 },
                 "requested_predicates": {}
             }

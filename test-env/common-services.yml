@@ -76,6 +76,7 @@ services:
           --auto-respond-credential-offer
           --auto-respond-credential-request
           --auto-respond-presentation-request
+          --auto-verify-presentation
           --genesis-url http://test.bcovrin.vonx.io/genesis
           --seed 0000000000000000000ProviderSeed1
           --ledger-pool-name bcovrin-test
@@ -101,6 +102,7 @@ services:
       --auto-respond-credential-offer
       --auto-respond-credential-request
       --auto-respond-presentation-request
+      --auto-verify-presentation
       --genesis-url http://test.bcovrin.vonx.io/genesis
       --ledger-pool-name bcovrin-test
       --seed 0000000000000000000ConsumerSeed1
