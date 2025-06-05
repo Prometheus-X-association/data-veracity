@@ -11,6 +11,7 @@ dependencies {
     implementation(libs.rabbitmq.amqp.client)
     implementation(libs.rabbitmq.kotlin)
     implementation(libs.slf4j.api)
+    implementation(libs.kotlinx.datetime)
     implementation(project(":dto"))
     implementation(project(":model"))
     implementation(project(":persistence"))

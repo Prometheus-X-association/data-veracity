@@ -9,6 +9,8 @@ import kotlinx.serialization.UseSerializers
 import java.net.URL
 import org.bson.types.ObjectId
 import org.bson.codecs.pojo.annotations.BsonId
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 @Serializable
 data class AttestationRequestDTO(
@@ -22,12 +24,12 @@ data class AttestationRequestDTO(
 
 @Serializable
 data class AttestationRequestDTOMongo(
-  @BsonId
-  val _id: String = ObjectId().toHexString(),
   val id: String?,
   val vlaId: String,
   val data: ByteArray,
   val attesterID: String,
   val callbackURL: String,
   val mapping: Map<String, String>,
+  val successful: Boolean? = null,
+  val date: Instant = Clock.System.now(),
 )
