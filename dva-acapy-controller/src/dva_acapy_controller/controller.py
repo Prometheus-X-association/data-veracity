@@ -383,38 +383,8 @@ async def request_presentation_from_peer():
                 detail="Consumer connection did not become active in time",
             )
 
-    provider_agent_host = PEER_AGENT_URL
-    provider_admin = f"{provider_agent_host}:{PEER_CONTROLLER_PORT_IN}"
-
-    provider_active = False
-    provider_conn = None
-    for _ in range(15):
-        resp = requests.get(f"{provider_admin}/connections")
-        if resp.status_code == 200:
-            prow = resp.json().get("results", [])
-            provider_conn = next(
-                (
-                    c
-                    for c in prow
-                    if c.get("their_label", "").lower() == ADMIN_LABEL.lower()
-                    and c.get("state") == "active"
-                ),
-                None,
-            )
-            if provider_conn:
-                provider_active = True
-                break
-        sleep(1)
-
-    if not provider_active or not provider_conn:
-        raise HTTPException(
-            status_code=500, detail="Provider connection did not become active in time"
-        )
-
-    provider_connection_id = provider_conn.get("connection_id")
-
     pres_request = {
-        "connection_id": provider_connection_id,
+        "connection_id": consumer_conn.get("connection_id"),
         "presentation_request": {
             "indy": {
                 "name": "PleasePresentAOV",
@@ -434,7 +404,7 @@ async def request_presentation_from_peer():
     }
 
     resp = requests.post(
-        f"{provider_admin}/present-proof-2.0/send-request", json=pres_request
+        f"{ADMIN_URL}/present-proof-2.0/send-request", json=pres_request
     )
     if resp.status_code != 200:
         raise HTTPException(
