@@ -6,27 +6,17 @@ services:
       context: ../
       dockerfile: ./dva-jvm/Dockerfile
     init: true
-    environment:
-      DVA_RABBITMQ_HOST: rabbit
     healthcheck:
       test: nc -z localhost 9090
       interval: 5s
       timeout: 5s
       retries: 3
-    depends_on:
-      rabbit:
-        condition: service_healthy
 
   dva-python:
     build:
       context: ../
       dockerfile: ./dva-python/Dockerfile
     init: true
-    environment:
-      DVA_RABBITMQ_HOST: rabbit
-    depends_on:
-      rabbit:
-        condition: service_healthy
 
   rabbit:
     image: rabbitmq:4-management-alpine
@@ -57,53 +47,16 @@ services:
       callback-dummy:
         condition: service_healthy
 
-  dva-provider-side-aca-py:
-      image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.12.6
-      command: >
-          start
-          --inbound-transport http 0.0.0.0 8020
-          --outbound-transport http
-          --admin 0.0.0.0 8031
-          --admin-insecure-mode
-          --webhook-url http://dva-provider-side-controller:8051/webhooks
-          --label Provider
-          --wallet-type askar
-          --wallet-name providerwallet
-          --wallet-key providerskey123
-          --auto-provision
-          --auto-accept-invites
-          --auto-accept-requests
-          --auto-respond-credential-offer
-          --auto-respond-credential-request
-          --auto-respond-presentation-request
-          --auto-verify-presentation
-          --genesis-url http://test.bcovrin.vonx.io/genesis
-          --seed 0000000000000000000ProviderSeed1
-          --ledger-pool-name bcovrin-test
-          --endpoint http://dva-provider-side-aca-py:8020
-
-  dva-consumer-side-aca-py:
+  aca-py:
     image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.12.6
-    command: >
-      start
-      --inbound-transport http 0.0.0.0 8021
-      --outbound-transport http
-      --admin 0.0.0.0 8032
-      --admin-insecure-mode
-      --webhook-url http://dva-consumer-side-controller:8052/webhooks
-      --label Consumer
-      --wallet-type askar
-      --wallet-name consumerwallet
-      --wallet-key consumerskey123
-      --auto-provision
-      --auto-accept-invites
-      --auto-store-credential
-      --auto-accept-requests
-      --auto-respond-credential-offer
-      --auto-respond-credential-request
-      --auto-respond-presentation-request
-      --auto-verify-presentation
-      --genesis-url http://test.bcovrin.vonx.io/genesis
-      --ledger-pool-name bcovrin-test
-      --seed 0000000000000000000ConsumerSeed1
-      --endpoint http://dva-consumer-side-aca-py:8021
+
+  dva-aca-py-controller:
+    build:
+      context: ../
+      dockerfile: ./dva-acapy-controller/Dockerfile
+    init: true
+    healthcheck:
+      test: nc -z localhost 8050
+      interval: 5s
+      timeout: 5s
+      retries: 3

@@ -1,19 +1,3 @@
-from typing import List, Dict, Any
-from fastapi import (
-    FastAPI,
-    Request,
-    Body,
-    HTTPException,
-    Query,
-    WebSocket,
-    WebSocketDisconnect,
-)
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
-from .aov import AOV, AOVRequest
-from datetime import datetime
-from pathlib import Path
-
 import requests
 import json
 import uuid
@@ -22,12 +6,28 @@ import os
 import httpx
 import asyncio
 
+from typing import Dict, Any
+from fastapi import (
+    FastAPI,
+    Request,
+    Body,
+    HTTPException,
+    Query,
+)
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse, HTMLResponse
+from datetime import datetime
+from pathlib import Path
+
+from .aov import AOV, AOVRequest
+
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
 LOG_FILE = "log.json"
 webhook_logs = []
-presentation_queue: asyncio.Queue = asyncio.Queue()
+presentation_queue = asyncio.Queue()
 
 SELF_CONNECTION_ID = None
 SELF_SCHEMA_ID = None
