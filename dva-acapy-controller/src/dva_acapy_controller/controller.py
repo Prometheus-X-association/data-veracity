@@ -47,6 +47,9 @@ SELF_CRED_DEF_ID = None
 async def startup_event():
     print(f"{ADMIN_LABEL} Controller is starting...")
     await presentation_queue.put({"message": "Startup test data!"})
+    print("Starting self initialization...")
+    await init_all_self()
+    print("Self init done!")
 
 
 @app.on_event("shutdown")
