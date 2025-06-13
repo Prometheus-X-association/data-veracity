@@ -1,11 +1,8 @@
-import uuid
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Dict, Any
 from pydantic import BaseModel
 
-"""
-https://docs.pydantic.dev/latest/api/base_model/
-"""
+
 class AOV(BaseModel):
     vc_id: str
     valid_since: datetime
@@ -15,8 +12,10 @@ class AOV(BaseModel):
     contract_id: str
     payload: str
 
+
 class AOVRequest(BaseModel):
     subject: str
     issuer_id: str
     payload: Dict[str, Any]
     target: str = "self"
+
