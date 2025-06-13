@@ -527,8 +527,8 @@ async def present_custom_vc():
     }
 
 
-@app.get("/events/{label}")
-async def events(label: str):
+@app.get("/events/")
+async def events():
     async def event_generator():
         while True:
             try:
@@ -536,8 +536,7 @@ async def events(label: str):
                 event_source = event.get("source")
                 if event_source is None:
                     event_source = ADMIN_LABEL
-                if event_source.lower() == label.lower():
-                    yield f"data: {json.dumps(event)}\n\n"
+                yield f"data: {json.dumps(event)}\n\n"
             except CancelledError:
                 break
 
