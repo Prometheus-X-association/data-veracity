@@ -60,6 +60,19 @@ services:
       timeout: 5s
       retries: 3
 
+
+  dashboard-backend:
+    build:
+      context: ../../dashboard-backend
+      dockerfile: Dockerfile
+    environment:
+      MONGO_URL: mongodb://mongo:27017/dva
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - 3000:3000
+
   karate:
     build: karate/
     volumes:
