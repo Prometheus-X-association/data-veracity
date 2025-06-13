@@ -2,6 +2,8 @@ FROM python:3.12-slim AS build
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:0.5 /uv /uvx /bin/
+# Install netcat for healthcheck
+RUN apt-get update && apt-get install -y netcat-openbsd
 
 # Set working directory
 WORKDIR /app/
