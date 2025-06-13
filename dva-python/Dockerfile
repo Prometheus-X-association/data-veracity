@@ -31,6 +31,9 @@ RUN \
 # ----------------------------------------------------------------
 FROM python:3.12-slim
 
+# Install netcat for healthcheck
+RUN apt-get update && apt-get install -y netcat-openbsd
+
 # Copy built project
 COPY --from=build --chown=app:app /app/.venv/ /app/.venv/
 
