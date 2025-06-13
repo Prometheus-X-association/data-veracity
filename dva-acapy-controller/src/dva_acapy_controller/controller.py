@@ -1,12 +1,16 @@
 import requests
 import json
-import uuid
-import time
-import os
-import httpx
-import asyncio
 
+from asyncio import Queue, CancelledError
+from datetime import datetime
+from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from httpx import AsyncClient
+from pathlib import Path
+from time import sleep
 from typing import Dict, Any
+from uuid import uuid4
+
 from fastapi import (
     FastAPI,
     Request,
@@ -14,48 +18,29 @@ from fastapi import (
     HTTPException,
     Query,
 )
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import StreamingResponse, HTMLResponse
-from datetime import datetime
-from pathlib import Path
 
 from .aov import AOV, AOVRequest
+from .config import (
+    ADMIN_URL,
+    ADMIN_LABEL,
+    PEER_AGENT_URL,
+    PEER_CONTROLLER_URL,
+    PEER_CONTROLLER_PORT_IN,
+    PEER_CONTROLLER_PORT_OUT,
+    PEER_LABEL,
+    LOG_FILE,
+)
 
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
-LOG_FILE = "log.json"
 webhook_logs = []
-presentation_queue = asyncio.Queue()
+presentation_queue = Queue()
 
 SELF_CONNECTION_ID = None
 SELF_SCHEMA_ID = None
 SELF_CRED_DEF_ID = None
-
-ADMIN_STATIC_PAGE = os.getenv(
-    "ADMIN_STATIC_PAGE", "index.html"
-)  # provider index.html, consumer index_consumer.html
-ADMIN_URL = os.getenv(
-    "ADMIN_URL"
-)  # provider http://dva-provider-side-aca-py, consumer http://dva-consumer-side-aca-py
-ADMIN_LABEL = os.getenv("ADMIN_LABEL")  # provider, consumer
-ADMIN_PORT = os.getenv("ADMIN_PORT", "8031")  # provider 8031, consumer 8032
-ADMIN_INBOUND = os.getenv("ADMIN_INBOUND", "8020")  # provider 8020, consumer 8021
-CONTROLLER_PORT_IN = os.getenv("CONTROLLER_PORT_IN")  # provider 8051, consumer 8052
-CONTROLLER_PORT_OUT = os.getenv("CONTROLLER_PORT_OUT")  # provider 8051, consumer 8052
-
-PEER_AGENT_URL = os.getenv("PEER_AGENT_URL")
-PEER_CONTROLLER_URL = os.getenv(
-    "PEER_CONTROLLER_URL"
-)  # provider http://dva-consumer-side-aca-py, consumer http://dva-provider-side-aca-py
-PEER_CONTROLLER_PORT_IN = os.getenv(
-    "PEER_CONTROLLER_PORT_IN"
-)  # consumer 8032, provider 8031
-PEER_CONTROLLER_PORT_OUT = os.getenv(
-    "PEER_CONTROLLER_PORT_OUT"
-)  # consumer 8052, provider 8051
-PEER_LABEL = os.getenv("PEER_LABEL")  # consumer, provider
 
 
 @app.on_event("startup")
@@ -67,7 +52,6 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     print(f"{ADMIN_LABEL} Controller is shutting down...")
-
     if webhook_logs:
         with open("log_human_readable.json", "w") as f:
             json.dump(webhook_logs, f, indent=2)
@@ -75,7 +59,7 @@ async def shutdown_event():
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    html = Path(f"static/{ADMIN_STATIC_PAGE}").read_text(encoding="utf-8")
+    html = Path("static/index.html").read_text(encoding="utf-8")
     return HTMLResponse(content=html)
 
 
@@ -86,7 +70,7 @@ def wait_until_connection_active(admin_url, conn_id, timeout=10):
         conn = next((c for c in conns if c["connection_id"] == conn_id), None)
         if conn and conn["state"] == "active":
             return True
-        time.sleep(1)
+        sleep(1)
     return False
 
 
@@ -97,7 +81,6 @@ async def webhook_listener(topic: str, request: Request):
     webhook_logs.append({"topic": topic, "data": data})
     with open(LOG_FILE, "w") as f:
         json.dump(webhook_logs, f, indent=2)
-
     await presentation_queue.put(data)
     print(f"Webhook received on topic: {topic}")
     return {"status": "received"}
@@ -119,10 +102,8 @@ async def handle_presentation_webhook(request: Request):
 @app.get("/connections/self")
 async def get_self_connection():
     global SELF_CONNECTION_ID
-
     if not SELF_CONNECTION_ID:
         return {"error": "Self-connection not initialized."}
-
     return {"self_connection_id": SELF_CONNECTION_ID}
 
 
@@ -132,7 +113,7 @@ async def init_all_self():
 
     # Step 1: Create Invitation for self-connection
     invitation_resp = requests.post(
-        f"{ADMIN_URL}:{ADMIN_PORT}/out-of-band/create-invitation",
+        f"{ADMIN_URL}/out-of-band/create-invitation",
         json={
             "handshake_protocols": ["https://didcomm.org/didexchange/1.0"],
             "use_public_did": False,
@@ -148,7 +129,8 @@ async def init_all_self():
 
     # Step 2: Receive own invitation
     receive_resp = requests.post(
-        f"{ADMIN_URL}:{ADMIN_PORT}/out-of-band/receive-invitation", json=invitation
+        f"{ADMIN_URL}/out-of-band/receive-invitation",
+        json=invitation,
     )
     if receive_resp.status_code != 200:
         return {
@@ -159,16 +141,16 @@ async def init_all_self():
     conn_id = receive_resp.json()["connection_id"]
 
     # Step 3: Wait until connection is active
-    if not wait_until_connection_active(f"{ADMIN_URL}:{ADMIN_PORT}", conn_id):
+    if not wait_until_connection_active(f"{ADMIN_URL}/", conn_id):
         return {"error": "Self connection did not become active"}
 
     SELF_CONNECTION_ID = conn_id
 
     # Step 4: Create Self-Identity Schema
     schema_resp = requests.post(
-        f"{ADMIN_URL}:{ADMIN_PORT}/schemas",
+        f"{ADMIN_URL}/schemas",
         json={
-            "schema_name": f"Self-Identity-{uuid.uuid4().hex[:6]}",
+            "schema_name": f"Self-Identity-{uuid4().hex[:6]}",
             "schema_version": "1.0",
             "attributes": [
                 "vc_id",
@@ -191,7 +173,7 @@ async def init_all_self():
 
     # Step 5: Create Credential Definition
     cred_def_resp = requests.post(
-        f"{ADMIN_URL}:{ADMIN_PORT}/credential-definitions",
+        f"{ADMIN_URL}/credential-definitions",
         json={
             "schema_id": SELF_SCHEMA_ID,
             "support_revocation": False,
@@ -206,16 +188,16 @@ async def init_all_self():
 
     SELF_CRED_DEF_ID = cred_def_resp.json().get("credential_definition_id")
 
-    with open("cred_def.txt", "w") as f:
+    with open("cred_def.json", "w") as f:
         json.dump({"cred_def_id": SELF_CRED_DEF_ID}, f)
 
     # Step 6: Self-Issue Credential to Own Wallet
     cred_attrs = {
-        "vc_id": str(uuid.uuid4()),
+        "vc_id": str(uuid4()),
         "valid_since": datetime.utcnow().isoformat(),
         "subject": "Provider Subject",
         "issuer_id": "Provider",
-        "record_id": str(uuid.uuid4()),
+        "record_id": str(uuid4()),
         "contract_id": "contract123",
         "payload": "[]",
     }
@@ -230,10 +212,13 @@ async def init_all_self():
     }
 
     issue_resp = requests.post(
-        f"{ADMIN_URL}:{ADMIN_PORT}/issue-credential-2.0/send-offer", json=issue_payload
+        f"{ADMIN_URL}/issue-credential-2.0/send-offer", json=issue_payload
     )
     if issue_resp.status_code != 200:
-        return {"error": "Failed to self-issue credential", "details": issue_resp.text}
+        return {
+            "error": "Failed to self-issue credential",
+            "details": issue_resp.text,
+        }
 
     return {
         "message": "Self-connection, schema, credential definition, and self-credential issued successfully.",
@@ -250,17 +235,17 @@ async def generate_aov(payload: AOVRequest):
     payload_str = json.dumps(payload.payload, indent=2)
 
     record = AOV(
-        vc_id=str(uuid.uuid4()),
+        vc_id=str(uuid4()),
         valid_since=datetime.utcnow(),
         subject=payload.subject,
         issuer_id=payload.issuer_id,
-        record_id=str(uuid.uuid4()),
-        contract_id=uuid.uuid4().hex,
+        record_id=str(uuid4()),
+        contract_id=uuid4().hex,
         payload=payload_str,
     )
 
     target = payload.target
-    if target not in ["self", f"{PEER_LABEL}"]:
+    if target not in ["self", PEER_LABEL]:
         raise HTTPException(status_code=400, detail="Invalid target")
 
     if target == "self":
@@ -272,9 +257,10 @@ async def generate_aov(payload: AOVRequest):
         connection_id = SELF_CONNECTION_ID
         cred_def_id = SELF_CRED_DEF_ID
     else:
-        conns = requests.get(f"{ADMIN_URL}:{ADMIN_PORT}/connections").json()["results"]
+        conns = requests.get(f"{ADMIN_URL}/connections").json()["results"]
         peer_conn = next(
-            (c for c in conns if c["connection_id"] != SELF_CONNECTION_ID), None
+            (c for c in conns if c["connection_id"] != SELF_CONNECTION_ID),
+            None,
         )
         if not peer_conn:
             raise HTTPException(
@@ -311,8 +297,9 @@ async def generate_aov(payload: AOVRequest):
     }
 
     issue_resp = requests.post(
-        f"{ADMIN_URL}:{ADMIN_PORT}/issue-credential-2.0/send", json=issue_payload
+        f"{ADMIN_URL}/issue-credential-2.0/send", json=issue_payload
     )
+    print(f"Issue response: {issue_resp}")
 
     if issue_resp.status_code != 200:
         return {"error": "Credential issue failed", "details": issue_resp.text}
@@ -332,9 +319,7 @@ async def generate_aov(payload: AOVRequest):
 
 @app.post("/request_presentation_from_peer")
 async def request_presentation_from_peer():
-    conns = (
-        requests.get(f"{ADMIN_URL}:{ADMIN_PORT}/connections").json().get("results", [])
-    )
+    conns = requests.get(f"{ADMIN_URL}/connections").json().get("results", [])
     consumer_conn = next(
         (
             c
@@ -347,7 +332,7 @@ async def request_presentation_from_peer():
 
     if not consumer_conn:
         create_inv_resp = requests.post(
-            f"{ADMIN_URL}:{ADMIN_PORT}/out-of-band/create-invitation",
+            f"{ADMIN_URL}/out-of-band/create-invitation",
             json={
                 "handshake_protocols": ["https://didcomm.org/didexchange/1.0"],
                 "use_public_did": False,
@@ -377,11 +362,7 @@ async def request_presentation_from_peer():
 
         consumer_active = False
         for _ in range(15):
-            conns = (
-                requests.get(f"{ADMIN_URL}:{ADMIN_PORT}/connections")
-                .json()
-                .get("results", [])
-            )
+            conns = requests.get(f"{ADMIN_URL}/connections").json().get("results", [])
             consumer_conn = next(
                 (
                     c
@@ -394,7 +375,7 @@ async def request_presentation_from_peer():
             if consumer_conn:
                 consumer_active = True
                 break
-            time.sleep(1)
+            sleep(1)
 
         if not consumer_active:
             raise HTTPException(
@@ -423,7 +404,7 @@ async def request_presentation_from_peer():
             if provider_conn:
                 provider_active = True
                 break
-        time.sleep(1)
+        sleep(1)
 
     if not provider_active or not provider_conn:
         raise HTTPException(
@@ -477,7 +458,7 @@ async def request_aov(
         "comment": comment,
         "target": f"{PEER_LABEL}",
     }
-    async with httpx.AsyncClient() as client:
+    async with AsyncClient() as client:
         resp = await client.post(
             f"{PEER_CONTROLLER_URL}:{PEER_CONTROLLER_PORT_OUT}/generate_aov",
             params=params,
@@ -501,7 +482,7 @@ async def receive_aov(aov: Dict[str, Any] = Body(...)):
 @app.post("/present_aov")
 async def present_custom_vc():
     # Search for active connection to consumer
-    conns = requests.get(f"{ADMIN_URL}:{ADMIN_PORT}/connections").json()["results"]
+    conns = requests.get(f"{ADMIN_URL}/connections").json()["results"]
     peer_conn = next((c for c in conns if c["state"] == "active"), None)
     if not peer_conn:
         raise HTTPException(
@@ -533,7 +514,7 @@ async def present_custom_vc():
     }
 
     resp = requests.post(
-        f"{ADMIN_URL}:{ADMIN_PORT}/present-proof-2.0/send-request", json=pres_request
+        f"{ADMIN_URL}/present-proof-2.0/send-request", json=pres_request
     )
     if resp.status_code != 200:
         raise HTTPException(
@@ -557,7 +538,7 @@ async def events(label: str):
                     event_source = ADMIN_LABEL
                 if event_source.lower() == label.lower():
                     yield f"data: {json.dumps(event)}\n\n"
-            except asyncio.CancelledError:
+            except CancelledError:
                 break
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

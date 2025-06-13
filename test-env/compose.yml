@@ -146,10 +146,8 @@ services:
       service: dva-aca-py-controller
     environment:
       PYTHONUNBUFFERED: 1
-      ADMIN_URL: http://aca-py-provider
+      ADMIN_URL: http://aca-py-provider:8030
       ADMIN_LABEL: provider
-      ADMIN_PORT: 8030
-      ADMIN_STATIC_PAGE: index.html
       PEER_CONTROLLER_URL: http://dva-aca-py-controller-consumer
       PEER_AGENT_URL: http://aca-py-consumer
       PEER_LABEL: consumer
@@ -166,10 +164,8 @@ services:
       service: dva-aca-py-controller
     environment:
       PYTHONUNBUFFERED: 1
-      ADMIN_URL: http://aca-py-consumer
+      ADMIN_URL: http://aca-py-consumer:8030
       ADMIN_LABEL: consumer
-      ADMIN_PORT: 8030
-      ADMIN_STATIC_PAGE: index.html
       PEER_CONTROLLER_URL: http://dva-aca-py-controller-provider
       PEER_AGENT_URL: http://aca-py-provider
       PEER_LABEL: provider
