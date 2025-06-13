@@ -6,7 +6,7 @@
 
 <style>
   body {
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
     padding: 2rem;
     background-color: #f9f9f9;
   }
@@ -14,9 +14,12 @@
   h1 {
     color: #333;
     margin-bottom: 1rem;
+    margin-left: auto;
+    margin-right: auto;
   }
 
-  .events {
+  #events {
+    font-family: monospace;
     background-color: #fff;
     border: 1px solid #ccc;
     padding: 1rem;
@@ -26,53 +29,31 @@
     white-space: pre-wrap;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
-
-  .events::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .events::-webkit-scrollbar-thumb {
-    background-color: #ccc;
-    border-radius: 4px;
-  }
 </style>
 
-<h1>DVA ACA-Py Controller -- Real-Time Events</h1>
+<h1>DVA ACA-Py Controller – Real-Time Event Log</h1>
 
-<h2>Provider-Side Events</h2>
-<div class=events id="events-provider">Listening for events...</div>
+<div id="events">
+  Listening for events…
 
-<h2>Consumer-Side Events</h2>
-<div class=events id="events-consumer">Listening for events...</div>
+
+</div>
 
 <script>
-  const eventsDivProvider = document.getElementById("events-provider");
-  const eventSourceProvider = new EventSource("/events/provider");
+  const eventsDiv = document.getElementById("events")
+  const eventSource = new EventSource("/events/")
 
-  const eventsDivConsumer = document.getElementById("events-consumer");
-  const eventSourceConsumer = new EventSource("/events/consumer");
+  eventSource.onmessage = (event) => {
+    const data = JSON.parse(event.data)
+    const time = new Date().toISOString()
+    eventsDiv.textContent += `[${time}] ${JSON.stringify(data, null, 2)}\n--------------------------------\n`
+    eventsDiv.scrollTop = eventsDiv.scrollHeight
+  }
 
-  eventSourceProvider.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    const time = new Date().toLocaleTimeString();
-    eventsDivProvider.textContent += `[${time}] ${JSON.stringify(data, null, 2)}\n\n`;
-    eventsDivProvider.scrollTop = eventsDivProvider.scrollHeight;
-  };
-  eventSourceProvider.onerror = function(err) {
-      console.error("EventSource failed:", err);
-      eventsDivProvider.textContent += "\n\n[Error] Lost connection to server.";
-  };
-
-  eventSourceConsumer.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    const time = new Date().toLocaleTimeString();
-    eventsDivConsumer.textContent += `[${time}] ${JSON.stringify(data, null, 2)}\n\n`;
-    eventsDivConsumer.scrollTop = eventsDivConsumer.scrollHeight;
-  };
-  eventSourceConsumer.onerror = function(err) {
-      console.error("EventSource failed:", err);
-      eventsDivConsumer.textContent += "\n\n[Error] Lost connection to server.";
-  };
+  eventSource.onerror = function(err) {
+      console.error('EventSource failed:', err)
+      eventsDiv.textContent += '\n\n[Error] Lost connection to server'
+  }
 </script>
 
 </html>
