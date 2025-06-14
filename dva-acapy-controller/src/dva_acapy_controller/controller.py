@@ -19,7 +19,7 @@ from fastapi import (
     Query,
 )
 
-from .aov import AOV, AOVRequest
+from .aov import AOV, AOVRequest, AoVPresentationRequest
 from .config import (
     ADMIN_URL,
     ADMIN_LABEL,
@@ -162,6 +162,7 @@ async def init_all_self():
                 "issuer_id",
                 "record_id",
                 "contract_id",
+                "data_exchange_id",
                 "payload",
             ],
         },
@@ -202,6 +203,7 @@ async def init_all_self():
         "issuer_id": "Provider",
         "record_id": str(uuid4()),
         "contract_id": "contract123",
+        "data_exchange_id": "xchg123",
         "payload": "[]",
     }
 
@@ -244,6 +246,7 @@ async def generate_aov(payload: AOVRequest):
         issuer_id=payload.issuer_id,
         record_id=str(uuid4()),
         contract_id=uuid4().hex,
+        data_exchange_id=uuid4().hex,
         payload=payload_str,
     )
 
@@ -287,6 +290,7 @@ async def generate_aov(payload: AOVRequest):
         "issuer_id": record.issuer_id,
         "record_id": record.record_id,
         "contract_id": record.contract_id,
+        "data_exchange_id": record.data_exchange_id,
         "payload": record.payload,
     }
 
@@ -321,76 +325,65 @@ async def generate_aov(payload: AOVRequest):
 
 
 @app.post("/request_presentation_from_peer")
-async def request_presentation_from_peer():
-    conns = requests.get(f"{ADMIN_URL}/connections").json().get("results", [])
-    consumer_conn = next(
-        (
-            c
-            for c in conns
-            if c["state"] == "active"
-            and c.get("their_label", "").lower() == PEER_LABEL.lower()
-        ),
-        None,
+async def request_presentation_from_peer(payload: AoVPresentationRequest):
+    create_inv_resp = requests.post(
+        f"{ADMIN_URL}/out-of-band/create-invitation",
+        json={
+            "handshake_protocols": ["https://didcomm.org/didexchange/1.0"],
+            "use_public_did": False,
+        },
     )
-
-    if not consumer_conn:
-        create_inv_resp = requests.post(
-            f"{ADMIN_URL}/out-of-band/create-invitation",
-            json={
-                "handshake_protocols": ["https://didcomm.org/didexchange/1.0"],
-                "use_public_did": False,
-            },
+    if create_inv_resp.status_code != 200:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create OOB invitation for attester",
         )
-        if create_inv_resp.status_code != 200:
-            raise HTTPException(
-                status_code=500, detail="Failed to create invitation on Consumer ACA-Py"
-            )
 
-        invitation = create_inv_resp.json().get("invitation")
-        if not invitation:
-            raise HTTPException(
-                status_code=500, detail="No invitation returned by Consumer ACA-Py"
-            )
-
-        provider_agent_host = PEER_AGENT_URL
-        provider_admin = f"{provider_agent_host}:{PEER_CONTROLLER_PORT_IN}"
-
-        receive_inv_resp = requests.post(
-            f"{provider_admin}/out-of-band/receive-invitation", json=invitation
+    invitation = create_inv_resp.json().get("invitation")
+    if not invitation:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create OOB invitation for attester",
         )
-        if receive_inv_resp.status_code != 200:
-            raise HTTPException(
-                status_code=500, detail="Failed to send invitation to Provider ACA-Py"
-            )
 
-        consumer_active = False
-        for _ in range(15):
-            conns = requests.get(f"{ADMIN_URL}/connections").json().get("results", [])
-            consumer_conn = next(
-                (
-                    c
-                    for c in conns
-                    if c["state"] == "active"
-                    and c.get("their_label", "").lower() == PEER_LABEL.lower()
-                ),
-                None,
-            )
-            if consumer_conn:
-                consumer_active = True
-                break
-            sleep(1)
+    receive_inv_resp = requests.post(
+        f"{payload.attesterAgentURL}/out-of-band/receive-invitation",
+        json=invitation,
+    )
+    if receive_inv_resp.status_code != 200:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to send invitation OOB invitation to attester",
+        )
 
-        if not consumer_active:
-            raise HTTPException(
-                status_code=500,
-                detail="Consumer connection did not become active in time",
-            )
+    is_active = False
+    for _ in range(15):
+        conns = requests.get(f"{ADMIN_URL}/connections").json().get("results", [])
+        attester_conn = next(
+            (
+                c
+                for c in conns
+                if c["state"] == "active"
+                and c.get("their_label", "").lower() == payload.attesterLabel
+            ),
+            None,
+        )
+        if attester_conn:
+            is_active = True
+            break
+        sleep(1)
+
+    if not is_active:
+        raise HTTPException(
+            status_code=500,
+            detail="Connection to attester timed out",
+        )
 
     pres_request = {
-        "connection_id": consumer_conn.get("connection_id"),
+        "connection_id": attester_conn.get("connection_id"),
         "presentation_request": {
             "indy": {
-                "name": "PleasePresentAOV",
+                "name": "AoVPresentationRequest",
                 "version": "1.0",
                 "requested_attributes": {
                     "attr_subject": {"name": "subject", "restrictions": [{}]},
@@ -399,24 +392,35 @@ async def request_presentation_from_peer():
                     "attr_valid_since": {"name": "valid_since", "restrictions": [{}]},
                     "attr_record_id": {"name": "record_id", "restrictions": [{}]},
                     "attr_contract_id": {"name": "contract_id", "restrictions": [{}]},
+                    "attr_data_exchange_id": {
+                        "name": "data_exchange_id",
+                        "restrictions": [
+                            {"attr::data_exchange_id::value": payload.dataExchangeId},
+                        ],
+                    },
                     "attr_payload": {"name": "payload", "restrictions": [{}]},
                 },
                 "requested_predicates": {},
-            }
+            },
         },
     }
 
     resp = requests.post(
-        f"{ADMIN_URL}/present-proof-2.0/send-request", json=pres_request
+        f"{ADMIN_URL}/present-proof-2.0/send-request",
+        json=pres_request,
     )
     if resp.status_code != 200:
         raise HTTPException(
-            status_code=500, detail="Failed to send proof request to Provider ACA-Py"
+            status_code=500,
+            detail="Failed to send AoV presentation request to attester",
         )
     resp.raise_for_status()
     data = resp.json()
 
-    return {"message": "Presentation request sent to provider.", "aov": data}
+    return {
+        "message": "Presentation request sent to attester",
+        "aov": data,
+    }
 
 
 @app.get("/request_aov")
@@ -479,6 +483,10 @@ async def present_custom_vc():
                     "attr_valid_since": {"name": "valid_since", "restrictions": [{}]},
                     "attr_record_id": {"name": "record_id", "restrictions": [{}]},
                     "attr_contract_id": {"name": "contract_id", "restrictions": [{}]},
+                    "attr_data_exchange_id": {
+                        "name": "data_exchange_id",
+                        "restrictions": [{}],
+                    },
                     "attr_payload": {"name": "payload", "restrictions": [{}]},
                 },
                 "requested_predicates": {},

@@ -10,6 +10,7 @@ class AOV(BaseModel):
     issuer_id: str
     record_id: str
     contract_id: str
+    data_exchange_id: str
     payload: str
 
 
@@ -19,3 +20,8 @@ class AOVRequest(BaseModel):
     payload: Dict[str, Any]
     target: str = "self"
 
+
+class AoVPresentationRequest(BaseModel):
+    dataExchangeId: str
+    attesterLabel: str
+    attesterAgentURL: str
