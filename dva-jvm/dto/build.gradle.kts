@@ -6,6 +6,7 @@ plugins {
 dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.bson)
+  implementation(libs.kotlinx.datetime)
 
   api(project(":model"))
 }

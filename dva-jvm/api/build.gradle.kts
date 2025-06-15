@@ -8,6 +8,7 @@ dependencies {
     implementation(libs.bundles.ktor.server)
     implementation(libs.bundles.logging)
     implementation(libs.bundles.mongo)
+    implementation(libs.kotlinx.datetime)
     implementation(libs.ktor.server.html.builder)
     implementation(libs.rabbitmq.amqp.client)
     implementation(libs.rabbitmq.kotlin)
