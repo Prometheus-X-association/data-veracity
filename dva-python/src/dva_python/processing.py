@@ -1,6 +1,7 @@
 import json
 
 from pydantic import BaseModel, PositiveInt
+from pymongo import MongoClient, PyMongoError
 from typing import Any
 
 from .log import get_logger
@@ -30,6 +31,10 @@ def handle_aov_request(req: AoVRequest) -> AoVGenerationRequest:
     data_string = data_bytes.decode(encoding="utf-8")
     logger.debug(f"Data in request: {data_string}", request_data=data_string)
 
+    mongo_client = MongoClient("mongodb://mongo:27017")
+    db = mongo_client["dva"]
+    collection = db["requests"]
+
     mapping = req.mapping
 
     contract = req.contract
@@ -41,6 +46,13 @@ def handle_aov_request(req: AoVRequest) -> AoVGenerationRequest:
             logger.info("Successful validation", results=results_dict)
         else:
             logger.warning("Failed validation", results=results_dict)
+
+        try:
+            collection.update_one(
+                {"id": req.id}, {"$set": {"successful": results["success"]}}
+            )
+        except PyMongoError as mongo_err:
+            logger.error(f"error: {mongo_err} when tried to save success")
 
         return AoVGenerationRequest(
             subject=contract["dataProvider"],
