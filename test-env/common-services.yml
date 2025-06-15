@@ -30,8 +30,6 @@ services:
 
   mongo:
     image: mongo:8.0.9
-    volumes:
-      - ./init-mongo:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: >
         echo 'db.runCommand("ping").ok'
