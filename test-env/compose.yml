@@ -7,6 +7,7 @@ services:
       service: dva-jvm
     environment:
       DVA_RABBITMQ_HOST: rabbit-provider
+      DVA_MONGODB_HOST: mongo-provider
     command: api
     ports: [9091:9090]
     depends_on:
@@ -21,6 +22,7 @@ services:
       service: dva-jvm
     environment:
       DVA_RABBITMQ_HOST: rabbit-consumer
+      DVA_MONGODB_HOST: mongo-consumer
     command: api
     ports: [9092:9090]
     depends_on:
@@ -36,6 +38,7 @@ services:
       service: dva-python
     environment:
       DVA_RABBITMQ_HOST: rabbit-provider
+      DVA_MONGODB_URL: mongodb://mongo-provider:27017
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-provider:8050
     depends_on:
       rabbit-consumer:
@@ -49,6 +52,7 @@ services:
       service: dva-python
     environment:
       DVA_RABBITMQ_HOST: rabbit-consumer
+      DVA_MONGODB_URL: mongodb://mongo-consumer:27017
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-consumer:8050
     depends_on:
       rabbit-consumer:
@@ -179,6 +183,7 @@ services:
       PEER_LABEL: consumer
       PEER_CONTROLLER_PORT_IN: 8030
       PEER_CONTROLLER_PORT_OUT: 8050
+      DVA_MONGODB_URL: mongodb://mongo-provider:27017
     ports: [8051:8050]
     depends_on:
       aca-py-provider:
@@ -199,6 +204,7 @@ services:
       PEER_LABEL: provider
       PEER_CONTROLLER_PORT_IN: 8030
       PEER_CONTROLLER_PORT_OUT: 8050
+      DVA_MONGODB_URL: mongodb://mongo-provider:27017
     ports: [8052:8050]
     depends_on:
       aca-py-consumer:
