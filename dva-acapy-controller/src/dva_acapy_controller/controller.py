@@ -5,31 +5,45 @@ from asyncio import Queue, CancelledError
 from datetime import datetime
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from httpx import AsyncClient
 from pathlib import Path
+from pydantic import BaseModel
 from time import sleep
 from typing import Dict, Any
 from uuid import uuid4
+from fastapi import FastAPI, Request, HTTPException
 
-from fastapi import (
-    FastAPI,
-    Request,
-    Body,
-    HTTPException,
-    Query,
-)
-
-from .aov import AOV, AOVRequest, AoVPresentationRequest
 from .config import (
     ADMIN_URL,
     ADMIN_LABEL,
-    PEER_AGENT_URL,
     PEER_CONTROLLER_URL,
-    PEER_CONTROLLER_PORT_IN,
     PEER_CONTROLLER_PORT_OUT,
     PEER_LABEL,
     LOG_FILE,
 )
+
+
+class AOV(BaseModel):
+    vc_id: str
+    valid_since: datetime
+    subject: str
+    issuer_id: str
+    record_id: str
+    contract_id: str
+    data_exchange_id: str
+    payload: str
+
+
+class AOVRequest(BaseModel):
+    subject: str
+    issuer_id: str
+    payload: Dict[str, Any]
+    target: str = "self"
+
+
+class AoVPresentationRequest(BaseModel):
+    dataExchangeId: str
+    attesterLabel: str
+    attesterAgentURL: str
 
 
 app = FastAPI()
@@ -418,91 +432,6 @@ async def request_presentation_from_peer(payload: AoVPresentationRequest):
     return {
         "message": "Presentation request sent to attester",
         "aov": data,
-    }
-
-
-@app.get("/request_aov")
-async def request_aov(
-    subject: str = Query("{ADMIN_LABEL} App"),
-    issuer_id: str = Query(f"{ADMIN_LABEL}"),
-    comment: str = Query("Requested dynamically"),
-):
-    params = {
-        "subject": subject,
-        "issuer_id": issuer_id,
-        "comment": comment,
-        "target": f"{PEER_LABEL}",
-    }
-    async with AsyncClient() as client:
-        resp = await client.post(
-            f"{PEER_CONTROLLER_URL}:{PEER_CONTROLLER_PORT_OUT}/generate_aov",
-            params=params,
-            timeout=10.0,
-        )
-    resp.raise_for_status()
-    data = resp.json()
-    vc = data.get("credential_data", {})
-    await presentation_queue.put(vc)
-    return {"received_vc": vc}
-
-
-@app.post("/receive_aov")
-async def receive_aov(aov: Dict[str, Any] = Body(...)):
-    print("Received AOV from consumer:")
-    print(json.dumps(aov, indent=2))
-
-    return {"message": "AOV received by provider", "aov": aov}
-
-
-@app.post("/present_aov")
-async def present_custom_vc():
-    # Search for active connection to consumer
-    conns = requests.get(f"{ADMIN_URL}/connections").json()["results"]
-    peer_conn = next((c for c in conns if c["state"] == "active"), None)
-    if not peer_conn:
-        raise HTTPException(
-            status_code=400,
-            detail=f"No active connection found with peer '{PEER_LABEL}'.",
-        )
-
-    connection_id = peer_conn["connection_id"]
-
-    # Build presentation request with restrictions
-    pres_request = {
-        "connection_id": connection_id,
-        "presentation_request": {
-            "indy": {
-                "name": "PleasePresentAOV",
-                "version": "1.0",
-                "requested_attributes": {
-                    "attr_subject": {"name": "subject", "restrictions": [{}]},
-                    "attr_issuer_id": {"name": "issuer_id", "restrictions": [{}]},
-                    "attr_vc_id": {"name": "vc_id", "restrictions": [{}]},
-                    "attr_valid_since": {"name": "valid_since", "restrictions": [{}]},
-                    "attr_record_id": {"name": "record_id", "restrictions": [{}]},
-                    "attr_contract_id": {"name": "contract_id", "restrictions": [{}]},
-                    "attr_data_exchange_id": {
-                        "name": "data_exchange_id",
-                        "restrictions": [{}],
-                    },
-                    "attr_payload": {"name": "payload", "restrictions": [{}]},
-                },
-                "requested_predicates": {},
-            }
-        },
-    }
-
-    resp = requests.post(
-        f"{ADMIN_URL}/present-proof-2.0/send-request", json=pres_request
-    )
-    if resp.status_code != 200:
-        raise HTTPException(
-            status_code=500, detail="Failed to send proof request via ACA-Py"
-        )
-
-    return {
-        "message": "Presentation request sent from provider to consumer.",
-        "connection_id": connection_id,
     }
 
 
