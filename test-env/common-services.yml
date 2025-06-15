@@ -6,27 +6,17 @@ services:
       context: ../
       dockerfile: ./dva-jvm/Dockerfile
     init: true
-    environment:
-      DVA_RABBITMQ_HOST: rabbit
     healthcheck:
       test: nc -z localhost 9090
       interval: 5s
       timeout: 5s
       retries: 3
-    depends_on:
-      rabbit:
-        condition: service_healthy
 
   dva-python:
     build:
       context: ../
       dockerfile: ./dva-python/Dockerfile
     init: true
-    environment:
-      DVA_RABBITMQ_HOST: rabbit
-    depends_on:
-      rabbit:
-        condition: service_healthy
 
   rabbit:
     image: rabbitmq:4-management-alpine
@@ -56,3 +46,17 @@ services:
         condition: service_healthy
       callback-dummy:
         condition: service_healthy
+
+  aca-py:
+    image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.12.6
+
+  dva-aca-py-controller:
+    build:
+      context: ../
+      dockerfile: ./dva-acapy-controller/Dockerfile
+    init: true
+    healthcheck:
+      test: nc -z localhost 8050
+      interval: 5s
+      timeout: 5s
+      retries: 3

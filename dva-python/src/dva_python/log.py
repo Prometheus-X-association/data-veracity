@@ -13,7 +13,7 @@ def setup_logging():
     shared_processors = [
         add_log_level,
         StackInfoRenderer(),
-        TimeStamper(fmt='iso'),
+        TimeStamper(fmt="iso"),
     ]
 
     if stderr.isatty():
@@ -24,7 +24,9 @@ def setup_logging():
     structlog.configure(
         processors=processors,
         context_class=dict,
-        wrapper_class=make_filtering_bound_logger(
-            dva_python.config.LOG_LEVEL
-        ),
+        wrapper_class=make_filtering_bound_logger(dva_python.config.LOG_LEVEL),
     )
+
+
+def get_logger():
+    return structlog.get_logger()

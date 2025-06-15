@@ -1,16 +1,11 @@
-import json
 import requests
 import sys
-import uuid
-
-from datetime import datetime
 
 from pika import BlockingConnection, ConnectionParameters
-from structlog import get_logger
 
-from .serialization import parse_aov_req_json
-from .config import QUEUE_NAME, RABBITMQ_HOST
-from .qc import validate_data
+from .config import QUEUE_NAME, RABBITMQ_HOST, ACA_PY_CONTROLLER_URL
+from .log import get_logger
+from .processing import AoVRequest, handle_aov_request
 
 logger = get_logger()
 
@@ -29,47 +24,21 @@ def consume_loop():
     chan.queue_declare(queue=QUEUE_NAME)
 
     def callback(chan, method, props, body):
-        req = parse_aov_req_json(body)
-        logger.info(f"Received request", callback_url=req.callbackURL)
+        aov_request = AoVRequest.model_validate_json(
+            bytearray(body).decode(encoding="utf-8")
+        )
+        logger.info("Received AoV request", request=aov_request)
+        aov_gen_req = handle_aov_request(aov_request)
+        logger.info("Sending AoV VC generation request", request=aov_gen_req)
+        print("AoV Generation Request as a JSON string {{{")
+        print(aov_gen_req.model_dump_json())
+        print("}}} ----- ")
+        requests.post(
+            f"{ACA_PY_CONTROLLER_URL}/generate_aov",
+            json=aov_gen_req.model_dump(),
+        )
 
-        data_bytes = bytearray(req.data)
-        data_string = data_bytes.decode(encoding='utf-8')
-        logger.debug(f"Data in request: {data_string}",
-                     request_data=data_string)
-
-        mapping = req.mapping
-
-        contract = req.contract
-        vla = contract.vla
-        try:
-            results = validate_data(json.loads(data_string), vars(mapping), vla)
-            if results['success']:
-                logger.info("Successful validation", results=results)
-            else:
-                logger.warning("Failed validation", results=results)
-            aov = {
-                'aovID': uuid.uuid4(),
-                'contractID': uuid.uuid4(),
-                'evaluations': [],
-                'vc': {
-                    'id': uuid.uuid4(),
-                    'type': 'VerifiableCredential',
-                    'validFrom': datetime.now().isoformat(),
-                    'subject': {
-                        'id': contract.dataProvider,
-                    },
-                    'issuer': req.attesterID,
-                }
-            }
-            requests.post(req.callbackURL, data=aov)
-        except Exception as ex:
-            logger.error(f"validation failed due to {ex}")
-            requests.post(f'{req.callbackURL}/error')
-
-
-    chan.basic_consume(queue=QUEUE_NAME,
-                       auto_ack=True,
-                       on_message_callback=callback)
+    chan.basic_consume(queue=QUEUE_NAME, auto_ack=True, on_message_callback=callback)
 
     logger.info("Waiting for messages")
     chan.start_consuming()
