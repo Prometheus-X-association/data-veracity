@@ -1,5 +1,6 @@
 [versions]
-bson-version = "4.11.0"
+bson = "4.11.0"
+datetime = "0.6.2"
 jena-iri = "5.2.0"
 kasechange = "1.4.1"
 kmongo = "4.11.0"
@@ -19,7 +20,7 @@ testcontainers = "1.20.4"
 text-case-converter = "2.0.0"
 
 [libraries]
-bson = { module = "org.mongodb:bson", version.ref = "bson-version" }
+bson = { module = "org.mongodb:bson", version.ref = "bson" }
 jena-iri = { module = "org.apache.jena:jena-iri", version.ref = "jena-iri" }
 kasechange = { module = "net.pearx.kasechange:kasechange", version.ref = "kasechange" }
 kmongo-coroutine = { module = "org.litote.kmongo:kmongo-coroutine", version.ref = "kmongo" }
@@ -27,6 +28,7 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 kover-gradle-plugin = { module = "org.jetbrains.kotlinx.kover:org.jetbrains.kotlinx.kover.gradle.plugin", version.ref = "kover" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
