@@ -1,8 +1,12 @@
 import json
 
+from datetime import datetime
 from pydantic import BaseModel, PositiveInt
+from pymongo import MongoClient
+from pymongo.errors import PyMongoError
 from typing import Any
 
+from .config import MONGO_URL, MONGO_DB, MONGO_COLLECTION
 from .log import get_logger
 from .qc import validate_data
 
@@ -11,6 +15,7 @@ logger = get_logger()
 
 
 class AoVRequest(BaseModel):
+    id: str
     contract: dict[str, Any]
     data: list[PositiveInt]
     attesterID: str
@@ -19,6 +24,7 @@ class AoVRequest(BaseModel):
 
 
 class AoVGenerationRequest(BaseModel):
+    request_id: str
     subject: str
     issuer_id: str
     payload: dict[str, Any]
@@ -42,7 +48,24 @@ def handle_aov_request(req: AoVRequest) -> AoVGenerationRequest:
         else:
             logger.warning("Failed validation", results=results_dict)
 
+        try:
+            req_coll = MongoClient(MONGO_URL)[MONGO_DB][MONGO_COLLECTION]
+            req_coll.update_one(
+                {"requestID": req.id},
+                {
+                    "$set": {
+                        "evaluationPassing": results["success"],
+                        "evaluationDate": datetime.utcnow(),
+                        "evaluationResults": json.dumps(results_dict),
+                    }
+                },
+            )
+            logger.info(f"Successfully updated MongoDB entry for request {req.id}")
+        except PyMongoError as e:
+            logger.error(f"Failed to update MongoDB entry due to {e}", error=e)
+
         return AoVGenerationRequest(
+            request_id=req.id,
             subject=contract["dataProvider"],
             issuer_id=req.attesterID,
             payload={

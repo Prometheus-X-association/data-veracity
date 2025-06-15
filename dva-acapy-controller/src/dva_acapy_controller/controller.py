@@ -3,22 +3,27 @@ import json
 
 from asyncio import Queue, CancelledError
 from datetime import datetime
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from pydantic import BaseModel
+from pymongo import MongoClient
+from pymongo.errors import PyMongoError
 from time import sleep
 from typing import Dict, Any
 from uuid import uuid4
-from fastapi import FastAPI, Request, HTTPException
 
 from .config import (
-    ADMIN_URL,
     ADMIN_LABEL,
-    PEER_CONTROLLER_URL,
-    PEER_CONTROLLER_PORT_OUT,
-    PEER_LABEL,
+    ADMIN_URL,
     LOG_FILE,
+    MONGO_COLLECTION,
+    MONGO_DB,
+    MONGO_URL,
+    PEER_CONTROLLER_PORT_OUT,
+    PEER_CONTROLLER_URL,
+    PEER_LABEL,
 )
 
 
@@ -34,6 +39,7 @@ class AOV(BaseModel):
 
 
 class AOVRequest(BaseModel):
+    request_id: str
     subject: str
     issuer_id: str
     payload: Dict[str, Any]
@@ -323,16 +329,21 @@ async def generate_aov(payload: AOVRequest):
     if issue_resp.status_code != 200:
         return {"error": "Credential issue failed", "details": issue_resp.text}
 
-    if target == f"{PEER_LABEL}":
-        try:
-            forward_resp = requests.post(
-                f"{PEER_CONTROLLER_URL}:{PEER_CONTROLLER_PORT_OUT}/receive_aov",
-                json={"source": "provider", "credential": cred_attrs},
-            )
-            forward_resp.raise_for_status()
-            print(f"Forwarded VC to {PEER_LABEL} UI stream.")
-        except Exception as e:
-            print(f"Failed to forward VC to {PEER_LABEL} UI: {e}")
+    req_coll = MongoClient(MONGO_URL)[MONGO_DB][MONGO_COLLECTION]
+    try:
+        req_coll.update_one(
+            {"requestID": payload.request_id},
+            {
+                "$set": {
+                    "vcIssuedDate": datetime.utcnow(),
+                    "vcID": record.vc_id,
+                }
+            },
+        )
+        print(f"Successfully updated MongoDB entry for request {payload.request_id}")
+    except PyMongoError as e:
+        print(f"Failed to update MongoDB entry due to {e}")
+
     return {"message": f"AOV issued to {target}", "credential_data": cred_attrs}
 
 

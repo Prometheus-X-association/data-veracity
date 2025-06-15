@@ -10,3 +10,9 @@ swagger:
 
 rabbitmq:
   host: "$DVA_RABBITMQ_HOST:localhost"
+
+mongodb:
+  host: "$DVA_MONGODB_HOST:localhost"
+  database: "$DVA_MONGODB_DB:dva"
+  collections:
+    aovRequests: "$DVA_MONGODB_COLLECTION_REQUESTS:requests"
