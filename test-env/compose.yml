@@ -12,6 +12,8 @@ services:
     depends_on:
       rabbit-provider:
         condition: service_healthy
+      mongo-provider:
+        condition: service_healthy
 
   dva-api-consumer:
     extends:
@@ -23,6 +25,8 @@ services:
     ports: [9092:9090]
     depends_on:
       rabbit-consumer:
+        condition: service_healthy
+      mongo-consumer:
         condition: service_healthy
 
 
@@ -36,6 +40,8 @@ services:
     depends_on:
       rabbit-consumer:
         condition: service_healthy
+      mongo-provider:
+        condition: service_healthy
 
   dva-processing-consumer:
     extends:
@@ -46,6 +52,8 @@ services:
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-consumer:8050
     depends_on:
       rabbit-consumer:
+        condition: service_healthy
+      mongo-consumer:
         condition: service_healthy
 
 
@@ -58,6 +66,20 @@ services:
     extends:
       file: common-services.yml
       service: rabbit
+
+
+  mongo-provider:
+    extends:
+      file: common-services.yml
+      service: mongo
+    ports: [27021:27017]
+
+  mongo-consumer:
+    extends:
+      file: common-services.yml
+      service: mongo
+    ports: [27022:27017]
+
 
 
   callback-dummy:
@@ -161,6 +183,8 @@ services:
     depends_on:
       aca-py-provider:
         condition: service_healthy
+      mongo-provider:
+        condition: service_healthy
 
   dva-aca-py-controller-consumer:
     extends:
@@ -178,4 +202,6 @@ services:
     ports: [8052:8050]
     depends_on:
       aca-py-consumer:
+        condition: service_healthy
+      mongo-consumer:
         condition: service_healthy
