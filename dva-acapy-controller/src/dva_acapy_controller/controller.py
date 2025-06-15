@@ -237,8 +237,6 @@ async def init_all_self():
 async def generate_aov(payload: AOVRequest):
     global SELF_CONNECTION_ID, SELF_CRED_DEF_ID
 
-    payload_str = json.dumps(payload.payload, indent=2)
-
     record = AOV(
         vc_id=str(uuid4()),
         valid_since=datetime.utcnow(),
@@ -247,7 +245,7 @@ async def generate_aov(payload: AOVRequest):
         record_id=str(uuid4()),
         contract_id=uuid4().hex,
         data_exchange_id=uuid4().hex,
-        payload=payload_str,
+        payload=json.dumps(payload.payload),
     )
 
     target = payload.target
