@@ -6,7 +6,7 @@ import hu.bme.mit.ftsrg.dva.api.error.UnimplementedError
 import hu.bme.mit.ftsrg.dva.api.resource.Attestations
 import hu.bme.mit.ftsrg.dva.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
-import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTOMongo
+import hu.bme.mit.ftsrg.dva.model.DVARequestMongoDoc
 import io.github.viartemev.rabbitmq.channel.confirmChannel
 import io.github.viartemev.rabbitmq.channel.publish
 import io.github.viartemev.rabbitmq.publisher.OutboundMessage
@@ -17,37 +17,39 @@ import io.ktor.server.request.*
 import io.ktor.server.resources.post
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.litote.kmongo.coroutine.CoroutineCollection
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.*
-import org.litote.kmongo.coroutine.*
-import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.oshai.kotlinlogging.KLogger
 
-fun Application.aovRoutes(rmqConnection: Connection, requests: CoroutineCollection<AttestationRequestDTOMongo>) {
+fun Application.aovRoutes(rmqConnection: Connection, aovReqsColl: CoroutineCollection<DVARequestMongoDoc>) {
   routing {
-    aovRoute(rmqConnection, requests)
+    aovRoute(rmqConnection, aovReqsColl)
   }
 }
 
-fun Route.aovRoute(rmqConnection: Connection, requests: CoroutineCollection<AttestationRequestDTOMongo>) {
+fun Route.aovRoute(rmqConnection: Connection, aovReqsColl: CoroutineCollection<DVARequestMongoDoc>) {
   post<Attestations> {
     val request: AttestationRequestDTO = call.receive()
 
     val id = UUID.randomUUID().toString()
     val requestWithID: AttestationRequestDTO = request.copy(id = id)
 
-    val requestForMongo: AttestationRequestDTOMongo = AttestationRequestDTOMongo(
-        id = requestWithID.id,
-        vlaId = requestWithID.contract.vla.id,
-        data = requestWithID.data,
-        attesterID = requestWithID.attesterID,
-        callbackURL = requestWithID.callbackURL.toString(),
-        mapping = requestWithID.mapping
+    logReqToMongo(
+      coll = aovReqsColl,
+      req =
+        DVARequestMongoDoc(
+          type = "aov",
+          requestID = requestWithID.id,
+          vlaID = requestWithID.contract.vla.id,
+          data = requestWithID.data,
+          attesterID = requestWithID.attesterID,
+          receivedDate = Clock.System.now(),
+        )
     )
-
-    val logger = KotlinLogging.logger {}
-    insertRequest(requests, requestForMongo, logger)
 
     rmqConnection.confirmChannel {
       declareQueue(QueueSpecification("ATTESTATION_REQUESTS"))
@@ -73,20 +75,16 @@ private fun createMessage(body: String): OutboundMessage =
     msg = body
   )
 
-private suspend fun insertRequest(
-  requests: CoroutineCollection<AttestationRequestDTOMongo>,
-  req: AttestationRequestDTOMongo,
-  logger: KLogger,
+private suspend fun logReqToMongo(
+  coll: CoroutineCollection<DVARequestMongoDoc>,
+  req: DVARequestMongoDoc,
 ) {
-  if(req.id == null) {
-    logger.error { "AttestationRequestDTOMongo id field is missing!" }
-    return
-  }
+  val logger: Logger = LoggerFactory.getLogger("AoVRoute")
 
   try {
-    requests.insertOne(req)
-    logger.info { "Succesful insertion of ${req.id}" }
+    coll.insertOne(req)
+    logger.info("Logged AoV request ${req.requestID} into MongoDB")
   } catch (e: Exception) {
-    logger.error { "Couldn't insert ${req.id} into 'requests' collection!" }
+    logger.error("Failed to insert AoV request ${req.requestID} into MongoBD due to error: ${e.message}", e)
   }
 }

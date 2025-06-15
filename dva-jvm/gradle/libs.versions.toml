@@ -1,5 +1,4 @@
 [versions]
-bson = "4.11.0"
 datetime = "0.6.2"
 jena-iri = "5.2.0"
 kasechange = "1.4.1"
@@ -20,7 +19,6 @@ testcontainers = "1.20.4"
 text-case-converter = "2.0.0"
 
 [libraries]
-bson = { module = "org.mongodb:bson", version.ref = "bson" }
 jena-iri = { module = "org.apache.jena:jena-iri", version.ref = "jena-iri" }
 kasechange = { module = "net.pearx.kasechange:kasechange", version.ref = "kasechange" }
 kmongo-coroutine = { module = "org.litote.kmongo:kmongo-coroutine", version.ref = "kmongo" }
@@ -79,7 +77,7 @@ ktor-server = [
     "ktor-server-swagger",
 ]
 logging = ["kotlin-logging", "slf4j-api"]
-mongo = ["kmongo-coroutine", "bson"]
+mongo = ["kmongo-coroutine"]
 text-case-converter = ["text-case-converter", "text-case-converter-kotlin-extension"]
 testcontainers-rabbitmq = [
     "testcontainers",
