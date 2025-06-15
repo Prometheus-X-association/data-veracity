@@ -26,6 +26,13 @@ services:
       timeout: 5s
       retries: 3
 
+  mongo:
+    build:
+      context: ../
+      dockerfile: ./dva-mongo/Dockerfile
+    volumes:
+      - ./init-mongo:/docker-entrypoint-initdb.d
+
   callback-dummy:
     build: callback-dummy/
     healthcheck:

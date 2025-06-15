@@ -1,6 +1,7 @@
 [versions]
 jena-iri = "5.2.0"
 kasechange = "1.4.1"
+kmongo= "4.11.0"
 kotlin = "2.1.0-RC2"
 kotlin-gradle-plugin = "2.0.0-RC1"
 kotlin-logging = "7.0.3"
@@ -19,6 +20,7 @@ text-case-converter = "2.0.0"
 [libraries]
 jena-iri = { module = "org.apache.jena:jena-iri", version.ref = "jena-iri" }
 kasechange = { module = "net.pearx.kasechange:kasechange", version.ref = "kasechange" }
+kmongo = { module = "org.litote.kmongo:kmongo-coroutine", version.ref = "kmongo" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle-plugin" }
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -71,6 +73,7 @@ ktor-server = [
     "ktor-server-resources",
     "ktor-server-status-pages",
     "ktor-server-swagger",
+    "kmongo",
 ]
 logging = ["kotlin-logging", "slf4j-api"]
 text-case-converter = ["text-case-converter", "text-case-converter-kotlin-extension"]
