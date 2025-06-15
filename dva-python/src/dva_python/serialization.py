@@ -4,12 +4,11 @@ import pandas as pd
 
 from types import SimpleNamespace
 
-from jsonpath_ng import jsonpath, parse
+from jsonpath_ng import parse
 
 
 def parse_aov_req_json(aov_req_json):
-    return json.loads(aov_req_json,
-                      object_hook=lambda j: SimpleNamespace(**j))
+    return json.loads(aov_req_json, object_hook=lambda j: SimpleNamespace(**j))
 
 
 def parse_ge_yaml(ge_yaml):
