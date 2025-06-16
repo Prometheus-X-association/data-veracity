@@ -167,7 +167,7 @@
     background-color: #1e3fb9;
   }
   .badge-pov {
-    background-color: ##f3d80a;
+    background-color: #825f00;
   }
 
   .data {
