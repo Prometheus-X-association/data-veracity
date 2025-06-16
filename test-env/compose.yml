@@ -211,3 +211,53 @@ services:
         condition: service_healthy
       mongo-consumer:
         condition: service_healthy
+
+
+  dva-dashboard-backend-provider:
+    extends:
+      file: common-services.yml
+      service: dva-dashboard-backend
+    environment:
+      DVA_MONGODB_URL: mongodb://mongo-provider:27017
+      DVA_ACA_PY_URL: http://aca-py-provider:8030
+    ports: [3001:3000]
+    depends_on:
+      mongo-consumer:
+        condition: service_healthy
+
+  dva-dashboard-backend-consumer:
+    extends:
+      file: common-services.yml
+      service: dva-dashboard-backend
+    environment:
+      DVA_MONGODB_URL: mongodb://mongo-consumer:27017
+      DVA_ACA_PY_URL: http://aca-py-consumer:8030
+    ports: [3002:3000]
+    depends_on:
+      mongo-consumer:
+        condition: service_healthy
+
+
+  dva-dashboard-frontend-provider:
+    extends:
+      file: common-services.yml
+      service: dva-dashboard-frontend
+    build:
+      args:
+        DVA_DASHBOARD_BACKEND_URL: http://localhost:3001
+    ports: [3011:80]
+    depends_on:
+      dva-dashboard-backend-provider:
+        condition: service_healthy
+
+  dva-dashboard-frontend-consumer:
+    extends:
+      file: common-services.yml
+      service: dva-dashboard-frontend
+    build:
+      args:
+        DVA_DASHBOARD_BACKEND_URL: http://localhost:3002
+    ports: [3012:80]
+    depends_on:
+      dva-dashboard-backend-consumer:
+        condition: service_healthy
