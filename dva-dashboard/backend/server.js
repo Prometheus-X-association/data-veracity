@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util'
 
 import { addRoutes as addMockRoutes } from './mock.js'
 import { addRoutes as addMongoRoutes } from './mongo.js'
+import { initWebsocket } from './websocket.js'
 
 main().catch(err => console.log(err))
 
@@ -17,6 +18,8 @@ async function main () {
       }
     }
   })
+
+  initWebsocket()
 
   const app = express()
   app.use(cors())
