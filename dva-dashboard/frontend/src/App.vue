@@ -1,9 +1,6 @@
 <!-- src/App.vue -->
 <template>
-  <div class="container mt-4">
-    <h2 class="mb-3">DVA Unified Dashboard</h2>
-    <Dashboard />
-  </div>
+  <Dashboard />
 </template>
 
 <script>
