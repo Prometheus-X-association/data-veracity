@@ -8,7 +8,7 @@
 ## How to run
 
 ```console
-$ uv run dva-python
+$ uv run dva-processing
 ```
 
 

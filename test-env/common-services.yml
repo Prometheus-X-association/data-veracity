@@ -12,10 +12,10 @@ services:
       timeout: 5s
       retries: 3
 
-  dva-python:
+  dva-processing:
     build:
       context: ../
-      dockerfile: ./dva-python/Dockerfile
+      dockerfile: ./dva-processing/Dockerfile
     init: true
     environment:
       DVA_RABBITMQ_HOST: rabbit

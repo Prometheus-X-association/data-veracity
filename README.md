@@ -9,14 +9,14 @@ See the design document [here](docs/design-document.md).
 ## Building instructions
 
 At the moment, DVA has two subcomponents which must be both running: the API server and the processing module.
-These can be found in the `dva-api/` and `dva-python` subdirectories, respectively.
+These can be found in the `dva-api/` and `dva-processing` subdirectories, respectively.
 
 Both have been prepared for containerization using Docker but note that the build context must be the root of the repository.
 You can use the following commands to build the images:
 
 ```console
 $ docker buildx build -t dva-api:latest -f dva-api/Dockerfile ./
-$ docker buildx build -t dva-processing:latest -f dva-python/Dockerfile ./
+$ docker buildx build -t dva-processing:latest -f dva-processing/Dockerfile ./
 ```
 
 > [!NOTE]
@@ -113,10 +113,10 @@ In the test output, you should see all JUnit tests passing.
   ```
 </details>.
 
-### DVA Processing Module (`dva-python`)
+### DVA Processing Module (`dva-processing`)
 
 > [!WARNING]
-> `dva-python` does not -have unit tests yet.
+> `dva-processing` does not -have unit tests yet.
 
 
 ## Component-level testing
