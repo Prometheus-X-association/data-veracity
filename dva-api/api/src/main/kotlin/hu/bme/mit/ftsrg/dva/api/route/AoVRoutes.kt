@@ -12,6 +12,7 @@ import io.github.viartemev.rabbitmq.channel.publish
 import io.github.viartemev.rabbitmq.publisher.OutboundMessage
 import io.github.viartemev.rabbitmq.queue.QueueSpecification
 import io.github.viartemev.rabbitmq.queue.declareQueue
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.resources.post
@@ -58,7 +59,7 @@ fun Route.aovRoute(rmqConnection: Connection, aovReqsColl: CoroutineCollection<D
       }
     }
 
-    call.respond(IDDTO(id))
+    call.respond(status = HttpStatusCode.Created, message = IDDTO(id))
   }
 
   /* TODO: Implement verification */
