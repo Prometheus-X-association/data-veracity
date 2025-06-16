@@ -12,10 +12,11 @@ WORKDIR /home/gradle/src/
 RUN gradle shadowJar --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine AS runtime
-EXPOSE 8080
+EXPOSE 9090
 RUN mkdir /app/
 COPY --from=build /home/gradle/src/*/build/libs/*.jar /app/
 COPY --chmod=755 ./dva-api/docker/docker-entrypoint /app/
 COPY ./docs/spec/openapi.yaml /app/
 ENV DVA_OPENAPI_FILE=/app/openapi.yaml
 ENTRYPOINT ["/app/docker-entrypoint"]
+HEALTHCHECK --interval=5s --timeout=5s CMD nc -z localhost 9090
