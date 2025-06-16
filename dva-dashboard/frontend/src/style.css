@@ -21,10 +21,9 @@ a:hover {
 }
 
 body {
-  margin: 0;
   display: flex;
-  place-items: center;
-  min-width: 320px;
+  margin: 0;
+  min-width: 100vw;
   min-height: 100vh;
 }
 
@@ -53,10 +52,13 @@ button:focus-visible {
 }
 
 #app {
-  max-width: 90%;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.vsm--scroll {
+  padding-top: 1rem;
 }
 
 @media (prefers-color-scheme: light) {
