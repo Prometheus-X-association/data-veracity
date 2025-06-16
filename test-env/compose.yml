@@ -219,6 +219,7 @@ services:
       service: dva-dashboard-backend
     environment:
       DVA_MONGODB_URL: mongodb://mongo-provider:27017
+      DVA_ACA_PY_URL: http://aca-py-provider:8030
     ports: [3001:3000]
     depends_on:
       mongo-consumer:
@@ -230,6 +231,7 @@ services:
       service: dva-dashboard-backend
     environment:
       DVA_MONGODB_URL: mongodb://mongo-consumer:27017
+      DVA_ACA_PY_URL: http://aca-py-consumer:8030
     ports: [3002:3000]
     depends_on:
       mongo-consumer:
@@ -243,7 +245,7 @@ services:
     build:
       args:
         DVA_DASHBOARD_BACKEND_URL: http://localhost:3001
-    ports: [3011:3000]
+    ports: [3011:80]
     depends_on:
       dva-dashboard-backend-provider:
         condition: service_healthy
@@ -255,7 +257,7 @@ services:
     build:
       args:
         DVA_DASHBOARD_BACKEND_URL: http://localhost:3002
-    ports: [3012:3000]
+    ports: [3012:80]
     depends_on:
       dva-dashboard-backend-consumer:
         condition: service_healthy
