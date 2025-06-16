@@ -5,12 +5,6 @@ services:
     build:
       context: ../
       dockerfile: ./dva-api/Dockerfile
-    init: true
-    healthcheck:
-      test: nc -z localhost 9090
-      interval: 5s
-      timeout: 5s
-      retries: 3
 
   dva-processing:
     build:
