@@ -67,3 +67,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
+
+  dva-dashboard-backend:
+    build: ../dva-dashboard/backend/
+
+  dva-dashboard-frontend:
+    build: ../dva-dashboard/frontend/
