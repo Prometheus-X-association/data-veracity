@@ -4,7 +4,7 @@ services:
   dva-api-provider:
     extends:
       file: common-services.yml
-      service: dva-jvm
+      service: dva-api
     environment:
       DVA_RABBITMQ_HOST: rabbit-provider
       DVA_MONGODB_HOST: mongo-provider
@@ -19,7 +19,7 @@ services:
   dva-api-consumer:
     extends:
       file: common-services.yml
-      service: dva-jvm
+      service: dva-api
     environment:
       DVA_RABBITMQ_HOST: rabbit-consumer
       DVA_MONGODB_HOST: mongo-consumer

@@ -1,10 +1,10 @@
 ---
 services:
 
-  dva-jvm:
+  dva-api:
     build:
       context: ../
-      dockerfile: ./dva-jvm/Dockerfile
+      dockerfile: ./dva-api/Dockerfile
     init: true
     healthcheck:
       test: nc -z localhost 9090
