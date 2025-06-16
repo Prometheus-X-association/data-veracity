@@ -9,8 +9,8 @@ WORKDIR /app/
 # Install dependencies
 RUN \
     --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=./dva-python/uv.lock,target=uv.lock \
-    --mount=type=bind,source=./dva-python/pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=./dva-processing/uv.lock,target=uv.lock \
+    --mount=type=bind,source=./dva-processing/pyproject.toml,target=pyproject.toml \
     uv sync \
         --frozen \
 	--no-install-project \
@@ -18,7 +18,7 @@ RUN \
 	--no-editable
 
 # Copy app files
-COPY ./dva-python/ /app/
+COPY ./dva-processing/ /app/
 
 # Sync project
 RUN \
@@ -38,4 +38,4 @@ RUN apt-get update && apt-get install -y netcat-openbsd
 COPY --from=build --chown=app:app /app/.venv/ /app/.venv/
 
 # Run app
-CMD ["/app/.venv/bin/dva-python"]
+CMD ["/app/.venv/bin/dva-processing"]

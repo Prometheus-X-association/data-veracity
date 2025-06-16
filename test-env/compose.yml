@@ -35,7 +35,7 @@ services:
   dva-processing-provider:
     extends:
       file: common-services.yml
-      service: dva-python
+      service: dva-processing
     environment:
       DVA_RABBITMQ_HOST: rabbit-provider
       DVA_MONGODB_URL: mongodb://mongo-provider:27017
@@ -49,7 +49,7 @@ services:
   dva-processing-consumer:
     extends:
       file: common-services.yml
-      service: dva-python
+      service: dva-processing
     environment:
       DVA_RABBITMQ_HOST: rabbit-consumer
       DVA_MONGODB_URL: mongodb://mongo-consumer:27017
