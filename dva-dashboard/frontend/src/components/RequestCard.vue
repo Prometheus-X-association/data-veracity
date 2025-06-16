@@ -6,7 +6,7 @@
     <div class="card-body">
       <table>
         <tr>
-          <th><v-icon name="fa-clock" /> Requested</th>
+          <th style="width:40%"><v-icon name="fa-clock" /> Requested</th>
           <td class="data">{{ req.receivedDate }}</td>
         </tr>
         <tr>
@@ -92,7 +92,7 @@
 
   .card-header {
     height: 2rem;
-    background-color: #17243f;
+    background-color: #4051b5;
     color: #fff;
     padding: 1rem;
     display: flex;
@@ -109,7 +109,7 @@
   }
 
   .card-body {
-    padding: 1rem;
+    padding: .6rem;
 
   }
   

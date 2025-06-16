@@ -1,14 +1,10 @@
 <template>
-  <div class="dashboard-wrapper">
-    <h2 class="page-title">DVA Dashboard</h2>
-
-    <section class="section">
-      <div class="card-container">
-        <p class="placeholder" v-if="reqs.length === 0">No requests yet</p>
-        <RequestCard :req="req" v-for="req in reqs" :key="req.requestID"/>
-      </div>
-    </section>
-  </div>
+  <section>
+    <div class="card-container">
+      <p class="placeholder" v-if="reqs.length === 0">No requests yet</p>
+      <RequestCard :req="req" v-for="req in reqs" :key="req.requestID"/>
+    </div>
+  </section>
 </template>
 
 <script setup>
@@ -34,25 +30,31 @@
 </script>
 
 <style scoped>
-  .dashboard-wrapper {
-    padding: 1rem 1.5rem;
-  }
-  
-  .page-title {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    font-size: 3rem;
-    font-weight: 500;
-  }
-  
-  /* Force exactly 4 columns */
   .card-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
   }
 
   .placeholder {
     font-style: italic;
+  }
+
+  @media (max-width: 1670px) {
+    .card-container {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 1350px) {
+    .card-container {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 980px) {
+    .card-container {
+      grid-template-columns: repeat(1, 1fr);
+    }
   }
 </style>
