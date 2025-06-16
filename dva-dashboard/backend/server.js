@@ -30,14 +30,14 @@ async function main () {
 async function serveFromMongo () {
   console.log('Attempting to connect to mongodb...')
   const conn = await mongoose.connect(`${MONGO_URL}/${MONGO_DB}`)
-  const coll = conn.collection(MONGO_COLLECTION)
+  const coll = conn.model('Requests', {}, MONGO_COLLECTION)
   console.log('MongoDB connected')
 
   const app = express()
   app.use(cors())
   app.use(express.json())
 
-  app.get('/requests', async (req, res) => {
+  app.get('/api/requests', async (req, res) => {
     console.log('Serving all MongoDB request documents')
     const docs = await coll.find().sort('-receivedDate')
     res.json(docs)
@@ -53,7 +53,7 @@ async function serveMock () {
   app.use(cors())
   app.use(express.json())
 
-  app.get('/requests', async (req, res) => {
+  app.get('/api/requests', async (req, res) => {
     console.log('Serving dummy MongoDB request documents')
     const docs = [
       {
