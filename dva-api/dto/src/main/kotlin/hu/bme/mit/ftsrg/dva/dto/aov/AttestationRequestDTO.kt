@@ -6,14 +6,12 @@ import hu.bme.mit.ftsrg.contractmanager.contract.model.Contract
 import hu.bme.mit.ftsrg.serialization.java.URLSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import java.net.URL
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class AttestationRequestDTO(
   val id: String? = null,
   val contract: Contract,
-  val data: ByteArray,
+  val data: JsonElement,
   val attesterID: String,
-  val callbackURL: URL,
-  val mapping: Map<String, String>,
 )

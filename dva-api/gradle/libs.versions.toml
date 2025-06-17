@@ -51,6 +51,7 @@ shadow-gradle-plugin = { module = "com.gradleup.shadow:com.gradleup.shadow.gradl
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-mongodb = { module = "org.testcontainers:mongodb", version.ref = "testcontainers" }
 testcontainers-rabbitmq = { module = "org.testcontainers:rabbitmq", version.ref = "testcontainers" }
 text-case-converter = { module = "dev.turingcomplete:text-case-converter", version.ref = "text-case-converter" }
 text-case-converter-kotlin-extension = { module = "dev.turingcomplete:text-case-converter-kotlin-extension", version.ref = "text-case-converter" }
@@ -83,6 +84,11 @@ testcontainers-rabbitmq = [
     "testcontainers",
     "testcontainers-junit-jupiter",
     "testcontainers-rabbitmq",
+]
+testcontainers-mongodb = [
+    "testcontainers",
+    "testcontainers-junit-jupiter",
+    "testcontainers-mongodb",
 ]
 
 [plugins]

@@ -7,6 +7,7 @@ import hu.bme.mit.ftsrg.contractmanager.contract.model.Purpose
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Status
 import hu.bme.mit.ftsrg.dva.api.testutil.testModule
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
+import hu.bme.mit.ftsrg.dva.model.DVARequestMongoDoc
 import hu.bme.mit.ftsrg.odcs.model.fundamentals.APIVersion
 import hu.bme.mit.ftsrg.odcs.model.fundamentals.FileKind
 import hu.bme.mit.ftsrg.odcs.model.quality.DataQuality
@@ -27,13 +28,19 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
+import kotlinx.serialization.json.Json
 import org.apache.jena.iri.IRIFactory
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.litote.kmongo.coroutine.CoroutineClient
+import org.litote.kmongo.coroutine.CoroutineCollection
+import org.litote.kmongo.coroutine.CoroutineDatabase
+import org.litote.kmongo.coroutine.coroutine
+import org.litote.kmongo.reactivestreams.KMongo
+import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.containers.RabbitMQContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import java.net.URI
 import java.util.*
 import hu.bme.mit.ftsrg.odcs.model.Contract as ODCSContract
 
@@ -43,6 +50,9 @@ class AoVRoutesTest {
 
   @Container
   val rmqContainer: RabbitMQContainer = RabbitMQContainer("rabbitmq").withExposedPorts(5672)
+
+  @Container
+  val mongoContainer: MongoDBContainer = MongoDBContainer("mongo").withExposedPorts(27017)
 
   @Test
   fun `should create attestation request`() = testApplication {
@@ -147,7 +157,8 @@ class AoVRoutesTest {
           )
         ),
       ),
-      data = """
+      data = Json.parseToJsonElement(
+        """
         {
           "actor": {
             "name": "Jean Dupont",
@@ -185,20 +196,14 @@ class AoVRoutesTest {
           },
           "timestamp": "2024-03-16T30:25:00Z"
         }
-      """.trimIndent().toByteArray(charset = Charsets.UTF_8),
-      callbackURL = URI("http://example.com/callback").toURL(),
-      mapping = mapOf(
-        "$.actor.name" to "actor",
-        "$.verb.id" to "verb",
-        "$.object.id" to "object",
-        "$.timestamp" to "timestamp"
-      ),
+      """
+      )
     )
     client.post("/attestation") {
       contentType(ContentType.Application.Json)
       setBody(request)
     }.apply {
-      Assertions.assertEquals(HttpStatusCode.OK, status)
+      Assertions.assertEquals(HttpStatusCode.Created, status)
     }
   }
 
@@ -208,8 +213,14 @@ class AoVRoutesTest {
       port = rmqContainer.firstMappedPort
     }
 
+    val mongoClient: CoroutineClient =
+      KMongo.createClient("mongodb://${mongoContainer.host}:${mongoContainer.firstMappedPort}").coroutine
+    val database: CoroutineDatabase = mongoClient.getDatabase("dva-test")
+    val requestsCollection: CoroutineCollection<DVARequestMongoDoc> =
+      database.getCollection("requests")
+
     testModule()
-    aovRoutes(rmqConnection = rmqConnectionFactory.newConnection())
+    aovRoutes(rmqConnection = rmqConnectionFactory.newConnection(), aovReqsColl = requestsCollection)
   }
 
   private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {
