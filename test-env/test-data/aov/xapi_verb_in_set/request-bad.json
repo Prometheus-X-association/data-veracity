@@ -182,6 +182,5 @@
       "version": "1.0.0"
     }
   ],
-  "attesterID": "attester-0000",
-  "callbackURL": "http://callback-dummy/callback"
+  "attesterID": "attester-0000"
 }

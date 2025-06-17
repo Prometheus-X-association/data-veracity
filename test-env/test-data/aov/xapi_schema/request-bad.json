@@ -189,6 +189,5 @@
       }
     }
   ],
-  "attesterID": "attester-0000",
-  "callbackURL": "http://callback-dummy/callback",
+  "attesterID": "attester-0000"
 }

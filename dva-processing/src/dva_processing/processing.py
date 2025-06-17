@@ -1,7 +1,7 @@
 import json
 
 from datetime import datetime
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 from typing import Any
@@ -17,10 +17,8 @@ logger = get_logger()
 class AoVRequest(BaseModel):
     id: str
     contract: dict[str, Any]
-    data: list[PositiveInt]
+    data: Any
     attesterID: str
-    callbackURL: str
-    mapping: dict[str, str]
 
 
 class AoVGenerationRequest(BaseModel):
@@ -32,16 +30,10 @@ class AoVGenerationRequest(BaseModel):
 
 
 def handle_aov_request(req: AoVRequest) -> AoVGenerationRequest:
-    data_bytes = bytearray(req.data)
-    data_string = data_bytes.decode(encoding="utf-8")
-    logger.debug(f"Data in request: {data_string}", request_data=data_string)
-
-    mapping = req.mapping
-
     contract = req.contract
     vla = contract["vla"]
     try:
-        results = validate_data(json.loads(data_string), mapping, vla)
+        results = validate_data(req.data, vla)
         results_dict = results.to_json_dict()
         if results["success"]:
             logger.info("Successful validation", results=results_dict)
