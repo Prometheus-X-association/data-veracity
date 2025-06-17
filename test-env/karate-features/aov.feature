@@ -3,8 +3,8 @@ Feature: Attestation of Veracity (AoV) generation
 
 Background:
   * url 'http://dva-api:9090'
-  * def exampleRequestGood = read('../test-data/aov/request-good.json')
-  * def exampleRequestBad = read('../test-data/aov/request-bad.json')
+  * def exampleRequestGood = read('../test-data/aov/timestamp_in_range/request-good.json')
+  * def exampleRequestBad = read('../test-data/aov/timestamp_in_range/request-bad.json')
 
 
 Scenario: create an AoV request with data passing requirements

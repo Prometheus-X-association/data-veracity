@@ -1,14 +1,22 @@
 import great_expectations as gx
+import pandas as pd
 
 from .log import get_logger
-from .serialization import json_to_df, parse_ge_yaml
+from .serialization import parse_ge_yaml
 
 logger = get_logger()
 
 
-def validate_data(data_str, mapping, vla):
-    data_df = json_to_df(data_str, mapping)
-    print(data_df)
+def validate_data(data, vla):
+    data_df = pd.json_normalize(data)
+    logger.info("Mapped JSON to dataframe", dataframe=data_df)
+
+    # Try to convert datetimes to datetimes
+    for col in data_df.select_dtypes(include=["object"]).columns:
+        try:
+            data_df[col] = pd.to_datetime(data_df[col], errors="ignore")
+        except ValueError:
+            pass
 
     ctx = gx.get_context()
 
