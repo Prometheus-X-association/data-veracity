@@ -89,8 +89,10 @@
 
 <script setup>
   import { ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
+  import axios from 'axios'
 
   import SampleModal from './SampleModal.vue'
   import ElementReqModal from './ElementReqModal.vue'
@@ -114,7 +116,13 @@
     fragments.value.push(req)
   }
 
-  const handleCreateVLA = () => {
+  const router = useRouter()
+
+  const handleCreateVLA = async () => {
+    console.log("posting")
+    axios.post('/api/vla/from-fragments', fragments.value)
+    alert(`Created VLA from ${fragments.value.length} fragments`)
+    router.push({ path: "/list" })
   }
 </script>
 
