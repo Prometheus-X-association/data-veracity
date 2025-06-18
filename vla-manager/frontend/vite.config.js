@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-const BACKEND_URL = process.env.VLA_MANAGER_BACKEND_URL || 'http://localhost:8080'
+const BACKEND_URL = process.env.VLA_MANAGER_BACKEND_URL || 'http://localhost:3000'
 
 export default defineConfig({
   plugins: [vue()],
