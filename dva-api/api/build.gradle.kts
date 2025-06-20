@@ -6,6 +6,7 @@ plugins {
 
 dependencies {
     implementation(libs.bundles.ktor.server)
+    implementation(libs.bundles.ktor.client)
     implementation(libs.bundles.logging)
     implementation(libs.bundles.mongo)
     implementation(libs.kotlinx.datetime)
