@@ -126,6 +126,7 @@ services:
         --auto-respond-presentation-request
         --auto-verify-presentation
         --auto-store-credential
+        --preserve-exchange-records
         --genesis-url http://test.bcovrin.vonx.io/genesis
         --seed 0000000000000000000ProviderSeed1
         --ledger-pool-name bcovrin-test
@@ -160,6 +161,7 @@ services:
         --auto-respond-presentation-request
         --auto-verify-presentation
         --auto-store-credential
+        --preserve-exchange-records
         --genesis-url http://test.bcovrin.vonx.io/genesis
         --seed 0000000000000000000ConsumerSeed1
         --ledger-pool-name bcovrin-test
