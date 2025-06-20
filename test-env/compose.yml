@@ -8,6 +8,7 @@ services:
     environment:
       DVA_RABBITMQ_HOST: rabbit-provider
       DVA_MONGODB_HOST: mongo-provider
+      DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-provider:8050
     command: api
     ports: [9091:9090]
     depends_on:
@@ -23,6 +24,7 @@ services:
     environment:
       DVA_RABBITMQ_HOST: rabbit-consumer
       DVA_MONGODB_HOST: mongo-consumer
+      DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-consumer:8050
     command: api
     ports: [9092:9090]
     depends_on:
@@ -124,6 +126,7 @@ services:
         --auto-respond-presentation-request
         --auto-verify-presentation
         --auto-store-credential
+        --preserve-exchange-records
         --genesis-url http://test.bcovrin.vonx.io/genesis
         --seed 0000000000000000000ProviderSeed1
         --ledger-pool-name bcovrin-test
@@ -158,6 +161,7 @@ services:
         --auto-respond-presentation-request
         --auto-verify-presentation
         --auto-store-credential
+        --preserve-exchange-records
         --genesis-url http://test.bcovrin.vonx.io/genesis
         --seed 0000000000000000000ConsumerSeed1
         --ledger-pool-name bcovrin-test

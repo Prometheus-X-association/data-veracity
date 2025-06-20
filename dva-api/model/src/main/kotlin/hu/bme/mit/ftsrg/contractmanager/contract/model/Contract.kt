@@ -9,6 +9,7 @@ import hu.bme.mit.ftsrg.odcs.model.Contract as ODCSContract
  */
 @Serializable
 data class Contract(
+  val id: String,
   val dataProvider: String,
   val dataConsumer: String,
   val serviceOffering: String,

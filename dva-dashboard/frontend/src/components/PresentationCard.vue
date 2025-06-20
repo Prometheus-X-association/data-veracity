@@ -1,63 +1,67 @@
 <template>
   <div class="card">
     <div class="card-header">
-      <h5 class="card-title">{{ req.requestID }}</h5>
+      <h5 class="card-title">{{ pres.thread_id }}</h5>
     </div>
     <div class="card-body">
       <table>
         <tr>
           <th style="width:44%"><v-icon name="fa-people-arrows" /> Data Exchange ID</th>
-          <td class="data">{{ req.exchangeID }}</td>
+          <td class="data">{{ pres.by_format.pres_request.indy.requested_attributes.attr_data_exchange_id.restrictions[0]['attr::data_exchange_id::value'] }}</td>
         </tr>
         <tr>
-          <th><v-icon name="fa-file-signature" /> Contract ID</th>
-          <td class="data">{{ req.contractID }}</td>
+          <th><v-icon name="fa-plus" /> Created</th>
+          <td class="data">{{ pres.created_at }}</td>
         </tr>
         <tr>
-          <th><v-icon name="fa-clock" /> Requested</th>
-          <td class="data">{{ req.receivedDate }}</td>
+          <th><v-icon name="fa-pencil-alt" /> Updated</th>
+          <td class="data">{{ pres.updated_at }}</td>
         </tr>
         <tr>
-          <th><v-icon name="fa-calculator" /> Evaluated</th>
-          <td class="data">{{ req.evaluationDate }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-certificate" /> VC Issued</th>
-          <td class="data">{{ req.vcIssuedDate }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-certificate" /> VC ID</th>
-          <td class="data">{{ req.vcID }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-user" /> Attester</th>
-          <td class="data">{{ req.attesterID }}</td>
+          <th><v-icon name="fa-user-cog" /> Role</th>
+          <td class="data">{{ pres.role }}</td>
         </tr>
       </table>
 
-      <div class="badges">
-        <span v-if="req.type == 'aov'" class="badge badge-aov"><v-icon name="fa-stamp" /> Attestation</span>
-        <span v-else class="badge badge-pov"><v-icon name="fa-code" /> Proof</span>
+      <hr class="divider" />
 
-        <span v-if="req.evaluationPassing" class="badge badge-success"><v-icon name="fa-check" /> Pass</span>
-        <span v-else class="badge badge-danger"><v-icon name="fa-times" /> Fail</span>
+      <h6 class="card-subtitle">Revealed Attributes</h6>
+
+      <table>
+        <tr>
+          <th style="width:44%"><v-icon name="fa-user-check" /> Subject</th>
+          <td class="data">{{ pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_subject.raw }}</td>
+        </tr>
+        <tr>
+          <th><v-icon name="fa-people-arrows" /> Data Exchange ID</th>
+          <td class="data">{{ pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_data_exchange_id.raw }}</td>
+        </tr>
+        <tr>
+          <th style="width:44%"><v-icon name="fa-file-signature" /> Contract ID</th>
+          <td class="data">{{ pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_contract_id.raw }}</td>
+        </tr>
+        <tr>
+          <th style="width:44%"><v-icon name="fa-certificate" /> VC ID</th>
+          <td class="data">{{ pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_vc_id.raw }}</td>
+        </tr>
+        <tr>
+          <th style="width:44%"><v-icon name="fa-user" /> Issuer</th>
+          <td class="data">{{ pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_issuer_id.raw }}</td>
+        </tr>
+      </table>
+      
+      <hr class="divider" />
+
+      <div class="badges">
+        <!-- TODO -->
+        <span class="badge badge-success"><v-icon name="fa-check" /> Verified</span>
       </div>
 
       <hr class="divider" />
 
-      <h6 class="card-subtitle">Data</h6>
+      <h6 class="card-subtitle">Revealed Results</h6>
       <vue-json-pretty
-        :data="req.data"
-        :deep="0"
-        :virtual="true"
-        :height="100"
-      />
-
-      <hr class="divider" />
-
-      <h6 class="card-subtitle">Evaluation Results</h6>
-      <vue-json-pretty
-        :data="JSON.parse(req.evaluationResults)"
+        :data="JSON.parse(pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_payload.raw)"
         :deep="1"
         :virtual="true"
         :height="150"
@@ -67,7 +71,7 @@
 </template>
 
 <script setup>
-  defineProps(['req'])
+  defineProps(['pres'])
 </script>
 
 <script>
@@ -105,7 +109,7 @@
 
   .card-header {
     height: 2rem;
-    background-color: #4051b5;
+    background-color: #a80cad;
     color: #fff;
     padding: 1rem;
     display: flex;

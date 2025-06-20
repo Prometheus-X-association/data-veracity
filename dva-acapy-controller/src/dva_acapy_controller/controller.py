@@ -21,8 +21,6 @@ from .config import (
     MONGO_COLLECTION,
     MONGO_DB,
     MONGO_URL,
-    PEER_CONTROLLER_PORT_OUT,
-    PEER_CONTROLLER_URL,
     PEER_LABEL,
 )
 
@@ -40,6 +38,8 @@ class AOV(BaseModel):
 
 class AOVRequest(BaseModel):
     request_id: str
+    exchange_id: str
+    contract_id: str
     subject: str
     issuer_id: str
     payload: Dict[str, Any]
@@ -106,19 +106,6 @@ async def webhook_listener(topic: str, request: Request):
         json.dump(webhook_logs, f, indent=2)
     await presentation_queue.put(data)
     print(f"Webhook received on topic: {topic}")
-    return {"status": "received"}
-
-
-@app.post("/webhooks/topic/present_proof_v2_0/")
-async def handle_presentation_webhook(request: Request):
-    data = await request.json()
-    print(f"[{ADMIN_LABEL}] Presentation webhook received:")
-    print(json.dumps(data, indent=2))
-
-    state = data.get("state")
-    if state in ["presentation-received", "verified"]:
-        await presentation_queue.put(data)
-
     return {"status": "received"}
 
 
@@ -263,8 +250,8 @@ async def generate_aov(payload: AOVRequest):
         subject=payload.subject,
         issuer_id=payload.issuer_id,
         record_id=str(uuid4()),
-        contract_id=uuid4().hex,
-        data_exchange_id=uuid4().hex,
+        contract_id=payload.contract_id,
+        data_exchange_id=payload.exchange_id,
         payload=json.dumps(payload.payload),
     )
 

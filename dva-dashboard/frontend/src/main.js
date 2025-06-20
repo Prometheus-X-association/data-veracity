@@ -8,6 +8,7 @@ import 'vue-sidebar-menu/dist/vue-sidebar-menu.css'
 import './style.css'
 import App from './App.vue'
 import RequestsView from './components/RequestsView.vue'
+import PresentationsView from './components/PresentationsView.vue'
 import CredentialsView from './components/CredentialsView.vue'
 
 const Fa = Object.values({ ...FaIcons })
@@ -18,6 +19,7 @@ const router = createRouter({
   routes: [
     { path: '/', redirect: '/requests' },
     { path: '/requests', component: RequestsView },
+    { path: '/verifications', component: PresentationsView },
     { path: '/credentials', component: CredentialsView }
   ]
 })

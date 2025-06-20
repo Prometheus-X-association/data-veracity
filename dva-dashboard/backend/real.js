@@ -19,6 +19,12 @@ export async function addRoutes (app) {
     res.json(docs)
   })
 
+  app.get('/api/presentations', async (req, res) => {
+    console.log('Serving all presentations')
+    const response = await axios.get(`${ACAPY_URL}/present-proof-2.0/records`)
+    res.json(response.data.results)
+  })
+
   app.get('/api/credentials', async (req, res) => {
     console.log('Serving all verifiable credentials')
     const response = await axios.get(`${ACAPY_URL}/credentials`)
