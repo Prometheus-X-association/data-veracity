@@ -8,6 +8,11 @@ export async function addRoutes (app) {
     res.json(vlas)
   })
 
+  app.get('/api/vla/:id', async (req, res) => {
+    console.log('Serving a single dummy VLA')
+    res.json(vlas[0])
+  })
+
   app.post('/api/vla/from-fragments', async (req, res) => {
     const fragments = req.body
     console.log(`Got ${fragments.length} fragments in request`)
