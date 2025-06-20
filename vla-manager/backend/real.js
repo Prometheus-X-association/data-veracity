@@ -17,6 +17,13 @@ export async function addRoutes (app) {
     res.json(docs)
   })
 
+  app.get('/api/vla/:id', async (req, res) => {
+    const id = req.params.id
+    console.log(`Serving VLA ${id}`)
+    const doc = await coll.findOne({ id })
+    res.json(doc)
+  })
+
   app.post('/api/vla/from-fragments', async (req, res) => {
     const fragments = req.body
     console.log(`Got ${fragments.length} fragments in request`)
