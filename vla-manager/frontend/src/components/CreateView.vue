@@ -12,9 +12,6 @@
   <div class="content">
     <header>
       <h2>Create a new VLA</h2>
-
-      <label for="id">VLA ID:</label>
-      <input id="id" type="text" />
     </header>
     <div class="main-part">
       <button
