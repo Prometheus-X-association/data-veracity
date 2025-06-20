@@ -39,26 +39,28 @@
         <section class="column toolbox">
           <h3>Toolbox</h3>
 
-          <p
-            v-if="lastPath === null"
-            class="json-selection"
-            style="font-style:italic"
-          >
-            Select a JSON element…
-          </p>
-          <p
-            v-else
-            class="json-selection"
-          >
-            {{ lastPath }}
-          </p>
+          <div class="element-req-box">
+            <p
+              v-if="lastPath === null"
+              class="json-selection"
+              style="font-style:italic"
+            >
+              Select a JSON element…
+            </p>
+            <p
+              v-else
+              class="json-selection"
+            >
+              {{ lastPath }}
+            </p>
+            <button
+              @click="showElementReqModal"
+              :disabled="lastPath === null"
+            >
+              Add requirement for data element
+            </button>
+          </div>
 
-          <button
-            @click="showElementReqModal"
-            :disabled="lastPath === null"
-          >
-            Add element requirement
-          </button>
           <button @click="showGenericReqModal">
             Add generic requirement
           </button>
@@ -181,8 +183,7 @@
     background: #ccc;
     padding: 1rem;
     margin: 0 2rem;
-    align-self: stretch;
-    text-align: center;
+    flex-grow: 1;
   }
 
   .fragment {
@@ -201,5 +202,14 @@
     width: 15rem;
     background-color: #e08b1b;
     font-size: 1.5rem;
+  }
+
+  .element-req-box {
+    align-self: stretch;
+    text-align: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    align-items: center;
   }
 </style>

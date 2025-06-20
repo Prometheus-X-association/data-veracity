@@ -2,10 +2,10 @@
   <div class="content">
     <header>
       <h2>View VLAs</h2>
-      <RouterLink to="/create">Create new VLA</RouterLink>
+      <RouterLink to="/create"><button>Create new VLA</button></RouterLink>
     </header>
     <div class="main-part">
-      <vue-json-pretty :data="vlas" />
+      <vue-json-pretty :data="vlas" :deep="1" />
     </div>
   </div>
 </template>
@@ -40,6 +40,7 @@
     flex-direction: column;
     display: flex;
     padding: 1rem;
+    gap: 1rem;
   }
 
   .main-part {
