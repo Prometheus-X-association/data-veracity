@@ -16,6 +16,7 @@ logger = get_logger()
 
 class AoVRequest(BaseModel):
     id: str
+    exchangeID: str
     contract: dict[str, Any]
     data: Any
     attesterID: str
@@ -23,6 +24,8 @@ class AoVRequest(BaseModel):
 
 class AoVGenerationRequest(BaseModel):
     request_id: str
+    exchange_id: str
+    contract_id: str
     subject: str
     issuer_id: str
     payload: dict[str, Any]
@@ -58,6 +61,8 @@ def handle_aov_request(req: AoVRequest) -> AoVGenerationRequest:
 
         return AoVGenerationRequest(
             request_id=req.id,
+            exchange_id=req.exchangeID,
+            contract_id=contract["id"],
             subject=contract["dataProvider"],
             issuer_id=req.attesterID,
             payload={

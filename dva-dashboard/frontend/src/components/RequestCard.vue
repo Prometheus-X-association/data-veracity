@@ -6,7 +6,15 @@
     <div class="card-body">
       <table>
         <tr>
-          <th style="width:40%"><v-icon name="fa-clock" /> Requested</th>
+          <th style="width:44%"><v-icon name="fa-people-arrows" /> Data Exchange ID</th>
+          <td class="data">{{ req.exchangeID }}</td>
+        </tr>
+        <tr>
+          <th><v-icon name="fa-file-signature" /> Contract ID</th>
+          <td class="data">{{ req.contractID }}</td>
+        </tr>
+        <tr>
+          <th><v-icon name="fa-clock" /> Requested</th>
           <td class="data">{{ req.receivedDate }}</td>
         </tr>
         <tr>
@@ -38,7 +46,12 @@
       <hr class="divider" />
 
       <h6 class="card-subtitle">Data</h6>
-      <pre>{{ req.data }}</pre>
+      <vue-json-pretty
+        :data="req.data"
+        :deep="0"
+        :virtual="true"
+        :height="100"
+      />
 
       <hr class="divider" />
 

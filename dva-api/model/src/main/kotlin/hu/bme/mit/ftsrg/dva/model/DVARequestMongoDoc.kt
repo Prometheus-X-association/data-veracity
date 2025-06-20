@@ -8,6 +8,8 @@ import kotlinx.serialization.json.JsonElement
 data class DVARequestMongoDoc(
   val type: String,
   val requestID: String?,
+  val exchangeID: String,
+  val contractID: String,
   val vlaID: String,
   val data: JsonElement,
   val attesterID: String,

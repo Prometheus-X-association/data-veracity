@@ -11,6 +11,7 @@ import java.net.URL
 data class AttestationVerificationRequestDTO(
   val id: String? = null,
   val exchangeID: String,
+  val contractID: String,
   val attesterAgentURL: URL,
   val attesterAgentLabel: String
 )

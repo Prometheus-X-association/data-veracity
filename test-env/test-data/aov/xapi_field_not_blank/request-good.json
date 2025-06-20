@@ -1,5 +1,7 @@
 {
+  "exchangeID": "xchg-0001",
   "contract": {
+    "id": "contract-00001",
     "dataProvider": "/catalog/participants/provider-test-id",
     "dataConsumer": "/catalog/participants/consumer-test-did",
     "serviceOffering": "/catalog/serviceofferings/serviceoffering-test-did",
