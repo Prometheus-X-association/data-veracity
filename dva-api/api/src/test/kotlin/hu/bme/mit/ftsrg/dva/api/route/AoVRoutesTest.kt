@@ -220,7 +220,7 @@ class AoVRoutesTest {
       database.getCollection("requests")
 
     testModule()
-    aovRoutes(rmqConnection = rmqConnectionFactory.newConnection(), aovReqsColl = requestsCollection)
+    aovRoutes(rmqConnection = rmqConnectionFactory.newConnection(),, httpClient = httpClient)
   }
 
   private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {

@@ -1,11 +1,7 @@
-@file:UseSerializers(URLSerializer::class)
-
 package hu.bme.mit.ftsrg.dva.dto.aov
 
 import hu.bme.mit.ftsrg.contractmanager.contract.model.Contract
-import hu.bme.mit.ftsrg.serialization.java.URLSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.JsonElement
 
 @Serializable
