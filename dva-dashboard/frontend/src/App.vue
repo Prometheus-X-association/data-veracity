@@ -28,10 +28,18 @@ export default {
         { header: 'Navigation' },
         {
           href: '/requests',
-          title: 'Requests',
+          title: 'Attestations',
           icon: {
             element: 'v-icon',
             attributes: { name: 'fa-list-ul' }
+          }
+        },
+        {
+          href: '/verifications',
+          title: 'Verifications',
+          icon: {
+            element: 'v-icon',
+            attributes: { name: 'fa-check-double' }
           }
         },
         {
