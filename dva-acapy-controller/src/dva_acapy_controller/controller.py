@@ -40,6 +40,8 @@ class AOV(BaseModel):
 
 class AOVRequest(BaseModel):
     request_id: str
+    exchange_id: str
+    contract_id: str
     subject: str
     issuer_id: str
     payload: Dict[str, Any]
@@ -263,8 +265,8 @@ async def generate_aov(payload: AOVRequest):
         subject=payload.subject,
         issuer_id=payload.issuer_id,
         record_id=str(uuid4()),
-        contract_id=uuid4().hex,
-        data_exchange_id=uuid4().hex,
+        contract_id=payload.contract_id,
+        data_exchange_id=payload.exchange_id,
         payload=json.dumps(payload.payload),
     )
 

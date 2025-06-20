@@ -13,6 +13,7 @@ import java.net.URL
 data class DVAVerificationRequestMongoDoc(
   val requestID: String?,
   val exchangeID: String,
+  val contractID: String,
   val attesterAgentURL: URL,
   val attesterAgentLabel: String,
   val requestedAt: Instant,

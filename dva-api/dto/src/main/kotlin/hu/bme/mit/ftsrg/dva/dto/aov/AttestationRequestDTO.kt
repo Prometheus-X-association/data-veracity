@@ -7,6 +7,7 @@ import kotlinx.serialization.json.JsonElement
 @Serializable
 data class AttestationRequestDTO(
   val id: String? = null,
+  val exchangeID: String,
   val contract: Contract,
   val data: JsonElement,
   val attesterID: String,

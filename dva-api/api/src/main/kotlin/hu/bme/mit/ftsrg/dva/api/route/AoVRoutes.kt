@@ -27,6 +27,7 @@ import io.ktor.server.request.*
 import io.ktor.server.resources.post
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import jdk.internal.vm.ScopedValueContainer.call
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -35,6 +36,7 @@ import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
+import kotlin.contracts.contract
 
 fun Application.aovRoutes(rmqConnection: Connection, mongoDB: CoroutineDatabase, httpClient: HttpClient) {
   routing {
@@ -60,6 +62,8 @@ fun Route.aovRoute(rmqConnection: Connection, mongoDB: CoroutineDatabase, httpCl
         DVARequestMongoDoc(
           type = "aov",
           requestID = requestWithID.id,
+          exchangeID = requestWithID.exchangeID,
+          contractID = requestWithID.contract.id,
           vlaID = requestWithID.contract.vla.id,
           data = requestWithID.data,
           attesterID = requestWithID.attesterID,
@@ -88,6 +92,7 @@ fun Route.aovRoute(rmqConnection: Connection, mongoDB: CoroutineDatabase, httpCl
       req = DVAVerificationRequestMongoDoc(
         requestID = requestWithID.id,
         exchangeID = requestWithID.exchangeID,
+        contractID = requestWithID.contractID,
         attesterAgentURL = requestWithID.attesterAgentURL,
         attesterAgentLabel = requestWithID.attesterAgentLabel,
         requestedAt = Clock.System.now(),
