@@ -111,7 +111,7 @@ In the test output, you should see all JUnit tests passing.
   TemplateRoutesTest > should respond with existing template if exists() PASSED
   [...]
   ```
-</details>.
+</details>
 
 ### DVA Processing Module (`dva-processing`)
 
@@ -139,7 +139,7 @@ All container should start successfully and the `karate` container should exit w
 `karate`’s summary table in the log should show the same number next to `scenarios` as `passed` (ie, all scenarios pass).
 
 <details>
-  <summary>Click to see any example of `karate`’s summary table</summary>
+  <summary>Click to see any example of <code>karate</code>’s summary table</summary>
 
   ```
   karate-1  | Karate version: 1.5.0
