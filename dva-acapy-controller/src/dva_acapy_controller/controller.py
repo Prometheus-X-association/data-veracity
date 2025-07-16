@@ -2,6 +2,7 @@ import requests
 import json
 
 from asyncio import Queue, CancelledError
+from contextlib import asynccontextmanager
 from datetime import datetime
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
@@ -52,7 +53,23 @@ class AoVPresentationRequest(BaseModel):
     attesterAgentURL: str
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app):
+    print(f"{ADMIN_LABEL} Controller is starting...")
+    await presentation_queue.put({"message": "Startup test data!"})
+    print("Starting self initialization...")
+    await init_all_self()
+    print("Self init done!")
+
+    yield
+
+    print(f"{ADMIN_LABEL} Controller is shutting down...")
+    if webhook_logs:
+        with open("log_human_readable.json", "w") as f:
+            json.dump(webhook_logs, f, indent=2)
+
+
+app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
 webhook_logs = []
@@ -61,23 +78,6 @@ presentation_queue = Queue()
 SELF_CONNECTION_ID = None
 SELF_SCHEMA_ID = None
 SELF_CRED_DEF_ID = None
-
-
-@app.on_event("startup")
-async def startup_event():
-    print(f"{ADMIN_LABEL} Controller is starting...")
-    await presentation_queue.put({"message": "Startup test data!"})
-    print("Starting self initialization...")
-    await init_all_self()
-    print("Self init done!")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    print(f"{ADMIN_LABEL} Controller is shutting down...")
-    if webhook_logs:
-        with open("log_human_readable.json", "w") as f:
-            json.dump(webhook_logs, f, indent=2)
 
 
 @app.get("/", response_class=HTMLResponse)
