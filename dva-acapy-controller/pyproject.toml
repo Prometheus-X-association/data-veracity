@@ -8,6 +8,7 @@ authors = [
     { name = "FTSRG", email = "bpeter@edu.bme.hu" },
     { name = "Rajmund Szilveszter Hubai", email = "hubai.rajmund@edu.bme.hu" }
 ]
+license = "Apache-2.0"
 dependencies = [
     "fastapi~=0.115.12",
     "httpx~=0.28.1",

@@ -1,6 +1,8 @@
 plugins {
     // Apply the Java plugin
     java
+    // Apply the dependency license report plugin
+    id("com.github.jk1.dependency-license-report")
 }
 
 repositories {

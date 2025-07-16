@@ -10,6 +10,7 @@ repositories {
 }
 
 dependencies {
+    implementation(libs.dependency.license.report.gradle.plugin)
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.kover.gradle.plugin)
     implementation(libs.shadow.gradle.plugin)
