@@ -1,8 +1,11 @@
 import great_expectations as gx
 import pandas as pd
 
+from types import SimpleNamespace
+from yaml import safe_load
+
 from .log import get_logger
-from .serialization import parse_ge_yaml
+
 
 logger = get_logger()
 
@@ -34,7 +37,7 @@ def validate_data(data, vla):
         for q in vla["schema"][0]["quality"]  # XXX
         if q["engine"] == "greatExpectations"
     ]:
-        check = parse_ge_yaml(check_str)
+        check = SimpleNamespace(**(safe_load(check_str)))
         gx_func = getattr(gx.expectations, check.type)
         exp = gx_func(**check.kwargs)
 
