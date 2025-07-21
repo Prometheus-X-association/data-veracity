@@ -1,7 +1,5 @@
 ---
 openapi: 3.0.3
-
-
 info:
   title: Data Veracity Assurance
   description: |-
@@ -9,9 +7,7 @@ info:
     [data veracity assurance building block (DVA)](https://github.com/Prometheus-X-association/data-veracity).
   contact:
     email: bpeter@edu.bme.hu
-  version: 0.2.0
-
-
+  version: 0.3.0
 servers:
   - url: http://localhost:9090
     description: Local development server running on default port
@@ -21,8 +17,6 @@ servers:
       server:
         default: http://example.com:1234
         description: Custom server URL
-
-
 tags:
   - name: VLA
     description: Endpoints related to veracity level agreements (VLAs)
@@ -30,13 +24,12 @@ tags:
     description: Endpoints related to attestations of veracity (AoVs)
   - name: PoV
     description: Endpoints related to proofs of veracity (PoVs)
-
-
+  - name: Info
+    description: Endpoints related to retrieving information about the running instance
 paths:
-
   /template:
     post:
-      tags: [ VLA ]
+      tags: [VLA]
       summary: Create new VLA template
       description: >
         Add a new **VLA template** to the database.
@@ -56,7 +49,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidData'
     get:
-      tags: [ VLA ]
+      tags: [VLA]
       summary: Get all VLA templates
       description: >
         Returns all available **VLA templates** from the database as an array.
@@ -68,7 +61,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TemplateArray'
-
   /template/{id}:
     parameters:
       - name: id
@@ -78,11 +70,12 @@ paths:
           $ref: '#/components/schemas/Id'
         description: A VLA template’s ID
     get:
-      tags: [ VLA ]
+      tags: [VLA]
       summary: Get VLA template by ID
       description: >
         Queries a specific **VLA template** by its unique ID.
-        Responds either with `200 OK` and the contents of the requested template or with `404 NOT FOUND` if no VLA template with the specified ID exists.
+        Responds either with `200 OK` and the contents of the requested template or
+        with `404 NOT FOUND` if no VLA template with the specified ID exists.
       operationId: getTemplate
       responses:
         '200':
@@ -94,12 +87,14 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
-      tags: [ VLA ]
+      tags: [VLA]
       summary: Update VLA template
       description: >
         Used to update an existing **VLA template** specified by its ID.
-        The request body should contain a partial VLA template object – only specified fields will be updated, if possible.
-        Responds with `200 OK` if the update operation was successful or `404 NOT FOUND` if no VLA template with the specified ID exists.
+        The request body should contain a partial VLA template object – only specified
+        fields will be updated, if possible.
+        Responds with `200 OK` if the update operation was successful or `404 NOT
+        FOUND` if no VLA template with the specified ID exists.
       operationId: updateTemplate
       requestBody:
         required: true
@@ -113,27 +108,88 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
-      tags: [ VLA ]
+      tags: [VLA]
       summary: Delete VLA template
       description: >
         Delete a **VLA template** specified by its ID.
-        Responds `200 OK` if the template was successfully deleted or `400 NOT FOUND` if no template with the specified ID exists.
+        Responds `200 OK` if the template was successfully deleted or `404  FOUND`
+        if no template with the specified ID exists.
       operationId: deleteTemplate
       responses:
         '200':
           $ref: '#/components/responses/Deleted'
         '404':
           $ref: '#/components/responses/NotFound'
-
+  /vla:
+    post:
+      tags: [VLA]
+      summary: Create a new VLA
+      description: >
+        Create a new **Veracity Level Agreement (VLA).**
+        Responds `201 CREATED` if the VLA was successfully created or `400 BAD REQUEST`
+        if creation failed.
+      operationId: createVLA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VLACreate'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/InvalidData'
+    get:
+      tags: [VLA]
+      summary: Get all VLAs
+      description: >
+        Returns all available **Veracity Level Agreements** from the database as an
+        array.
+      operationId: getVLAs
+      responses:
+        '200':
+          description: The list of known VLAs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VLAArray'
+  /vla/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+        description: A VLA’s ID
+    get:
+      tags: [VLA]
+      summary: Get VLA by ID
+      description: >
+        Queries a specific **Veracity Level Agreement** by its unique ID.
+        Responds either with `200 OK` and the contents of the requested VLA or with
+        `404 NOT FOUND` if no VLA with the specified ID exists.
+      operationId: getVLA
+      responses:
+        '200':
+          description: Returning requested VLA
+          content:
+            application/json:
+              schema:
+                $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json
+        '404':
+          $ref: '#/components/responses/NotFound'
   /attestation:
     post:
-      tags: [ AoV ]
+      tags: [AoV]
       summary: Submit an attestation request
       description: >
         Create a new **AoV request** for a given data exchange.
         Requests are processed asynchronously.
-        If your request has been accepted for processing, the response will be `202 ACCEPTED`.
-        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST` error.
+        If your request has been accepted for processing, the response will be `202
+        ACCEPTED`.
+        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST`
+        error.
       operationId: requestAov
       requestBody:
         required: true
@@ -146,64 +202,40 @@ paths:
           $ref: '#/components/responses/Accepted'
         '400':
           $ref: '#/components/responses/InvalidData'
-      callbacks:
-        created:
-          '${request.body#/callbackUrl}':
-            post:
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Aov'
-              responses:
-                '200':
-                  description: AoV received
-
   /attestation/verify:
     post:
-      tags: [ AoV ]
+      tags: [AoV]
       summary: Submit an AoV verification request
       description: >
         Create a new **AoV verification request** for a given AoV.
         Requests are processed asynchronously.
-        If your request has been accepted for processing, the response will be `202 ACCEPTED`.
-        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST` error.
+        If your request has been accepted for processing, the response will be `202
+        ACCEPTED`.
+        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST`
+        error.
       operationId: requestAovVerification
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Aov'
+              $ref: '#/components/schemas/VerificationRequest'
       responses:
         '202':
           $ref: '#/components/responses/Accepted'
         '400':
           $ref: '#/components/responses/InvalidData'
-      callbacks:
-        created:
-          '${request.body#/callbackUrl}':
-            post:
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/VerificationResult'
-              responses:
-                '200':
-                  description: Verification result received
-
   /proof:
     post:
-      tags: [ PoV ]
+      tags: [PoV]
       summary: Submit proof generation request
       description: >
         Create a new **PoV request** for a given data exchange.
         Requests are processed asynchronously.
-        If your request has been accepted for processing, the response will be `202 ACCEPTED`.
-        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST` error.
+        If your request has been accepted for processing, the response will be `202
+        ACCEPTED`.
+        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST`
+        error.
       operationId: requestPov
       requestBody:
         required: true
@@ -216,138 +248,167 @@ paths:
           $ref: '#/components/responses/Accepted'
         '400':
           $ref: '#/components/responses/InvalidData'
-      callbacks:
-        created:
-          '${request.body#/callbackUrl}':
-            post:
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Pov'
-              responses:
-                '200':
-                  description: PoV received
-
   /proof/verify:
     post:
-      tags: [ PoV ]
+      tags: [PoV]
       summary: Submit PoV verification request
       description: >
         Create a new **PoV verification request** for a given PoV.
         Requests are processed asynchronously.
-        If your request has been accepted for processing, the response will be `202 ACCEPTED`.
-        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST` error.
+        If your request has been accepted for processing, the response will be `202
+        ACCEPTED`.
+        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST`
+        error.
       operationId: requestPovVerification
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Pov'
+              $ref: '#/components/schemas/VerificationRequest'
       responses:
         '202':
           $ref: '#/components/responses/Accepted'
         '400':
           $ref: '#/components/responses/InvalidData'
-      callbacks:
-        created:
-          '${request.body#/callbackUrl}':
-            post:
-              requestBody:
-                required: true
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/VerificationResult'
-              responses:
-                '200':
-                  description: Verification result received
-
-
+  /info/requests:
+    get:
+      tags: [Info]
+      summary: Get all DVA attestation/proof requests
+      operationId: getRequests
+      responses:
+        '200':
+          description: Returning all known requests
+          content:
+            application/json:
+              schema:
+                type: object
+  /info/presentations:
+    get:
+      tags: [Info]
+      summary: Get all DVA presentations/verifications
+      operationId: getPresentations
+      responses:
+        '200':
+          description: Returning all known presentations
+          content:
+            application/json:
+              schema:
+                type: object
+  /info/credentials:
+    get:
+      tags: [Info]
+      summary: Get all stored verifiable credentials
+      operationId: getCredentials
+      responses:
+        '200':
+          description: Returning all stored VCs
+          content:
+            application/json:
+              schema:
+                type: object
 components:
-
   schemas:
     Id:
       type: string
-      example: 'template-0001'
+      example: 8e51e3a7-c614-4f5f-9ecf-8e2b032d72e4
     IdObject:
       type: object
       properties:
         id:
           $ref: '#/components/schemas/Id'
-      required: [ id ]
+      required: [id]
       example:
-        id: 'template-0001'
-
+        id: 8d70bc5f-f690-4b66-a7b0-c05c8c815dad
     TemplateArray:
       type: array
       items:
         $ref: '#/components/schemas/Template'
     Template:
       type: object
-      required: [ id ]
+      required:
+        - id
+        - name
+        - criterionType
+        - targetAspect
+        - evaluatoinMethod
       additionalProperties: false
       properties:
         id:
           type: string
-        objective:
-          $ref: '#/components/schemas/Objective'
+        name:
+          type: string
+        description:
+          type: string
+        criterionType:
+          $ref: '#/components/schemas/CriterionType'
+        targetAspect:
+          $ref: '#/components/schemas/QualityAspect'
+        evaluationMethod:
+          type: object
+          required: [engine, variableSchema, implementationTemplate]
+          additionalProperties: false
+          properties:
+            engine:
+              type: string
+            variableSchema:
+              type: object
+            implementationTemplate:
+              type: string
       example:
-        id: template-0001
-        objective:
-          evaluationScheme:
-            evaluationMethod: 'setMembershipCheck'
-            criterionType: 'validInvalid'
-            targetAspect: 'syntax'
+        id: json-schema-check
+        name: JSON Schema
+        description: >-
+          Data should conform to a JSON schema with the given URL
+        criterionType: validInvalid
+        targetAspect: syntax
+        evaluationMethod:
+          engine: schema
+          variableSchema:
+            schemaURL:
+              type: string
+          implementationTemplate: '{{ schemaURL }}'
     TemplateCreate:
       allOf:
         - $ref: '#/components/schemas/Template'
-      required: [ objective ]
     TemplateUpdate:
       allOf:
         - $ref: '#/components/schemas/Template'
-      minProperties: 2
-    Objective:
-      type: object
-      properties:
-        evaluationScheme:
-          $ref: '#/components/schemas/EvaluationScheme'
-        targetAspect:
-          $ref: '#/components/schemas/QualityAspect'
-    EvaluationScheme:
-      type: object
-      properties:
-        evaluationMethod:
-          $ref: '#/components/schemas/EvaluationMethod'
-        criterionType:
-          $ref: '#/components/schemas/CriterionType'
-    EvaluationMethod:
-      type: string
+    VLACreate:
+      allOf:
+        - $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json
+    VLAArray:
+      type: array
+      items:
+        $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json
     CriterionType:
       type: string
-      enum: [ 'validInvalid', 'withinRange', 'greaterOrLessThan' ]
+      enum: [validInvalid, withinRange, greaterOrLessThan]
     QualityAspect:
       type: string
-      enum: [ 'syntax', 'timeliness', 'accuracy', 'completeness', 'consistency' ]
-
-    AttestationRequest:
+      enum: [syntax, timeliness, accuracy, completeness, consistency]
+    VeracityRequest:
       type: object
-      required: [contract, data, attesterId, callbackUrl]
+      required: [exchangeID, contract, data]
       properties:
+        exchangeID:
+          type: string
+          example: 75c411c0-4016-4f83-a3e8-66b137080d86
         contract:
           type: object
+          required: [id, vla]
+          additionalProperties: true
+          properties:
+            id:
+              type: string
+            vla:
+              $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json
         data:
-          type: string
-          format: binary
-        attesterId:
-          type: string
-        callbackUrl:
-          type: string
-          format: uri
+          $ref: '#/components/schemas/AnyValue'
       example:
+        exchangeID: xchg-0001
         contract:
+          id: contract-0001
           dataProvider: /catalog/participants/provider-test-id
           dataConsumer: /catalog/participants/consumer-test-did
           serviceOffering: /catalog/serviceofferings/serviceoffering-test-did
@@ -359,96 +420,96 @@ components:
           policy:
             - uid: /policy/policy-0-uid
               permission:
-                - type: hu.bme.mit.ftsrg.odrl.model.rule.Permission
-                  target:
-                    uid: /target/3f8d1b0e-8e2e-4b69-9b1f-089fe2f3e9d7
-                  rule:
-                    action: USE
-        data: []
-        attesterID: attester-0000
-        callbackURL: http://example.com/callback
-
-    ProofRequest:
-      type: object
-      required: [contract, data, attesterId, callbackUrl]
-      properties:
-        contract:
-          type: object
+                - type: permission
+                  uid: /target/3f8d1b0e-8e2e-4b69-9b1f-089fe2f3e9d7
+                  action: use
+          vla:
+            id: 2e99b60d-8cf7-4668-a234-96ebfd6a2b63
+            kind: DataContract
+            schema:
+              name: xapi_statement
+              logicalType: object
+              properties:
+                - name: actor
+                  logicalType: object
+                  required: true
+                - name: verb
+                  logicalType: object
+                  required: true
+                - name: object
+                  logicalType: object
+                  required: true
+                - name: result
+                  logicalType: object
+                  required: true
+                - name: timestamp
+                  logicalType: string
+                  required: true
+              quality:
+                - type: custom
+                  engine: greatExpectations
+                  implementation: >-
+                    type: ExpectColumnValuesToBeBetween
+                    kwargs:
+                      column: timestamp
+                      min_value: '2025-01-01T00:00:00Z'
+                      max_value: '2026-01-01T00:00:00Z'
         data:
-          type: string
-          format: binary
-        proverId:
-          type: string
-        callbackUrl:
-          type: string
-          format: uri
-
-    VerifiableCredential:
-      type: object
-      required: [id, type, validFrom, credentialSubject, issuer]
-      properties:
-        id:
-          $ref: '#/components/schemas/Id'
-        type:
-          type: string
-        validFrom:
-          type: string
-          format: date-time
-        credentialSubject:
-          type: object
-          properties:
-            id:
-              $ref: '#/components/schemas/Id'
-        issuer:
-          type: string
-
-    Aov:
-      type: object
+          actor:
+            name: Jean Dupont
+            mbox: mailto:jeandupont@example.com
+          verb:
+            id: http://adlnet.gov/expapi/verbs/interacted
+          object:
+            id: https://navy.mil/netc/xapi/activities/simulations/b9e16535-4fc9-4c66-ac87-3ad7ce515f5c/events/0221144
+            definition:
+              name:
+                en-US: Event in Simulator
+              description:
+                en-US: You're wearing all your PPE
+              type: http://adlnet.gov/expapi/activities/interaction
+          result:
+            success: true
+          timestamp: '2025-03-16T03:25:00Z'
+    AttestationRequest:
       allOf:
-        - $ref: '#/components/schemas/VerifiableCredential'
+        - $ref: '#/components/schemas/VeracityRequest'
+      required: [attesterID]
       properties:
-        credentialSubject:
-          type: object
-          properties:
-            id:
-              $ref: '#/components/schemas/Id'
-            contractId:
-              type: string
-            evaluations:
-              type: array
-              items:
-                description: Evaluation ID
-                type: string
-
-    Pov:
-      type: object
+        attesterID:
+          type: string
+    ProofRequest:
       allOf:
-        - $ref: '#/components/schemas/VerifiableCredential'
+        - $ref: '#/components/schemas/VeracityRequest'
+      required: [proverID]
       properties:
-        credentialSubject:
-          type: object
-          properties:
-            id:
-              $ref: '#/components/schemas/Id'
-            contractId:
-              type: string
-            proof:
-              type: string
-              format: binary
-
-    VerificationResult:
+        proverID:
+          type: string
+    VerificationRequest:
       type: object
+      required:
+        - exchangeID
+        - contractID
+        - attesterAgentURL
+        - attesterAgentLabel
+      additionalProperties: false
       properties:
-        success:
-          type: boolean
-
+        exchangeID:
+          type: string
+        contractID:
+          type: string
+        attesterAgentURL:
+          type: string
+          format: url
+        attesterAgentLabel:
+          type: string
     Error:
       type: object
+      required: [message]
       properties:
         message:
           type: string
-      required: [ type ]
-
+    AnyValue: {}
   responses:
     Created:
       description: The resource has been created successfully
@@ -474,7 +535,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/IdObject'
-
     NotFound:
       description: The requested resource was not found
       content:
