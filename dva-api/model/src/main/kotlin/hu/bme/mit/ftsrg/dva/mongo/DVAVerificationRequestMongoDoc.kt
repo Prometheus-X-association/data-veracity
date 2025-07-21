@@ -1,6 +1,6 @@
 @file:UseSerializers(URLSerializer::class)
 
-package hu.bme.mit.ftsrg.dva.model
+package hu.bme.mit.ftsrg.dva.mongo
 
 import hu.bme.mit.ftsrg.serialization.java.URLSerializer
 import kotlinx.datetime.Instant

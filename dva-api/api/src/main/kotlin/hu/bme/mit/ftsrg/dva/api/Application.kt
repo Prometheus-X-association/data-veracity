@@ -2,8 +2,6 @@ package hu.bme.mit.ftsrg.dva.api
 
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
-import hu.bme.mit.ftsrg.deprecated.FakeVLATemplateRepository
-import hu.bme.mit.ftsrg.deprecated.VLATemplateRepository
 import hu.bme.mit.ftsrg.dva.api.error.addHandlers
 import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
@@ -29,8 +27,6 @@ import io.ktor.server.application.install as serverInstall
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
-  val templateRepository = FakeVLATemplateRepository()
-
   val rmqConnectionFactory = ConnectionFactory().apply {
     host = environment.config.property("rabbitmq.host").getString()
   }
@@ -52,7 +48,6 @@ fun Application.module() {
 
   installPlugins()
   addRoutes(
-    templateRepository = templateRepository,
     rmqConnection = rmqConnection,
     mongoDB = database,
     httpClient = httpClient,
@@ -83,12 +78,11 @@ fun Application.installPlugins() {
 }
 
 fun Application.addRoutes(
-  templateRepository: VLATemplateRepository,
   rmqConnection: Connection,
   mongoDB: CoroutineDatabase,
   httpClient: HttpClient,
 ) {
   docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
-  templateRoutes(templateRepository)
+  templateRoutes()
   aovRoutes(rmqConnection, mongoDB, httpClient)
 }

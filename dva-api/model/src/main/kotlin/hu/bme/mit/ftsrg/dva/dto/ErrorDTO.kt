@@ -12,5 +12,3 @@ data class ErrorDTO(
   var detail: String? = null,
   var instance: String? = null
 )
-
-fun errorDTO(init: ErrorDTO.() -> Unit): ErrorDTO = ErrorDTO().apply(init)

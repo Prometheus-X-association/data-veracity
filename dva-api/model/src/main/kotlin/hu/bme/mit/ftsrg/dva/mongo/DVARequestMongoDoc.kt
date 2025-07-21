@@ -1,4 +1,4 @@
-package hu.bme.mit.ftsrg.dva.model
+package hu.bme.mit.ftsrg.dva.mongo
 
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable

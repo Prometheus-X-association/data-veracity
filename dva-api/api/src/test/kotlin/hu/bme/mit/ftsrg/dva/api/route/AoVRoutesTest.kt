@@ -1,39 +1,18 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
 import com.rabbitmq.client.ConnectionFactory
-import hu.bme.mit.ftsrg.contractmanager.contract.model.Contract
-import hu.bme.mit.ftsrg.contractmanager.contract.model.Negotiator
-import hu.bme.mit.ftsrg.contractmanager.contract.model.Purpose
-import hu.bme.mit.ftsrg.contractmanager.contract.model.Status
 import hu.bme.mit.ftsrg.dva.api.testutil.testModule
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
-import hu.bme.mit.ftsrg.dva.model.DVARequestMongoDoc
-import hu.bme.mit.ftsrg.odcs.model.fundamentals.APIVersion
-import hu.bme.mit.ftsrg.odcs.model.fundamentals.FileKind
-import hu.bme.mit.ftsrg.odcs.model.quality.DataQuality
-import hu.bme.mit.ftsrg.odcs.model.quality.DataQualityCustom
-import hu.bme.mit.ftsrg.odcs.model.quality.DataQualityType
-import hu.bme.mit.ftsrg.odcs.model.schema.LogicalType
-import hu.bme.mit.ftsrg.odcs.model.schema.SchemaElement
-import hu.bme.mit.ftsrg.odcs.model.schema.SchemaObject
-import hu.bme.mit.ftsrg.odcs.model.schema.SchemaProperty
-import hu.bme.mit.ftsrg.odrl.model.asset.Asset
-import hu.bme.mit.ftsrg.odrl.model.policy.Policy
-import hu.bme.mit.ftsrg.odrl.model.rule.Action
-import hu.bme.mit.ftsrg.odrl.model.rule.Permission
-import hu.bme.mit.ftsrg.odrl.model.rule.Rule
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
-import kotlinx.serialization.json.Json
-import org.apache.jena.iri.IRIFactory
+import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.litote.kmongo.coroutine.CoroutineClient
-import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
@@ -42,7 +21,6 @@ import org.testcontainers.containers.RabbitMQContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
-import hu.bme.mit.ftsrg.odcs.model.Contract as ODCSContract
 
 /* TODO: These tests should not be coupled with FakeAttestationRequestRepository */
 @Testcontainers
@@ -63,103 +41,116 @@ class AoVRoutesTest {
       id = "request-test-0000",
       exchangeID = "xchg-0000",
       attesterID = "attester-0000",
-      contract = Contract(
-        id = "contract-0001",
-        dataProvider = "/catalog/participants/provider-test-id",
-        dataConsumer = "/catalog/participants/consumer-test-did",
-        serviceOffering = "/catalog/serviceofferings/serviceoffering-test-did",
-        purpose = listOf(
-          Purpose(
-            purpose = "/catalog/serviceofferings",
-            piiCategory = emptyList(),
-          ),
-        ),
-        negotiators = listOf(
-          Negotiator("/catalog/participants/provider-test-id"),
-          Negotiator("/catalog/participants/consumer-test-did"),
-        ),
-        status = Status.PENDING,
-        policy = listOf(
-          Policy(
-            uid = iriFactory.create("/policy/policy-0-uid"),
-            permission = listOf(
-              Permission(
-                target = Asset(uid = iriFactory.create("/target/3f8d1b0e-8e2e-4b69-9b1f-089fe2f3e9d7")),
-                rule = Rule(action = Action.USE),
-              )
-            ),
-          )
-        ),
-        vla = ODCSContract(
-          version = "1.0.0",
-          kind = FileKind.DATA_CONTRACT,
-          id = UUID.randomUUID().toString(),
-          status = "active",
-          name = "test",
-          dataProduct = "test",
-          apiVersion = APIVersion.V3_0_1,
-          schema = listOf(
-            SchemaObject(
-              schemaElement = SchemaElement(name = "xapi_statement"),
-              logicalType = LogicalType.OBJECT,
-              properties = listOf(
-                SchemaProperty(
-                  schemaElement = SchemaElement(name = "id"),
-                  logicalType = LogicalType.STRING,
-                ),
-                SchemaProperty(
-                  schemaElement = SchemaElement(name = "actor"),
-                  logicalType = LogicalType.OBJECT,
-                  required = true,
-                ),
-                SchemaProperty(
-                  schemaElement = SchemaElement(name = "verb"),
-                  logicalType = LogicalType.OBJECT,
-                  required = true,
-                ),
-                SchemaProperty(
-                  schemaElement = SchemaElement(name = "object"),
-                  logicalType = LogicalType.OBJECT,
-                  required = true,
-                ),
-                SchemaProperty(
-                  schemaElement = SchemaElement(name = "result"),
-                  logicalType = LogicalType.OBJECT,
-                ),
-                SchemaProperty(
-                  schemaElement = SchemaElement(name = "context"),
-                  logicalType = LogicalType.OBJECT,
-                ),
-                SchemaProperty(
-                  schemaElement = SchemaElement(name = "timestamp"),
-                  logicalType = LogicalType.STRING,
-                ),
-                SchemaProperty(
-                  schemaElement = SchemaElement(name = "stored"),
-                  logicalType = LogicalType.STRING,
-                ),
-                SchemaProperty(
-                  schemaElement = SchemaElement(name = "version"),
-                  logicalType = LogicalType.STRING,
-                ),
-              ),
-              quality = listOf(
-                DataQualityCustom(
-                  dataQuality = DataQuality(type = DataQualityType.CUSTOM),
-                  engine = "greatExpectations",
-                  implementation = """
+      contract = buildJsonObject {
+        put("id", "contract-0001")
+        put("dataProvider", "/catalog/participants/provider-test-id")
+        put("dataConsumer", "/catalog/participants/consumer-test-did")
+        put("serviceOffering", "/catalog/serviceofferings/serviceoffering-test-did")
+
+        putJsonArray("purpose") {
+          addJsonObject {
+            put("purpose", "/catalog/serviceofferings")
+            put("piiCategory", buildJsonArray {})
+          }
+        }
+
+        putJsonArray("negotiators") {
+          addJsonObject {
+            put("did", "/catalog/participants/provider-test-id")
+          }
+          addJsonObject {
+            put("did", "/catalog/participants/consumer-test-id")
+          }
+        }
+
+        put("status", "pending")
+
+        putJsonArray("policy") {
+          addJsonObject {
+            put("uid", "/policy/policy-0-uid")
+            putJsonArray("permission") {
+              addJsonObject {
+                put("target", "/target/3f8d1b0e-8e2e-4b69-9b1f-089fe2f3e9d7")
+                put("action", "use")
+              }
+            }
+          }
+        }
+
+        putJsonObject("vla") {
+          put("version", "1.0.0")
+          put("kind", "DataContract")
+          put("id", UUID.randomUUID().toString())
+          put("status", "active")
+          put("name", "test")
+          put("dataProduct", "test")
+          put("apiVersion", "v3.0.1")
+
+          putJsonArray("schema") {
+            addJsonObject {
+              put("schemaElement", "xapi_statement")
+              put("logicalType", "object")
+              putJsonArray("properties") {
+                addJsonObject {
+                  put("schemaElement", "id")
+                  put("logicalType", "string")
+                }
+                addJsonObject {
+                  put("schemaElement", "actor")
+                  put("logicalType", "object")
+                  put("required", true)
+                }
+                addJsonObject {
+                  put("schemaElement", "verb")
+                  put("logicalType", "object")
+                  put("required", true)
+                }
+                addJsonObject {
+                  put("schemaElement", "object")
+                  put("logicalType", "object")
+                  put("required", true)
+                }
+                addJsonObject {
+                  put("schemaElement", "result")
+                  put("logicalType", "object")
+                }
+                addJsonObject {
+                  put("schemaElement", "context")
+                  put("logicalType", "object")
+                }
+                addJsonObject {
+                  put("schemaElement", "timestamp")
+                  put("logicalType", "string")
+                }
+                addJsonObject {
+                  put("schemaElement", "stored")
+                  put("logicalType", "string")
+                }
+                addJsonObject {
+                  put("schemaElement", "version")
+                  put("logicalType", "string")
+                }
+              }
+              putJsonArray("quality") {
+                addJsonObject {
+                  put("dataQuality", "custom")
+                  put("engine", "greatExpectations")
+                  put(
+                    "implementation",
+                    """
                         type: ExpectColumnValuesToBeBetween
                         kwargs:
                           column: timestamp
                           min_value: '2025-01-01T00:00:00Z'
                           max_value: '2026-01-01T00:00:00Z'
                       """.trimIndent()
-                )
-              )
-            )
-          )
-        ),
-      ),
+                  )
+                }
+              }
+            }
+          }
+        }
+      },
       data = Json.parseToJsonElement(
         """
         {
@@ -219,8 +210,6 @@ class AoVRoutesTest {
     val mongoClient: CoroutineClient =
       KMongo.createClient("mongodb://${mongoContainer.host}:${mongoContainer.firstMappedPort}").coroutine
     val database: CoroutineDatabase = mongoClient.getDatabase("dva-test")
-    val requestsCollection: CoroutineCollection<DVARequestMongoDoc> =
-      database.getCollection("requests")
 
     testModule()
     aovRoutes(
@@ -233,6 +222,4 @@ class AoVRoutesTest {
   private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {
     install(ContentNegotiation) { json() }
   }
-
-  private val iriFactory = IRIFactory.iriImplementation()
 }

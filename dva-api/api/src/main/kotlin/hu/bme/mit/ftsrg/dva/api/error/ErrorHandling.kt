@@ -2,10 +2,7 @@ package hu.bme.mit.ftsrg.dva.api.error
 
 import hu.bme.mit.ftsrg.dva.api.error.ErrorType.*
 import hu.bme.mit.ftsrg.dva.dto.ErrorDTO
-import hu.bme.mit.ftsrg.dva.persistence.error.EntityExistsException
-import hu.bme.mit.ftsrg.dva.persistence.error.EntityNotFoundException
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.InternalServerError
 import io.ktor.http.HttpStatusCode.Companion.NotFound
 import io.ktor.http.HttpStatusCode.Companion.NotImplemented
@@ -29,14 +26,6 @@ suspend fun handleException(call: ApplicationCall, cause: Throwable) {
   }
 
   when (cause) {
-    is EntityExistsException -> {
-      call.respond(message = call.toErrorDTO(ALREADY_EXISTS, cause), status = BadRequest)
-    }
-
-    is NotFoundError, is EntityNotFoundException -> {
-      call.respond(message = call.toErrorDTO(NOT_FOUND, cause), status = NotFound)
-    }
-
     is UnimplementedError -> {
       call.respond(message = call.toErrorDTO(UNIMPLEMENTED, cause), status = NotImplemented)
     }
