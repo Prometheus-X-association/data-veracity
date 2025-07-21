@@ -16,7 +16,7 @@ At the moment, DVA has several subcomponents:
 * **ACA-Py Controller** in [`dva-acapy-controller/`](dva-acapy-controller/) – contains SSI/VC-related logic
 * **ACA-Py Agent** from [`ghcr.io/hyperledger/aries-cloudagent-python`](https://github.com/orgs/hyperledger/packages/container/package/aries-cloudagent-python) – an SSI cloud agent (~ wallet)
 * **MongoDB** from [`mongo`](https://hub.docker.com/_/mongo) – stores application state, events, and _logs_
-* **Dashboard** in [`dva-dashboard/`] – full stack application that displays MongoDB contents on a dashboard interface
+* **Dashboard** in [`dva-dashboard/`](dva-dashboard/) – full stack application that displays MongoDB contents on a dashboard interface
 * **VLA Manager** in [`vla-manager`](vla-manager/) – full stack application that manages VLAs (creation, display, etc)
 
 All of these are either existing Docker images or have been prepared for docker image building.
