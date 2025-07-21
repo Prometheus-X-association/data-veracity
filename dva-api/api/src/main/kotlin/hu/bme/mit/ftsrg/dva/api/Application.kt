@@ -2,12 +2,12 @@ package hu.bme.mit.ftsrg.dva.api
 
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
+import hu.bme.mit.ftsrg.deprecated.FakeVLATemplateRepository
+import hu.bme.mit.ftsrg.deprecated.VLATemplateRepository
 import hu.bme.mit.ftsrg.dva.api.error.addHandlers
 import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
 import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
-import hu.bme.mit.ftsrg.dva.persistence.repository.VLATemplateRepository
-import hu.bme.mit.ftsrg.dva.persistence.repository.fake.FakeVLATemplateRepository
 import io.ktor.client.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*

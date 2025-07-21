@@ -1,11 +1,11 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
-import hu.bme.mit.ftsrg.dva.dto.IDDTO
+import hu.bme.mit.ftsrg.deprecated.VLATemplateRepository
 import hu.bme.mit.ftsrg.dva.api.error.NotFoundError
 import hu.bme.mit.ftsrg.dva.api.error.UnimplementedError
 import hu.bme.mit.ftsrg.dva.api.resource.Templates
+import hu.bme.mit.ftsrg.dva.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.model.vla.VLATemplate
-import hu.bme.mit.ftsrg.dva.persistence.repository.VLATemplateRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*

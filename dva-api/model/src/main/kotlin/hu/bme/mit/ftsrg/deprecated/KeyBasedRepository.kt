@@ -1,4 +1,4 @@
-package hu.bme.mit.ftsrg.dva.persistence.repository
+package hu.bme.mit.ftsrg.deprecated
 
 interface KeyBasedRepository<EntityType, KeyType> {
   fun all(): List<EntityType>

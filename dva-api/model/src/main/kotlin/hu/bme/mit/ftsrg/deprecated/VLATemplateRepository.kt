@@ -1,4 +1,4 @@
-package hu.bme.mit.ftsrg.dva.persistence.repository
+package hu.bme.mit.ftsrg.deprecated
 
 import hu.bme.mit.ftsrg.dva.model.vla.VLATemplate
 

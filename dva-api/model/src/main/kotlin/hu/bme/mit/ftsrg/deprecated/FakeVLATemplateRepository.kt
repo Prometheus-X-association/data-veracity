@@ -1,9 +1,12 @@
-package hu.bme.mit.ftsrg.dva.persistence.repository.fake
+package hu.bme.mit.ftsrg.deprecated
 
-import hu.bme.mit.ftsrg.dva.model.vla.*
+import hu.bme.mit.ftsrg.dva.model.vla.CriterionType
+import hu.bme.mit.ftsrg.dva.model.vla.EvaluationScheme
+import hu.bme.mit.ftsrg.dva.model.vla.QualityAspect
+import hu.bme.mit.ftsrg.dva.model.vla.VLATemplate
+import hu.bme.mit.ftsrg.dva.model.vla.VeracityObjective
 import hu.bme.mit.ftsrg.dva.persistence.error.EntityExistsException
 import hu.bme.mit.ftsrg.dva.persistence.error.EntityNotFoundException
-import hu.bme.mit.ftsrg.dva.persistence.repository.VLATemplateRepository
 
 class FakeVLATemplateRepository : VLATemplateRepository {
   private val templates = mutableMapOf(
