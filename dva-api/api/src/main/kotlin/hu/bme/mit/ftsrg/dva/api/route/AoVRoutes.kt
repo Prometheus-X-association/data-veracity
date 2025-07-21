@@ -10,8 +10,8 @@ import hu.bme.mit.ftsrg.dva.dto.aov.ACAPyPresentationRequestDTO
 import hu.bme.mit.ftsrg.dva.dto.aov.ACAPyPresentationResponseDTO
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationVerificationRequestDTO
-import hu.bme.mit.ftsrg.dva.model.DVARequestMongoDoc
-import hu.bme.mit.ftsrg.dva.model.DVAVerificationRequestMongoDoc
+import hu.bme.mit.ftsrg.dva.mongo.DVARequestMongoDoc
+import hu.bme.mit.ftsrg.dva.mongo.DVAVerificationRequestMongoDoc
 import io.github.viartemev.rabbitmq.channel.confirmChannel
 import io.github.viartemev.rabbitmq.channel.publish
 import io.github.viartemev.rabbitmq.publisher.OutboundMessage
@@ -27,16 +27,15 @@ import io.ktor.server.request.*
 import io.ktor.server.resources.post
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import jdk.internal.vm.ScopedValueContainer.call
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
-import kotlin.contracts.contract
 
 fun Application.aovRoutes(rmqConnection: Connection, mongoDB: CoroutineDatabase, httpClient: HttpClient) {
   routing {
@@ -63,8 +62,8 @@ fun Route.aovRoute(rmqConnection: Connection, mongoDB: CoroutineDatabase, httpCl
           type = "aov",
           requestID = requestWithID.id,
           exchangeID = requestWithID.exchangeID,
-          contractID = requestWithID.contract.id,
-          vlaID = requestWithID.contract.vla.id,
+          contractID = requestWithID.contract["id"].toString(),
+          vlaID = requestWithID.contract["vla"]?.jsonObject["id"].toString(),
           data = requestWithID.data,
           attesterID = requestWithID.attesterID,
           receivedDate = Clock.System.now(),
