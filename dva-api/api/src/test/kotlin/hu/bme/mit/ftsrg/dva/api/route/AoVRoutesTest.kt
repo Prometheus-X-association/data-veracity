@@ -60,8 +60,11 @@ class AoVRoutesTest {
     val client = setupClient()
 
     val request = AttestationRequestDTO(
+      id = "request-test-0000",
+      exchangeID = "xchg-0000",
       attesterID = "attester-0000",
       contract = Contract(
+        id = "contract-0001",
         dataProvider = "/catalog/participants/provider-test-id",
         dataConsumer = "/catalog/participants/consumer-test-did",
         serviceOffering = "/catalog/serviceofferings/serviceoffering-test-did",
@@ -220,7 +223,11 @@ class AoVRoutesTest {
       database.getCollection("requests")
 
     testModule()
-    aovRoutes(rmqConnection = rmqConnectionFactory.newConnection(),, httpClient = httpClient)
+    aovRoutes(
+      rmqConnection = rmqConnectionFactory.newConnection(),
+      mongoDB = database,
+      httpClient = this@setupApplication.setupClient()
+    )
   }
 
   private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {
