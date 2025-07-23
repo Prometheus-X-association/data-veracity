@@ -3,6 +3,7 @@ package hu.bme.mit.ftsrg.dva.api
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import hu.bme.mit.ftsrg.dva.api.error.addHandlers
+import hu.bme.mit.ftsrg.dva.api.rabbit.connectWithRetry
 import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
 import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
@@ -31,7 +32,7 @@ fun Application.module() {
     host = environment.config.property("rabbitmq.host").getString()
   }
 
-  val rmqConnection = rmqConnectionFactory.newConnection()
+  val rmqConnection: Connection = rmqConnectionFactory.connectWithRetry(logger = log)
 
   val mongoClient: CoroutineClient =
     KMongo.createClient("mongodb://${environment.config.property("mongodb.host").getString()}:27017").coroutine
