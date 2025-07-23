@@ -3,7 +3,4 @@ plugins {
 }
 
 rootProject.name = "dva"
-include(
-  "api",
-  "model",
-)
+include("api", "model")

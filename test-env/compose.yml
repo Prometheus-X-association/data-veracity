@@ -1,6 +1,5 @@
 ---
 services:
-
   dva-api-provider:
     extends:
       file: common-services.yml
@@ -9,14 +8,12 @@ services:
       DVA_RABBITMQ_HOST: rabbit-provider
       DVA_MONGODB_HOST: mongo-provider
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-provider:8050
-    command: api
     ports: [9091:9090]
     depends_on:
       rabbit-provider:
         condition: service_healthy
       mongo-provider:
         condition: service_healthy
-
   dva-api-consumer:
     extends:
       file: common-services.yml
@@ -25,15 +22,12 @@ services:
       DVA_RABBITMQ_HOST: rabbit-consumer
       DVA_MONGODB_HOST: mongo-consumer
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-consumer:8050
-    command: api
     ports: [9092:9090]
     depends_on:
       rabbit-consumer:
         condition: service_healthy
       mongo-consumer:
         condition: service_healthy
-
-
   dva-processing-provider:
     extends:
       file: common-services.yml
@@ -47,7 +41,6 @@ services:
         condition: service_healthy
       mongo-provider:
         condition: service_healthy
-
   dva-processing-consumer:
     extends:
       file: common-services.yml
@@ -61,48 +54,35 @@ services:
         condition: service_healthy
       mongo-consumer:
         condition: service_healthy
-
-
   rabbit-provider:
     extends:
       file: common-services.yml
       service: rabbit
-
   rabbit-consumer:
     extends:
       file: common-services.yml
       service: rabbit
-
-
   mongo-provider:
     extends:
       file: common-services.yml
       service: mongo
     ports: [27021:27017]
-
   mongo-consumer:
     extends:
       file: common-services.yml
       service: mongo
     ports: [27022:27017]
-
-
-
   callback-dummy:
     profiles: [dev, karate]
     extends:
       file: common-services.yml
       service: callback-dummy
     ports: [9099:80]
-
-
   karate:
     profiles: [karate]
     extends:
       file: common-services.yml
       service: karate
-
-
   aca-py-provider:
     extends:
       file: common-services.yml
@@ -137,7 +117,6 @@ services:
       timeout: 5s
       retries: 3
     ports: [8021:8020, 8031:8030]
-
   aca-py-consumer:
     extends:
       file: common-services.yml
@@ -172,8 +151,6 @@ services:
       timeout: 5s
       retries: 3
     ports: [8022:8020, 8032:8030]
-
-
   dva-aca-py-controller-provider:
     extends:
       file: common-services.yml
@@ -194,7 +171,6 @@ services:
         condition: service_healthy
       mongo-provider:
         condition: service_healthy
-
   dva-aca-py-controller-consumer:
     extends:
       file: common-services.yml
@@ -215,8 +191,6 @@ services:
         condition: service_healthy
       mongo-consumer:
         condition: service_healthy
-
-
   dva-dashboard-backend-provider:
     extends:
       file: common-services.yml
@@ -228,7 +202,6 @@ services:
     depends_on:
       mongo-consumer:
         condition: service_healthy
-
   dva-dashboard-backend-consumer:
     extends:
       file: common-services.yml
@@ -240,8 +213,6 @@ services:
     depends_on:
       mongo-consumer:
         condition: service_healthy
-
-
   dva-dashboard-frontend-provider:
     extends:
       file: common-services.yml
@@ -253,7 +224,6 @@ services:
     depends_on:
       dva-dashboard-backend-provider:
         condition: service_healthy
-
   dva-dashboard-frontend-consumer:
     extends:
       file: common-services.yml
