@@ -4,6 +4,6 @@ import kotlinx.serialization.json.JsonObject
 
 @Suppress("unused")
 interface ACAPyPresentationResponseDTO {
-  val message: String
-  val aov: JsonObject
+    val message: String
+    val aov: JsonObject
 }

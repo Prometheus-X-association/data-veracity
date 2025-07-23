@@ -10,32 +10,32 @@ import kotlin.test.assertTrue
 
 class DocRoutesTest {
 
-  @Test
-  fun `should return HTML page when root route is requested`() = testApplication {
-    setupApplication()
-    client.get("/").apply {
-      assertEquals(HttpStatusCode.OK, status)
-      assertTrue {
-        headers["Content-Type"]?.contains(ContentType.Text.Html.toString()) ?: false
-      }
+    @Test
+    fun `should return HTML page when root route is requested`() = testApplication {
+        setupApplication()
+        client.get("/").apply {
+            assertEquals(HttpStatusCode.OK, status)
+            assertTrue {
+                headers["Content-Type"]?.contains(ContentType.Text.Html.toString()) ?: false
+            }
+        }
     }
-  }
 
-  @Test
-  fun `should return swagger documentation page when slash swagger is requested`() = testApplication {
-    setupApplication()
-    client.get("/swagger").apply {
-      assertEquals(HttpStatusCode.OK, status)
-      assertTrue {
-        headers["Content-Type"]?.contains(ContentType.Text.Html.toString()) ?: false
-      }
+    @Test
+    fun `should return swagger documentation page when slash swagger is requested`() = testApplication {
+        setupApplication()
+        client.get("/swagger").apply {
+            assertEquals(HttpStatusCode.OK, status)
+            assertTrue {
+                headers["Content-Type"]?.contains(ContentType.Text.Html.toString()) ?: false
+            }
+        }
     }
-  }
 }
 
 private fun ApplicationTestBuilder.setupApplication() {
-  application {
-    testModule()
-    docRoutes(openapiPath = "../../docs/spec/openapi.yaml")
-  }
+    application {
+        testModule()
+        docRoutes(openapiPath = "../../docs/spec/openapi.yaml")
+    }
 }

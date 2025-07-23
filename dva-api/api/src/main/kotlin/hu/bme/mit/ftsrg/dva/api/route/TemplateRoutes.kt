@@ -9,29 +9,29 @@ import io.ktor.server.resources.post
 import io.ktor.server.routing.*
 
 fun Application.templateRoutes() {
-  routing {
-    templateRoute()
-  }
+    routing {
+        templateRoute()
+    }
 }
 
 fun Route.templateRoute() {
-  get<Templates> {
-    throw UnimplementedError
-  }
+    get<Templates> {
+        throw UnimplementedError
+    }
 
-  post<Templates> {
-    throw UnimplementedError
-  }
+    post<Templates> {
+        throw UnimplementedError
+    }
 
-  get<Templates.Id> {
-    throw UnimplementedError
-  }
+    get<Templates.Id> {
+        throw UnimplementedError
+    }
 
-  patch<Templates.Id> {
-    throw UnimplementedError
-  }
+    patch<Templates.Id> {
+        throw UnimplementedError
+    }
 
-  delete<Templates.Id> {
-    throw UnimplementedError
-  }
+    delete<Templates.Id> {
+        throw UnimplementedError
+    }
 }

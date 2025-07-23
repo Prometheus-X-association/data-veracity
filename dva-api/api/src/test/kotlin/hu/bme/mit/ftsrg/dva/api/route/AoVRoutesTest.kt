@@ -26,133 +26,133 @@ import java.util.*
 @Testcontainers
 class AoVRoutesTest {
 
-  @Container
-  val rmqContainer: RabbitMQContainer = RabbitMQContainer("rabbitmq").withExposedPorts(5672)
+    @Container
+    val rmqContainer: RabbitMQContainer = RabbitMQContainer("rabbitmq").withExposedPorts(5672)
 
-  @Container
-  val mongoContainer: MongoDBContainer = MongoDBContainer("mongo").withExposedPorts(27017)
+    @Container
+    val mongoContainer: MongoDBContainer = MongoDBContainer("mongo").withExposedPorts(27017)
 
-  @Test
-  fun `should create attestation request`() = testApplication {
-    setupApplication()
-    val client = setupClient()
+    @Test
+    fun `should create attestation request`() = testApplication {
+        setupApplication()
+        val client = setupClient()
 
-    val request = AttestationRequestDTO(
-      id = "request-test-0000",
-      exchangeID = "xchg-0000",
-      attesterID = "attester-0000",
-      contract = buildJsonObject {
-        put("id", "contract-0001")
-        put("dataProvider", "/catalog/participants/provider-test-id")
-        put("dataConsumer", "/catalog/participants/consumer-test-did")
-        put("serviceOffering", "/catalog/serviceofferings/serviceoffering-test-did")
+        val request = AttestationRequestDTO(
+            id = "request-test-0000",
+            exchangeID = "xchg-0000",
+            attesterID = "attester-0000",
+            contract = buildJsonObject {
+                put("id", "contract-0001")
+                put("dataProvider", "/catalog/participants/provider-test-id")
+                put("dataConsumer", "/catalog/participants/consumer-test-did")
+                put("serviceOffering", "/catalog/serviceofferings/serviceoffering-test-did")
 
-        putJsonArray("purpose") {
-          addJsonObject {
-            put("purpose", "/catalog/serviceofferings")
-            put("piiCategory", buildJsonArray {})
-          }
-        }
+                putJsonArray("purpose") {
+                    addJsonObject {
+                        put("purpose", "/catalog/serviceofferings")
+                        put("piiCategory", buildJsonArray {})
+                    }
+                }
 
-        putJsonArray("negotiators") {
-          addJsonObject {
-            put("did", "/catalog/participants/provider-test-id")
-          }
-          addJsonObject {
-            put("did", "/catalog/participants/consumer-test-id")
-          }
-        }
+                putJsonArray("negotiators") {
+                    addJsonObject {
+                        put("did", "/catalog/participants/provider-test-id")
+                    }
+                    addJsonObject {
+                        put("did", "/catalog/participants/consumer-test-id")
+                    }
+                }
 
-        put("status", "pending")
+                put("status", "pending")
 
-        putJsonArray("policy") {
-          addJsonObject {
-            put("uid", "/policy/policy-0-uid")
-            putJsonArray("permission") {
-              addJsonObject {
-                put("target", "/target/3f8d1b0e-8e2e-4b69-9b1f-089fe2f3e9d7")
-                put("action", "use")
-              }
-            }
-          }
-        }
+                putJsonArray("policy") {
+                    addJsonObject {
+                        put("uid", "/policy/policy-0-uid")
+                        putJsonArray("permission") {
+                            addJsonObject {
+                                put("target", "/target/3f8d1b0e-8e2e-4b69-9b1f-089fe2f3e9d7")
+                                put("action", "use")
+                            }
+                        }
+                    }
+                }
 
-        putJsonObject("vla") {
-          put("version", "1.0.0")
-          put("kind", "DataContract")
-          put("id", UUID.randomUUID().toString())
-          put("status", "active")
-          put("name", "test")
-          put("dataProduct", "test")
-          put("apiVersion", "v3.0.1")
+                putJsonObject("vla") {
+                    put("version", "1.0.0")
+                    put("kind", "DataContract")
+                    put("id", UUID.randomUUID().toString())
+                    put("status", "active")
+                    put("name", "test")
+                    put("dataProduct", "test")
+                    put("apiVersion", "v3.0.1")
 
-          putJsonArray("schema") {
-            addJsonObject {
-              put("schemaElement", "xapi_statement")
-              put("logicalType", "object")
-              putJsonArray("properties") {
-                addJsonObject {
-                  put("schemaElement", "id")
-                  put("logicalType", "string")
-                }
-                addJsonObject {
-                  put("schemaElement", "actor")
-                  put("logicalType", "object")
-                  put("required", true)
-                }
-                addJsonObject {
-                  put("schemaElement", "verb")
-                  put("logicalType", "object")
-                  put("required", true)
-                }
-                addJsonObject {
-                  put("schemaElement", "object")
-                  put("logicalType", "object")
-                  put("required", true)
-                }
-                addJsonObject {
-                  put("schemaElement", "result")
-                  put("logicalType", "object")
-                }
-                addJsonObject {
-                  put("schemaElement", "context")
-                  put("logicalType", "object")
-                }
-                addJsonObject {
-                  put("schemaElement", "timestamp")
-                  put("logicalType", "string")
-                }
-                addJsonObject {
-                  put("schemaElement", "stored")
-                  put("logicalType", "string")
-                }
-                addJsonObject {
-                  put("schemaElement", "version")
-                  put("logicalType", "string")
-                }
-              }
-              putJsonArray("quality") {
-                addJsonObject {
-                  put("dataQuality", "custom")
-                  put("engine", "greatExpectations")
-                  put(
-                    "implementation",
-                    """
+                    putJsonArray("schema") {
+                        addJsonObject {
+                            put("schemaElement", "xapi_statement")
+                            put("logicalType", "object")
+                            putJsonArray("properties") {
+                                addJsonObject {
+                                    put("schemaElement", "id")
+                                    put("logicalType", "string")
+                                }
+                                addJsonObject {
+                                    put("schemaElement", "actor")
+                                    put("logicalType", "object")
+                                    put("required", true)
+                                }
+                                addJsonObject {
+                                    put("schemaElement", "verb")
+                                    put("logicalType", "object")
+                                    put("required", true)
+                                }
+                                addJsonObject {
+                                    put("schemaElement", "object")
+                                    put("logicalType", "object")
+                                    put("required", true)
+                                }
+                                addJsonObject {
+                                    put("schemaElement", "result")
+                                    put("logicalType", "object")
+                                }
+                                addJsonObject {
+                                    put("schemaElement", "context")
+                                    put("logicalType", "object")
+                                }
+                                addJsonObject {
+                                    put("schemaElement", "timestamp")
+                                    put("logicalType", "string")
+                                }
+                                addJsonObject {
+                                    put("schemaElement", "stored")
+                                    put("logicalType", "string")
+                                }
+                                addJsonObject {
+                                    put("schemaElement", "version")
+                                    put("logicalType", "string")
+                                }
+                            }
+                            putJsonArray("quality") {
+                                addJsonObject {
+                                    put("dataQuality", "custom")
+                                    put("engine", "greatExpectations")
+                                    put(
+                                        "implementation",
+                                        """
                         type: ExpectColumnValuesToBeBetween
                         kwargs:
                           column: timestamp
                           min_value: '2025-01-01T00:00:00Z'
                           max_value: '2026-01-01T00:00:00Z'
                       """.trimIndent()
-                  )
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
-              }
-            }
-          }
-        }
-      },
-      data = Json.parseToJsonElement(
-        """
+            },
+            data = Json.parseToJsonElement(
+                """
         {
           "actor": {
             "name": "Jean Dupont",
@@ -191,35 +191,35 @@ class AoVRoutesTest {
           "timestamp": "2024-03-16T30:25:00Z"
         }
       """
-      )
-    )
-    client.post("/attestation") {
-      contentType(ContentType.Application.Json)
-      setBody(request)
-    }.apply {
-      Assertions.assertEquals(HttpStatusCode.Created, status)
-    }
-  }
-
-  private fun ApplicationTestBuilder.setupApplication() = application {
-    val rmqConnectionFactory = ConnectionFactory().apply {
-      host = rmqContainer.host
-      port = rmqContainer.firstMappedPort
+            )
+        )
+        client.post("/attestation") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.apply {
+            Assertions.assertEquals(HttpStatusCode.Created, status)
+        }
     }
 
-    val mongoClient: CoroutineClient =
-      KMongo.createClient("mongodb://${mongoContainer.host}:${mongoContainer.firstMappedPort}").coroutine
-    val database: CoroutineDatabase = mongoClient.getDatabase("dva-test")
+    private fun ApplicationTestBuilder.setupApplication() = application {
+        val rmqConnectionFactory = ConnectionFactory().apply {
+            host = rmqContainer.host
+            port = rmqContainer.firstMappedPort
+        }
 
-    testModule()
-    aovRoutes(
-      rmqConnection = rmqConnectionFactory.newConnection(),
-      mongoDB = database,
-      httpClient = this@setupApplication.setupClient()
-    )
-  }
+        val mongoClient: CoroutineClient =
+            KMongo.createClient("mongodb://${mongoContainer.host}:${mongoContainer.firstMappedPort}").coroutine
+        val database: CoroutineDatabase = mongoClient.getDatabase("dva-test")
 
-  private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {
-    install(ContentNegotiation) { json() }
-  }
+        testModule()
+        aovRoutes(
+            rmqConnection = rmqConnectionFactory.newConnection(),
+            mongoDB = database,
+            httpClient = this@setupApplication.setupClient()
+        )
+    }
+
+    private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {
+        install(ContentNegotiation) { json() }
+    }
 }

@@ -30,62 +30,63 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerCon
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
-  val rmqConnectionFactory = ConnectionFactory().apply {
-    host = environment.config.property("rabbitmq.host").getString()
-  }
-
-  val rmqConnection: Connection = rmqConnectionFactory.connectWithRetry(logger = log)
-
-  val mongoClient: CoroutineClient =
-    KMongo.createClient("mongodb://${environment.config.property("mongodb.host").getString()}:27017").coroutine
-  val database: CoroutineDatabase = mongoClient.getDatabase(environment.config.property("mongodb.database").getString())
-
-  val httpClient = HttpClient(io.ktor.client.engine.cio.CIO) {
-    install(ClientContentNegotiation) {
-      json(Json {
-        explicitNulls = true
-        ignoreUnknownKeys = true
-      })
+    val rmqConnectionFactory = ConnectionFactory().apply {
+        host = environment.config.property("rabbitmq.host").getString()
     }
-  }
 
-  installPlugins()
-  addRoutes(
-    rmqConnection = rmqConnection,
-    mongoDB = database,
-    httpClient = httpClient,
-  )
+    val rmqConnection: Connection = rmqConnectionFactory.connectWithRetry(logger = log)
+
+    val mongoClient: CoroutineClient =
+        KMongo.createClient("mongodb://${environment.config.property("mongodb.host").getString()}:27017").coroutine
+    val database: CoroutineDatabase =
+        mongoClient.getDatabase(environment.config.property("mongodb.database").getString())
+
+    val httpClient = HttpClient(CIO) {
+        install(ClientContentNegotiation) {
+            json(Json {
+                explicitNulls = true
+                ignoreUnknownKeys = true
+            })
+        }
+    }
+
+    installPlugins()
+    addRoutes(
+        rmqConnection = rmqConnection,
+        mongoDB = database,
+        httpClient = httpClient,
+    )
 }
 
 fun Application.installPlugins() {
-  serverInstall(CallLogging) {
-    level = Level.DEBUG
-    format { call ->
-      val status: HttpStatusCode? = call.response.status()
-      val method = call.request.httpMethod.value
-      val path: String = call.request.path()
-      val time: Long = call.processingTimeMillis()
-      val size: String? = call.response.headers["Content-Length"]
+    serverInstall(CallLogging) {
+        level = Level.DEBUG
+        format { call ->
+            val status: HttpStatusCode? = call.response.status()
+            val method = call.request.httpMethod.value
+            val path: String = call.request.path()
+            val time: Long = call.processingTimeMillis()
+            val size: String? = call.response.headers["Content-Length"]
 
-      val sizeStr = size?.let { " with body of $it bytes" } ?: ""
+            val sizeStr = size?.let { " with body of $it bytes" } ?: ""
 
-      "$method $path -> $status in $time ms$sizeStr"
+            "$method $path -> $status in $time ms$sizeStr"
+        }
     }
-  }
 
-  serverInstall(StatusPages) { addHandlers() }
+    serverInstall(StatusPages) { addHandlers() }
 
-  serverInstall(ServerContentNegotiation) { json(Json { explicitNulls = true }) }
+    serverInstall(ServerContentNegotiation) { json(Json { explicitNulls = true }) }
 
-  serverInstall(Resources)
+    serverInstall(Resources)
 }
 
 fun Application.addRoutes(
-  rmqConnection: Connection,
-  mongoDB: CoroutineDatabase,
-  httpClient: HttpClient,
+    rmqConnection: Connection,
+    mongoDB: CoroutineDatabase,
+    httpClient: HttpClient,
 ) {
-  docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
-  templateRoutes()
-  aovRoutes(rmqConnection, mongoDB, httpClient)
+    docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
+    templateRoutes()
+    aovRoutes(rmqConnection, mongoDB, httpClient)
 }

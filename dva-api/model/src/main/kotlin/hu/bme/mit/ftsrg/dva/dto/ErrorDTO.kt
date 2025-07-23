@@ -7,8 +7,8 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class ErrorDTO(
-  var type: String? = null,
-  var title: String? = null,
-  var detail: String? = null,
-  var instance: String? = null
+    var type: String? = null,
+    var title: String? = null,
+    var detail: String? = null,
+    var instance: String? = null
 )

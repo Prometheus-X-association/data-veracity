@@ -11,9 +11,9 @@ import java.net.URL
 
 object URLSerializer : KSerializer<URL> {
 
-  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("URL", PrimitiveKind.STRING)
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("URL", PrimitiveKind.STRING)
 
-  override fun deserialize(decoder: Decoder): URL = URI(decoder.decodeString()).toURL()
+    override fun deserialize(decoder: Decoder): URL = URI(decoder.decodeString()).toURL()
 
-  override fun serialize(encoder: Encoder, value: URL) = encoder.encodeString(value.toString())
+    override fun serialize(encoder: Encoder, value: URL) = encoder.encodeString(value.toString())
 }

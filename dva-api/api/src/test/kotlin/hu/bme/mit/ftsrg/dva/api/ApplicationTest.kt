@@ -14,13 +14,13 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientCon
 
 class ApplicationTest {
 
-  @Test
-  fun `should respond with not found error on nonexistent path requested`() = testApplication {
-    application { testModule() }
-    val client = createClient { install(ClientContentNegotiation) { json() } }
-    client.get("/nonexistent").apply {
-      assertEquals(HttpStatusCode.NotFound, status)
-      assertEquals(ErrorType.NOT_FOUND.uri.path, body<ErrorDTO>().type)
+    @Test
+    fun `should respond with not found error on nonexistent path requested`() = testApplication {
+        application { testModule() }
+        val client = createClient { install(ClientContentNegotiation) { json() } }
+        client.get("/nonexistent").apply {
+            assertEquals(HttpStatusCode.NotFound, status)
+            assertEquals(ErrorType.NOT_FOUND.uri.path, body<ErrorDTO>().type)
+        }
     }
-  }
 }

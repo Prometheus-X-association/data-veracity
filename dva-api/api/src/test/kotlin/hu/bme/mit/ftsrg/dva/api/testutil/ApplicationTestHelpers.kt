@@ -11,8 +11,8 @@ import kotlinx.serialization.json.Json
 import org.slf4j.event.Level
 
 fun Application.testModule() {
-  install(CallLogging) { level = Level.DEBUG }
-  install(StatusPages) { addHandlers() }
-  install(ContentNegotiation) { json(Json { explicitNulls = true }) }
-  install(Resources)
+    install(CallLogging) { level = Level.DEBUG }
+    install(StatusPages) { addHandlers() }
+    install(ContentNegotiation) { json(Json { explicitNulls = true }) }
+    install(Resources)
 }

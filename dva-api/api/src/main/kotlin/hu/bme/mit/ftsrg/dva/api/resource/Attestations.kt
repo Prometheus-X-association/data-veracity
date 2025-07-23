@@ -6,6 +6,6 @@ import io.ktor.resources.*
 @Resource("/attestation")
 class Attestations {
 
-  @Resource("verify")
-  class Verify(val parent: Attestations = Attestations())
+    @Resource("verify")
+    class Verify(val parent: Attestations = Attestations())
 }

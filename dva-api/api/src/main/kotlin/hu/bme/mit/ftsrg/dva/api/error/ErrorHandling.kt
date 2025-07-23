@@ -14,39 +14,39 @@ import io.ktor.server.response.*
 private val logger = KotlinLogging.logger {}
 
 fun StatusPagesConfig.addHandlers() {
-  exception<Throwable>(::handleException)
-  status(NotFound) { call, _ -> handleNotFound(call) }
+    exception<Throwable>(::handleException)
+    status(NotFound) { call, _ -> handleNotFound(call) }
 }
 
 suspend fun handleException(call: ApplicationCall, cause: Throwable) {
-  logger.atWarn {
-    message = "Handling exception: $cause"
-    this.cause = cause
-    payload = mapOf("stacktrace" to cause.stackTraceToString())
-  }
-
-  when (cause) {
-    is UnimplementedError -> {
-      call.respond(message = call.toErrorDTO(UNIMPLEMENTED, cause), status = NotImplemented)
+    logger.atWarn {
+        message = "Handling exception: $cause"
+        this.cause = cause
+        payload = mapOf("stacktrace" to cause.stackTraceToString())
     }
 
-    else -> {
-      call.respond(message = call.toErrorDTO(UNKNOWN, cause), status = InternalServerError)
+    when (cause) {
+        is UnimplementedError -> {
+            call.respond(message = call.toErrorDTO(UNIMPLEMENTED, cause), status = NotImplemented)
+        }
+
+        else -> {
+            call.respond(message = call.toErrorDTO(UNKNOWN, cause), status = InternalServerError)
+        }
     }
-  }
 }
 
 suspend fun handleNotFound(call: ApplicationCall) {
-  call.respond(message = call.toErrorDTO(NOT_FOUND), status = NotFound)
+    call.respond(message = call.toErrorDTO(NOT_FOUND), status = NotFound)
 }
 
 private fun ApplicationCall.toErrorDTO(
-  type: ErrorType,
-  cause: Throwable? = null,
-  init: ErrorDTO.() -> Unit = {}
+    type: ErrorType,
+    cause: Throwable? = null,
+    init: ErrorDTO.() -> Unit = {}
 ): ErrorDTO =
-  errorDTO(type) {
-    instance = request.path()
-  }.apply {
-    if (cause != null) detail = "${cause.message}\n\nStack Trace:\n${cause.stackTraceToString()}"
-  }.apply(init)
+    errorDTO(type) {
+        instance = request.path()
+    }.apply {
+        if (cause != null) detail = "${cause.message}\n\nStack Trace:\n${cause.stackTraceToString()}"
+    }.apply(init)

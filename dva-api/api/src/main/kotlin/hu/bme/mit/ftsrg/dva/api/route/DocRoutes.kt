@@ -8,37 +8,37 @@ import io.ktor.server.routing.*
 import kotlinx.html.*
 
 fun Application.docRoutes(openapiPath: String) {
-  routing {
-    rootRoute()
-    swaggerRoute(openapiPath)
-  }
+    routing {
+        rootRoute()
+        swaggerRoute(openapiPath)
+    }
 }
 
 fun Route.rootRoute() {
-  get("/") {
-    val name = "DVA"
-    call.respondHtml(HttpStatusCode.OK) {
-      head {
-        title {
-          +name
+    get("/") {
+        val name = "DVA"
+        call.respondHtml(HttpStatusCode.OK) {
+            head {
+                title {
+                    +name
+                }
+            }
+            body {
+                h1 {
+                    +"Welcome to the $name web UI"
+                }
+                p {
+                    +"Click "
+                    a(href = "/swagger") {
+                        +"here"
+                    }
+                    +" to see the API documentation and test the service."
+                }
+            }
         }
-      }
-      body {
-        h1 {
-          +"Welcome to the $name web UI"
-        }
-        p {
-          +"Click "
-          a(href = "/swagger") {
-            +"here"
-          }
-          +" to see the API documentation and test the service."
-        }
-      }
     }
-  }
 }
 
 fun Route.swaggerRoute(openapiPath: String) {
-  swaggerUI("swagger", swaggerFile = openapiPath)
+    swaggerUI("swagger", swaggerFile = openapiPath)
 }
