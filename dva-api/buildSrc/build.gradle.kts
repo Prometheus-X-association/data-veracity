@@ -15,3 +15,7 @@ dependencies {
     implementation(libs.kover.gradle.plugin)
     implementation(libs.shadow.gradle.plugin)
 }
+
+kotlin {
+    jvmToolchain(21)
+}
