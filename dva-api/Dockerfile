@@ -6,9 +6,7 @@ COPY ./dva-api/settings.gradle.kts ./settings.gradle.kts
 COPY ./dva-api/gradle/libs.versions.toml ./gradle/libs.versions.toml
 COPY ./dva-api/buildSrc ./buildSrc
 COPY ./dva-api/api/build.gradle.kts ./api/build.gradle.kts
-COPY ./dva-api/dto/build.gradle.kts ./dto/build.gradle.kts
 COPY ./dva-api/model/build.gradle.kts ./model/build.gradle.kts
-COPY ./dva-api/persistence/build.gradle.kts ./persistence/build.gradle.kts
 RUN gradle clean build --info --stacktrace --no-daemon
 
 FROM gradle:jdk21-alpine AS build
