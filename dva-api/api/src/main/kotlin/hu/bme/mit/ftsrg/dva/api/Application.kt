@@ -8,12 +8,12 @@ import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
 import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
 import io.ktor.client.*
+import io.ktor.client.engine.cio.CIO
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.plugins.calllogging.*
-import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.resources.*
@@ -23,7 +23,9 @@ import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
 import org.slf4j.event.Level
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 import io.ktor.server.application.install as serverInstall
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
@@ -39,7 +41,7 @@ fun Application.module() {
   val database: CoroutineDatabase = mongoClient.getDatabase(environment.config.property("mongodb.database").getString())
 
   val httpClient = HttpClient(io.ktor.client.engine.cio.CIO) {
-    install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
+    install(ClientContentNegotiation) {
       json(Json {
         explicitNulls = true
         ignoreUnknownKeys = true
@@ -73,7 +75,7 @@ fun Application.installPlugins() {
 
   serverInstall(StatusPages) { addHandlers() }
 
-  serverInstall(ContentNegotiation) { json(Json { explicitNulls = true }) }
+  serverInstall(ServerContentNegotiation) { json(Json { explicitNulls = true }) }
 
   serverInstall(Resources)
 }
