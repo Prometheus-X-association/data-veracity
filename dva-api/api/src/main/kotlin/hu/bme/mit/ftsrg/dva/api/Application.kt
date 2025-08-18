@@ -18,7 +18,8 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.resources.*
 import kotlinx.serialization.json.Json
-import org.litote.kmongo.coroutine.CoroutineClient
+import org.koin.dsl.module
+import org.koin.ktor.plugin.Koin
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
@@ -30,32 +31,9 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerCon
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
-    val rmqConnectionFactory = ConnectionFactory().apply {
-        host = environment.config.property("rabbitmq.host").getString()
-    }
-
-    val rmqConnection: Connection = rmqConnectionFactory.connectWithRetry(logger = log)
-
-    val mongoClient: CoroutineClient =
-        KMongo.createClient("mongodb://${environment.config.property("mongodb.host").getString()}:27017").coroutine
-    val database: CoroutineDatabase =
-        mongoClient.getDatabase(environment.config.property("mongodb.database").getString())
-
-    val httpClient = HttpClient(CIO) {
-        install(ClientContentNegotiation) {
-            json(Json {
-                explicitNulls = true
-                ignoreUnknownKeys = true
-            })
-        }
-    }
-
     installPlugins()
-    addRoutes(
-        rmqConnection = rmqConnection,
-        mongoDB = database,
-        httpClient = httpClient,
-    )
+    configureKoin()
+    addRoutes()
 }
 
 fun Application.installPlugins() {
@@ -79,14 +57,44 @@ fun Application.installPlugins() {
     serverInstall(ServerContentNegotiation) { json(Json { explicitNulls = true }) }
 
     serverInstall(Resources)
+
+    serverInstall(Koin)
 }
 
-fun Application.addRoutes(
-    rmqConnection: Connection,
-    mongoDB: CoroutineDatabase,
-    httpClient: HttpClient,
-) {
+fun Application.configureKoin() {
+    val rabbitHost = environment.config.property("rabbitmq.host").getString()
+    val mongoHost = environment.config.property("mongodb.host").getString()
+    val mongoDB = environment.config.property("mongodb.database").getString()
+
+    val appModule = module {
+        single<Connection> {
+            ConnectionFactory().run {
+                host = rabbitHost
+                connectWithRetry(logger = log)
+            }
+        }
+        single<CoroutineDatabase> {
+            KMongo.createClient("mongodb://$mongoHost:27017").coroutine.run {
+                getDatabase(mongoDB)
+            }
+        }
+        single<HttpClient> {
+            HttpClient(CIO) {
+                install(ClientContentNegotiation) {
+                    json(Json {
+                        explicitNulls = true
+                        ignoreUnknownKeys = true
+                    })
+                }
+            }
+        }
+    }
+
+    serverInstall(Koin) { modules(appModule) }
+}
+
+fun Application.addRoutes() {
     docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
     templateRoutes()
-    aovRoutes(rmqConnection, mongoDB, httpClient)
+    aovRoutes()
 }

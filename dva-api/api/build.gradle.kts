@@ -5,15 +5,22 @@ plugins {
 }
 
 dependencies {
-  implementation(libs.bundles.ktor.server)
-  implementation(libs.bundles.ktor.client)
+  implementation(libs.slf4j.api)
   implementation(libs.bundles.logging)
-  implementation(libs.bundles.mongo)
-  implementation(libs.kotlinx.datetime)
+
+  implementation(libs.bundles.ktor.client)
+  implementation(libs.bundles.ktor.server)
   implementation(libs.ktor.server.html.builder)
+
+  implementation(libs.bundles.mongo)
   implementation(libs.rabbitmq.amqp.client)
   implementation(libs.rabbitmq.kotlin)
-  implementation(libs.slf4j.api)
+
+  implementation(libs.kotlinx.datetime)
+
+  implementation(project.dependencies.platform(libs.koin.bom))
+  implementation(libs.bundles.ktor.koin)
+
   implementation(project(":model"))
 
   runtimeOnly(libs.logevents)

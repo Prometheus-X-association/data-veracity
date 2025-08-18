@@ -31,19 +31,22 @@ import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import org.koin.ktor.ext.inject
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 
-fun Application.aovRoutes(rmqConnection: Connection, mongoDB: CoroutineDatabase, httpClient: HttpClient) {
-    routing {
-        aovRoute(rmqConnection, mongoDB, httpClient)
-    }
+fun Application.aovRoutes() {
+    routing { aovRoute() }
 }
 
-fun Route.aovRoute(rmqConnection: Connection, mongoDB: CoroutineDatabase, httpClient: HttpClient) {
+fun Route.aovRoute() {
+    val rmqConnection by inject<Connection>()
+    val mongoDB by inject<CoroutineDatabase>()
+    val httpClient by inject<HttpClient>()
+
     val reqColl: CoroutineCollection<DVARequestMongoDoc> =
         mongoDB.getCollection(environment.config.property("mongodb.collections.aovRequests").getString())
     val verifReqColl: CoroutineCollection<DVAVerificationRequestMongoDoc> =
@@ -141,5 +144,4 @@ private suspend fun <T : Any> logToMongo(coll: CoroutineCollection<T>, req: T) {
     } catch (e: Exception) {
         logger.error("Failed to insert document $req into MongoBD due to error: ${e.message}", e)
     }
-
 }

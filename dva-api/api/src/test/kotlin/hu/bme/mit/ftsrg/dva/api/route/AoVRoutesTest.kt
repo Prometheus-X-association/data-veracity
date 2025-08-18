@@ -1,7 +1,7 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
+import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
-import hu.bme.mit.ftsrg.dva.api.testutil.testModule
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -12,7 +12,8 @@ import io.ktor.server.testing.*
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.litote.kmongo.coroutine.CoroutineClient
+import org.koin.dsl.module
+import org.koin.ktor.plugin.Koin
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
@@ -34,7 +35,28 @@ class AoVRoutesTest {
 
     @Test
     fun `should create attestation request`() = testApplication {
-        setupApplication()
+        val testModule = module {
+            single<Connection> {
+                ConnectionFactory().run {
+                    host = rmqContainer.host
+                    port = rmqContainer.firstMappedPort
+                    newConnection()
+                }
+            }
+            single<CoroutineDatabase> {
+                KMongo.createClient("mongodb://${mongoContainer.host}:${mongoContainer.firstMappedPort}").coroutine.run {
+                    getDatabase("dva-test")
+                }
+            }
+            single<HttpClient> {
+                setupClient()
+            }
+        }
+        application {
+            aovRoutes()
+        }
+        install(Koin) { modules(testModule) }
+
         val client = setupClient()
 
         val request = AttestationRequestDTO(
@@ -199,24 +221,6 @@ class AoVRoutesTest {
         }.apply {
             Assertions.assertEquals(HttpStatusCode.Created, status)
         }
-    }
-
-    private fun ApplicationTestBuilder.setupApplication() = application {
-        val rmqConnectionFactory = ConnectionFactory().apply {
-            host = rmqContainer.host
-            port = rmqContainer.firstMappedPort
-        }
-
-        val mongoClient: CoroutineClient =
-            KMongo.createClient("mongodb://${mongoContainer.host}:${mongoContainer.firstMappedPort}").coroutine
-        val database: CoroutineDatabase = mongoClient.getDatabase("dva-test")
-
-        testModule()
-        aovRoutes(
-            rmqConnection = rmqConnectionFactory.newConnection(),
-            mongoDB = database,
-            httpClient = this@setupApplication.setupClient()
-        )
     }
 
     private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {
