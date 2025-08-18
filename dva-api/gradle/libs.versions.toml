@@ -1,8 +1,6 @@
 [versions]
 datetime = "0.6.2"
 dependency-license-report = "2.9"
-jena-iri = "5.2.0"
-kasechange = "1.4.1"
 kmongo = "4.11.0"
 kotlin = "2.1.0-RC2"
 kotlin-gradle-plugin = "2.0.0-RC1"
@@ -16,12 +14,9 @@ rabbitmq-kotlin = "0.7.0-SNAPSHOT"
 shadow = "8.3.5"
 slf4j = "2.0.14"
 testcontainers = "1.20.4"
-text-case-converter = "2.0.0"
 
 [libraries]
 dependency-license-report-gradle-plugin = { module = "com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin", version.ref = "dependency-license-report" }
-jena-iri = { module = "org.apache.jena:jena-iri", version.ref = "jena-iri" }
-kasechange = { module = "net.pearx.kasechange:kasechange", version.ref = "kasechange" }
 kmongo-coroutine = { module = "org.litote.kmongo:kmongo-coroutine", version.ref = "kmongo" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle-plugin" }
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
@@ -52,8 +47,6 @@ testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-mongodb = { module = "org.testcontainers:mongodb", version.ref = "testcontainers" }
 testcontainers-rabbitmq = { module = "org.testcontainers:rabbitmq", version.ref = "testcontainers" }
-text-case-converter = { module = "dev.turingcomplete:text-case-converter", version.ref = "text-case-converter" }
-text-case-converter-kotlin-extension = { module = "dev.turingcomplete:text-case-converter-kotlin-extension", version.ref = "text-case-converter" }
 
 [bundles]
 ktor-client = [
@@ -78,7 +71,6 @@ ktor-server = [
 ]
 logging = ["kotlin-logging", "slf4j-api"]
 mongo = ["kmongo-coroutine"]
-text-case-converter = ["text-case-converter", "text-case-converter-kotlin-extension"]
 testcontainers-rabbitmq = [
     "testcontainers",
     "testcontainers-junit-jupiter",
