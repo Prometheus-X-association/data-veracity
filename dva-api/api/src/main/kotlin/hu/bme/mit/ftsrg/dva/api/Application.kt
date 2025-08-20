@@ -57,8 +57,6 @@ fun Application.installPlugins() {
     serverInstall(ServerContentNegotiation) { json(Json { explicitNulls = true }) }
 
     serverInstall(Resources)
-
-    serverInstall(Koin)
 }
 
 fun Application.configureKoin() {
