@@ -1,4 +1,4 @@
-package hu.bme.mit.ftsrg.serialization.java
+package hu.bme.mit.ftsrg.serialization
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind

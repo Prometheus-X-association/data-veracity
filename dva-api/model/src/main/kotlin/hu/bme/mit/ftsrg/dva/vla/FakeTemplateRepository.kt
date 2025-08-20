@@ -5,12 +5,14 @@ import hu.bme.mit.ftsrg.dva.vla.QualityAspect.SYNTAX
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-import java.util.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 class FakeTemplateRepository : TemplateRepository {
     private val templates = mutableMapOf(
-        "template-0000" to Template(
-            id = "template-0000",
+        Uuid.NIL to Template(
+            id = Uuid.NIL,
             name = "JSON Schema",
             description = "Data should conform to a JSON schema with the given URL",
             criterionType = VALID_INVALID,
@@ -31,17 +33,17 @@ class FakeTemplateRepository : TemplateRepository {
         )
     )
 
-    override fun allTemplates(): List<Template> {
+    override suspend fun allTemplates(): List<Template> {
         return templates.values.toList()
     }
 
-    override fun templateById(id: String): Template? {
+    override suspend fun templateById(id: Uuid): Template? {
         return templates[id]
     }
 
-    override fun addTemplate(template: NewTemplate): Template? {
+    override suspend fun addTemplate(template: NewTemplate): Template? {
         val entity = Template(
-            id = UUID.randomUUID().toString(),
+            id = Uuid.random(),
             name = template.name,
             description = template.description,
             criterionType = template.criterionType,
@@ -52,7 +54,7 @@ class FakeTemplateRepository : TemplateRepository {
         return entity
     }
 
-    override fun patchTemplate(patch: TemplatePatch): Template? {
+    override suspend fun patchTemplate(patch: TemplatePatch): Template? {
         val existingTemplate = templates[patch.id] ?: return null
 
         val patchedTemplate = Template(
@@ -68,7 +70,7 @@ class FakeTemplateRepository : TemplateRepository {
         return patchedTemplate
     }
 
-    override fun removeTemplate(id: String): Boolean {
+    override suspend fun removeTemplate(id: Uuid): Boolean {
         if (templates[id] == null) return false
         templates.remove(id)
         return true

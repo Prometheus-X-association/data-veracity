@@ -6,6 +6,7 @@ import hu.bme.mit.ftsrg.dva.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.vla.NewTemplate
 import hu.bme.mit.ftsrg.dva.vla.TemplatePatch
 import hu.bme.mit.ftsrg.dva.vla.TemplateRepository
+import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.http.HttpStatusCode.Companion.InternalServerError
 import io.ktor.http.HttpStatusCode.Companion.NoContent
@@ -18,7 +19,10 @@ import io.ktor.server.resources.post
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.koin.ktor.ext.inject
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 fun Application.templateRoutes() {
     val repo: TemplateRepository by inject()
 
@@ -28,7 +32,7 @@ fun Application.templateRoutes() {
         }
 
         get<Templates.Id> { req ->
-            val template = repo.templateById(req.id) ?: run {
+            val template = repo.templateById(Uuid.parse(req.id)) ?: run {
                 call.respond(NotFound, ErrorDTO(type = "NOT_FOUND", title = "Template not found"))
                 return@get
             }
@@ -42,11 +46,17 @@ fun Application.templateRoutes() {
                 call.respond(InternalServerError, ErrorDTO(type = "UNKNOWN", title = "Failed to create template"))
                 return@post
             }
-            call.respond(Created, IDDTO(template.id))
+            call.respond(Created, IDDTO(template.id.toString()))
         }
 
-        patch<Templates.Id> {
+        patch<Templates.Id> { req ->
             val patch = call.receive<TemplatePatch>()
+            if (Uuid.parse(req.id) != patch.id) {
+                call.respond(
+                    status = BadRequest,
+                    ErrorDTO(type = "BAD_REQUEST", title = "ID path parameter does not match ID in body")
+                )
+            }
             val updatedTemplate = repo.patchTemplate(patch) ?: run {
                 call.respond(
                     NotFound,
@@ -58,7 +68,7 @@ fun Application.templateRoutes() {
         }
 
         delete<Templates.Id> { req ->
-            if (repo.removeTemplate(req.id)) {
+            if (repo.removeTemplate(Uuid.parse(req.id))) {
                 call.respond(NoContent)
             } else {
                 call.respond(NotFound, ErrorDTO(type = "NOT_FOUND", title = "Template not found"))

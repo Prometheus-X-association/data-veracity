@@ -12,6 +12,7 @@ dependencies {
   implementation(libs.bundles.ktor.server)
   implementation(libs.ktor.server.html.builder)
 
+  implementation(libs.bundles.postgres)
   implementation(libs.bundles.mongo)
   implementation(libs.rabbitmq.amqp.client)
   implementation(libs.rabbitmq.kotlin)

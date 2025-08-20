@@ -1,11 +1,18 @@
+@file:UseSerializers(UuidSerializer::class)
+
 package hu.bme.mit.ftsrg.dva.vla
 
+import hu.bme.mit.ftsrg.serialization.UuidSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.JsonObject
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 @Serializable
 data class Template(
-    val id: String,
+    val id: Uuid,
     val name: String,
     val description: String? = null,
     val criterionType: CriterionType,
@@ -34,9 +41,10 @@ data class NewTemplate(
     val evaluationMethod: EvaluationMethod
 )
 
+@OptIn(ExperimentalUuidApi::class)
 @Serializable
 data class TemplatePatch(
-    val id: String,
+    val id: Uuid,
     val name: String? = null,
     val description: String? = null,
     val criterionType: CriterionType? = null,

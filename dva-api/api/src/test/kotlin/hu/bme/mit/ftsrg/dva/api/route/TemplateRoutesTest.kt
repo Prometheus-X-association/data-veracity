@@ -21,9 +21,10 @@ import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
-private const val DEFAULT_TEMPLATE_ID = "template-0000"
-
+@OptIn(ExperimentalUuidApi::class)
 class TemplateRoutesTest {
 
     @Test
@@ -43,7 +44,7 @@ class TemplateRoutesTest {
         setupApplication()
 
         val client = setupClient()
-        client.get("/template/$DEFAULT_TEMPLATE_ID").apply {
+        client.get("/template/${Uuid.NIL}").apply {
             assertEquals(OK, status)
             assertNotNull(body<Template>())
         }
@@ -74,7 +75,7 @@ class TemplateRoutesTest {
             contentType(Application.Json)
             setBody(request)
         }.apply {
-            val id = body<IDDTO>().id
+            val id = Uuid.parse(body<IDDTO>().id)
             assertEquals(Created, status)
 
             client.get("/template/${id}").apply {
@@ -102,7 +103,7 @@ class TemplateRoutesTest {
         val client = setupClient()
         // Adds description to the default seed template
         val patch = TemplatePatch(
-            id = DEFAULT_TEMPLATE_ID,
+            id = Uuid.NIL,
             description = "Ensures that the timestamp property of the data is less than or equal to the data parameter",
         )
         client.patch("/template/${patch.id}") {
@@ -137,7 +138,7 @@ class TemplateRoutesTest {
         setupApplication()
 
         val client = setupClient()
-        client.delete("/template/$DEFAULT_TEMPLATE_ID").apply {
+        client.delete("/template/${Uuid.NIL}").apply {
             assertEquals(NoContent, status)
 
             // There are no more templates
@@ -152,19 +153,20 @@ class TemplateRoutesTest {
     fun `should return 404 when template not found`() = testApplication {
         setupApplication()
 
-        val patch = TemplatePatch(id = "nonexistent")
+        val patch = TemplatePatch(id = Uuid.NIL)
 
         val client = setupClient()
-        client.get("/template/nonexistent").apply {
+        val randomUUID = Uuid.random()
+        client.get("/template/$randomUUID").apply {
             assertEquals(NotFound, status)
         }
-        client.patch("/template/nonexistent") {
+        client.patch("/template/$randomUUID") {
             contentType(Application.Json)
-            setBody(patch)
+            setBody(TemplatePatch(id = randomUUID))
         }.apply {
             assertEquals(NotFound, status)
         }
-        client.delete("/template/nonexistent").apply {
+        client.delete("/template/$randomUUID").apply {
             assertEquals(NotFound, status)
         }
     }

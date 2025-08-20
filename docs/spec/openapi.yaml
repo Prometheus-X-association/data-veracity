@@ -7,7 +7,7 @@ info:
     [data veracity assurance building block (DVA)](https://github.com/Prometheus-X-association/data-veracity).
   contact:
     email: bpeter@edu.bme.hu
-  version: 0.4.0
+  version: 0.4.1
 servers:
   - url: http://localhost:9090
     description: Local development server running on default port
@@ -336,6 +336,7 @@ components:
       properties:
         id:
           type: string
+          readOnly: true
         name:
           type: string
         description:
@@ -356,18 +357,18 @@ components:
             implementationTemplate:
               type: string
       example:
-        id: json-schema-check
         name: JSON Schema
         description: >-
           Data should conform to a JSON schema with the given URL
-        criterionType: validInvalid
-        targetAspect: syntax
+        criterionType: VALID_INVALID
+        targetAspect: SYNTAX
         evaluationMethod:
-          engine: schema
+          engine: SCHEMA
           variableSchema:
-            schemaURL:
-              type: string
-          implementationTemplate: '{{ schemaURL }}'
+            properties:
+              schemaURL:
+                type: string
+          implementationTemplate: $schemaURL
     TemplateCreate:
       allOf:
         - $ref: '#/components/schemas/Template'

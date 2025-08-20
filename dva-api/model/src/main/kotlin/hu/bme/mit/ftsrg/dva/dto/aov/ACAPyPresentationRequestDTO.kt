@@ -2,7 +2,7 @@
 
 package hu.bme.mit.ftsrg.dva.dto.aov
 
-import hu.bme.mit.ftsrg.serialization.java.URLSerializer
+import hu.bme.mit.ftsrg.serialization.URLSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import java.net.URL

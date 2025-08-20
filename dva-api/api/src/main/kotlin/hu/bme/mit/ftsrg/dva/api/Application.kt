@@ -2,11 +2,13 @@ package hu.bme.mit.ftsrg.dva.api
 
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
+import hu.bme.mit.ftsrg.dva.api.db.PostgresTemplateRepository
 import hu.bme.mit.ftsrg.dva.api.error.addHandlers
 import hu.bme.mit.ftsrg.dva.api.rabbit.connectWithRetry
 import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
 import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
+import hu.bme.mit.ftsrg.dva.vla.TemplateRepository
 import io.ktor.client.*
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.*
@@ -32,6 +34,7 @@ fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
     installPlugins()
+    configureDatabases()
     configureKoin()
     addRoutes()
 }
@@ -65,17 +68,17 @@ fun Application.configureKoin() {
     val mongoDB = environment.config.property("mongodb.database").getString()
 
     val appModule = module {
-        single<Connection> {
-            ConnectionFactory().run {
-                host = rabbitHost
-                connectWithRetry(logger = log)
-            }
-        }
-        single<CoroutineDatabase> {
-            KMongo.createClient("mongodb://$mongoHost:27017").coroutine.run {
-                getDatabase(mongoDB)
-            }
-        }
+        //single<Connection> {
+        //    ConnectionFactory().run {
+        //        host = rabbitHost
+        //        connectWithRetry(logger = log)
+        //    }
+        //}
+        //single<CoroutineDatabase> {
+        //    KMongo.createClient("mongodb://$mongoHost:27017").coroutine.run {
+        //        getDatabase(mongoDB)
+        //    }
+        //}
         single<HttpClient> {
             HttpClient(CIO) {
                 install(ClientContentNegotiation) {
@@ -86,6 +89,9 @@ fun Application.configureKoin() {
                 }
             }
         }
+        single<TemplateRepository> {
+            PostgresTemplateRepository()
+        }
     }
 
     serverInstall(Koin) { modules(appModule) }
@@ -94,5 +100,5 @@ fun Application.configureKoin() {
 fun Application.addRoutes() {
     docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
     templateRoutes()
-    aovRoutes()
+    //aovRoutes()
 }
