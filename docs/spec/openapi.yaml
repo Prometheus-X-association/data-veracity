@@ -7,7 +7,7 @@ info:
     [data veracity assurance building block (DVA)](https://github.com/Prometheus-X-association/data-veracity).
   contact:
     email: bpeter@edu.bme.hu
-  version: 0.3.0
+  version: 0.4.0
 servers:
   - url: http://localhost:9090
     description: Local development server running on default port
@@ -104,7 +104,7 @@ paths:
               $ref: '#/components/schemas/TemplateUpdate'
       responses:
         '200':
-          $ref: '#/components/responses/Updated'
+          $ref: '#/components/responses/UpdatedTemplate'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
@@ -116,7 +116,7 @@ paths:
         if no template with the specified ID exists.
       operationId: deleteTemplate
       responses:
-        '200':
+        '204':
           $ref: '#/components/responses/Deleted'
         '404':
           $ref: '#/components/responses/NotFound'
@@ -517,18 +517,8 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/IdObject'
-    Updated:
-      description: The resource has been updated successfully
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/IdObject'
     Deleted:
       description: The resource has been deleted successfully
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/IdObject'
     Accepted:
       description: The request has been accepted for processing
       content:
@@ -565,3 +555,9 @@ components:
               value:
                 type: INVALID_DATA
                 message: Invalid AoV data supplied
+    UpdatedTemplate:
+      description: The template has been updated successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Template'
