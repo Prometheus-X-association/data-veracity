@@ -39,10 +39,6 @@ import org.slf4j.LoggerFactory
 import java.util.*
 
 fun Application.aovRoutes() {
-    routing { aovRoute() }
-}
-
-fun Route.aovRoute() {
     val rmqConnection by inject<Connection>()
     val mongoDB by inject<CoroutineDatabase>()
     val httpClient by inject<HttpClient>()
@@ -52,78 +48,80 @@ fun Route.aovRoute() {
     val verifReqColl: CoroutineCollection<DVAVerificationRequestMongoDoc> =
         mongoDB.getCollection(environment.config.property("mongodb.collections.aovVerificationRequests").getString())
 
-    post<Attestations> {
-        val request: AttestationRequestDTO = call.receive()
+    routing {
+        post<Attestations> {
+            val request: AttestationRequestDTO = call.receive()
 
-        val id = UUID.randomUUID().toString()
-        val requestWithID: AttestationRequestDTO = request.copy(id = id)
+            val id = UUID.randomUUID().toString()
+            val requestWithID: AttestationRequestDTO = request.copy(id = id)
 
-        logToMongo(
-            coll = reqColl,
-            req =
-                DVARequestMongoDoc(
-                    type = "aov",
-                    requestID = requestWithID.id,
-                    exchangeID = requestWithID.exchangeID,
-                    contractID = requestWithID.contract["id"].toString(),
-                    vlaID = requestWithID.contract["vla"]?.jsonObject["id"].toString(),
-                    data = requestWithID.data,
-                    attesterID = requestWithID.attesterID,
-                    receivedDate = Clock.System.now(),
-                )
-        )
+            logToMongo(
+                coll = reqColl,
+                req =
+                    DVARequestMongoDoc(
+                        type = "aov",
+                        requestID = requestWithID.id,
+                        exchangeID = requestWithID.exchangeID,
+                        contractID = requestWithID.contract["id"].toString(),
+                        vlaID = requestWithID.contract["vla"]?.jsonObject["id"].toString(),
+                        data = requestWithID.data,
+                        attesterID = requestWithID.attesterID,
+                        receivedDate = Clock.System.now(),
+                    )
+            )
 
-        rmqConnection.confirmChannel {
-            declareQueue(QueueSpecification("ATTESTATION_REQUESTS"))
-            publish {
-                publishWithConfirm(createMessage(Json.encodeToString(requestWithID)))
+            rmqConnection.confirmChannel {
+                declareQueue(QueueSpecification("ATTESTATION_REQUESTS"))
+                publish {
+                    publishWithConfirm(createMessage(Json.encodeToString(requestWithID)))
+                }
             }
+
+            call.respond(status = HttpStatusCode.Created, message = IDDTO(id))
         }
 
-        call.respond(status = HttpStatusCode.Created, message = IDDTO(id))
-    }
+        post<Attestations.Verify> {
+            val request: AttestationVerificationRequestDTO = call.receive()
 
-    post<Attestations.Verify> {
-        val request: AttestationVerificationRequestDTO = call.receive()
+            val id = UUID.randomUUID().toString()
+            val requestWithID: AttestationVerificationRequestDTO = request.copy(id = id)
 
-        val id = UUID.randomUUID().toString()
-        val requestWithID: AttestationVerificationRequestDTO = request.copy(id = id)
-
-        logToMongo(
-            coll = verifReqColl,
-            req = DVAVerificationRequestMongoDoc(
-                requestID = requestWithID.id,
-                exchangeID = requestWithID.exchangeID,
-                contractID = requestWithID.contractID,
-                attesterAgentURL = requestWithID.attesterAgentURL,
-                attesterAgentLabel = requestWithID.attesterAgentLabel,
-                requestedAt = Clock.System.now(),
-            )
-        )
-
-        val resp: HttpResponse =
-            httpClient.post(
-                "${
-                    environment.config.property("acaPyAgent.url").getString()
-                }/request_presentation_from_peer"
-            ) {
-                contentType(ContentType.Application.Json)
-                setBody(
-                    ACAPyPresentationRequestDTO(
-                        dataExchangeId = requestWithID.exchangeID,
-                        attesterAgentURL = requestWithID.attesterAgentURL,
-                        attesterLabel = requestWithID.attesterAgentLabel
-                    )
+            logToMongo(
+                coll = verifReqColl,
+                req = DVAVerificationRequestMongoDoc(
+                    requestID = requestWithID.id,
+                    exchangeID = requestWithID.exchangeID,
+                    contractID = requestWithID.contractID,
+                    attesterAgentURL = requestWithID.attesterAgentURL,
+                    attesterAgentLabel = requestWithID.attesterAgentLabel,
+                    requestedAt = Clock.System.now(),
                 )
-            }
-        val acaPyResp: ACAPyPresentationResponseDTO = resp.body()
+            )
 
-        verifReqColl.updateOne(
-            filter = Filters.eq(DVAVerificationRequestMongoDoc::requestID.name, requestWithID.id),
-            update = Updates.set(DVAVerificationRequestMongoDoc::presentationRequestData.name, acaPyResp.aov),
-        )
+            val resp: HttpResponse =
+                httpClient.post(
+                    "${
+                        environment.config.property("acaPyAgent.url").getString()
+                    }/request_presentation_from_peer"
+                ) {
+                    contentType(ContentType.Application.Json)
+                    setBody(
+                        ACAPyPresentationRequestDTO(
+                            dataExchangeId = requestWithID.exchangeID,
+                            attesterAgentURL = requestWithID.attesterAgentURL,
+                            attesterLabel = requestWithID.attesterAgentLabel
+                        )
+                    )
+                }
+            val acaPyResp: ACAPyPresentationResponseDTO = resp.body()
 
-        call.respond(status = resp.status, message = acaPyResp)
+            verifReqColl.updateOne(
+                filter = Filters.eq(DVAVerificationRequestMongoDoc::requestID.name, requestWithID.id),
+                update = Updates.set(DVAVerificationRequestMongoDoc::presentationRequestData.name, acaPyResp.aov),
+            )
+
+            call.respond(status = resp.status, message = acaPyResp)
+        }
     }
 }
 
