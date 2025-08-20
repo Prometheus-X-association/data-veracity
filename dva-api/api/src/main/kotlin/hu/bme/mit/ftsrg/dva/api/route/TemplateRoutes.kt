@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 fun Application.templateRoutes() {
-    val repo: TemplateRepository by inject()
+    val repo by inject<TemplateRepository>()
 
     routing {
         get<Templates> {

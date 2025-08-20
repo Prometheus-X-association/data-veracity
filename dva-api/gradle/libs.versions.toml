@@ -3,12 +3,11 @@ datetime = "0.6.2"
 dependency-license-report = "2.9"
 exposed = "1.0.0-beta-5"
 json-kotlin-schema = "0.57"
-kmongo = "4.11.0"
 koin = "4.0.3"
-kotlin = "2.0.0"
-kotlin-gradle-plugin = "2.0.0-RC1"
+kotlin = "2.2.0"
+kotlin-gradle-plugin = "2.2.0"
 kotlin-logging = "7.0.3"
-kotlinx-serialization-json = "1.8.0"
+kotlinx-serialization-json = "1.9.0"
 kover = "0.9.1"
 ktor = "3.0.1"
 logevents = "0.5.6"
@@ -24,8 +23,8 @@ dependency-license-report-gradle-plugin = { module = "com.github.jk1.dependency-
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
 exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exposed" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
 json-kotlin-schema = { module = "net.pwall.json:json-kotlin-schema", version.ref = "json-kotlin-schema" }
-kmongo-coroutine = { module = "org.litote.kmongo:kmongo-coroutine", version.ref = "kmongo" }
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
 koin-core = { module = "io.insert-koin:koin-core" }
 koin-ktor = { module = "io.insert-koin:koin-ktor" }
@@ -57,7 +56,6 @@ shadow-gradle-plugin = { module = "com.gradleup.shadow:com.gradleup.shadow.gradl
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
-testcontainers-mongodb = { module = "org.testcontainers:mongodb", version.ref = "testcontainers" }
 testcontainers-rabbitmq = { module = "org.testcontainers:rabbitmq", version.ref = "testcontainers" }
 
 [bundles]
@@ -83,21 +81,16 @@ ktor-server = [
 ]
 ktor-koin = ["koin-core", "koin-ktor"]
 logging = ["kotlin-logging", "slf4j-api"]
-mongo = ["kmongo-coroutine"]
 testcontainers-rabbitmq = [
     "testcontainers",
     "testcontainers-junit-jupiter",
     "testcontainers-rabbitmq",
 ]
-testcontainers-mongodb = [
-    "testcontainers",
-    "testcontainers-junit-jupiter",
-    "testcontainers-mongodb",
-]
 postgres = [
     "exposed-core",
     "exposed-dao",
     "exposed-jdbc",
+    "exposed-kotlin-datetime",
     "postgresql",
 ]
 

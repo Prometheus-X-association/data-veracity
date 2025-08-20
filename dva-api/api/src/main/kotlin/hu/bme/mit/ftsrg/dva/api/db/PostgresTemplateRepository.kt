@@ -4,7 +4,6 @@ import hu.bme.mit.ftsrg.dva.vla.NewTemplate
 import hu.bme.mit.ftsrg.dva.vla.Template
 import hu.bme.mit.ftsrg.dva.vla.TemplatePatch
 import hu.bme.mit.ftsrg.dva.vla.TemplateRepository
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere

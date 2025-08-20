@@ -11,12 +11,5 @@ swagger:
 rabbitmq:
   host: "$DVA_RABBITMQ_HOST:localhost"
 
-mongodb:
-  host: "$DVA_MONGODB_HOST:localhost"
-  database: "$DVA_MONGODB_DB:dva"
-  collections:
-    aovRequests: "$DVA_MONGODB_COLLECTION_REQUESTS:requests"
-    aovVerificationRequests: "$DVA_MONGODB_COLLECTION_VERIFICATION_REQUESTS:verifications"
-
 acaPyAgent:
   url: "$DVA_ACA_PY_CONTROLLER_URL:http://localhost:8050"

@@ -1,7 +1,5 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
-import com.mongodb.client.model.Filters
-import com.mongodb.client.model.Updates
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.MessageProperties
 import hu.bme.mit.ftsrg.dva.api.resource.Attestations
@@ -10,8 +8,7 @@ import hu.bme.mit.ftsrg.dva.dto.aov.ACAPyPresentationRequestDTO
 import hu.bme.mit.ftsrg.dva.dto.aov.ACAPyPresentationResponseDTO
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationVerificationRequestDTO
-import hu.bme.mit.ftsrg.dva.mongo.DVARequestMongoDoc
-import hu.bme.mit.ftsrg.dva.mongo.DVAVerificationRequestMongoDoc
+import hu.bme.mit.ftsrg.dva.log.*
 import io.github.viartemev.rabbitmq.channel.confirmChannel
 import io.github.viartemev.rabbitmq.channel.publish
 import io.github.viartemev.rabbitmq.publisher.OutboundMessage
@@ -27,26 +24,22 @@ import io.ktor.server.request.*
 import io.ktor.server.resources.post
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.datetime.Clock
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.koin.ktor.ext.inject
-import org.litote.kmongo.coroutine.CoroutineCollection
-import org.litote.kmongo.coroutine.CoroutineDatabase
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.util.*
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalTime::class, ExperimentalUuidApi::class)
 fun Application.aovRoutes() {
     val rmqConnection by inject<Connection>()
-    val mongoDB by inject<CoroutineDatabase>()
+    val reqsRepo by inject<DVARequestLogRepository>()
+    val verifsRepo by inject<DVAVerificationRequestLogRepository>()
     val httpClient by inject<HttpClient>()
-
-    val reqColl: CoroutineCollection<DVARequestMongoDoc> =
-        mongoDB.getCollection(environment.config.property("mongodb.collections.aovRequests").getString())
-    val verifReqColl: CoroutineCollection<DVAVerificationRequestMongoDoc> =
-        mongoDB.getCollection(environment.config.property("mongodb.collections.aovVerificationRequests").getString())
 
     routing {
         post<Attestations> {
@@ -55,19 +48,17 @@ fun Application.aovRoutes() {
             val id = UUID.randomUUID().toString()
             val requestWithID: AttestationRequestDTO = request.copy(id = id)
 
-            logToMongo(
-                coll = reqColl,
-                req =
-                    DVARequestMongoDoc(
-                        type = "aov",
-                        requestID = requestWithID.id,
-                        exchangeID = requestWithID.exchangeID,
-                        contractID = requestWithID.contract["id"].toString(),
-                        vlaID = requestWithID.contract["vla"]?.jsonObject["id"].toString(),
-                        data = requestWithID.data,
-                        attesterID = requestWithID.attesterID,
-                        receivedDate = Clock.System.now(),
-                    )
+            reqsRepo.addRequest(
+                NewDVARequestLog(
+                    type = RequestType.ATTESTATION_REQUEST,
+                    requestID = Uuid.parse(requestWithID.id!!),
+                    exchangeID = requestWithID.exchangeID,
+                    contractID = requestWithID.contract["id"].toString(),
+                    vlaID = Uuid.parse(requestWithID.contract["vla"]?.jsonObject["id"]?.jsonPrimitive?.content!!),
+                    data = requestWithID.data,
+                    attesterID = requestWithID.attesterID,
+                    receivedDate = Clock.System.now(),
+                )
             )
 
             rmqConnection.confirmChannel {
@@ -86,15 +77,13 @@ fun Application.aovRoutes() {
             val id = UUID.randomUUID().toString()
             val requestWithID: AttestationVerificationRequestDTO = request.copy(id = id)
 
-            logToMongo(
-                coll = verifReqColl,
-                req = DVAVerificationRequestMongoDoc(
-                    requestID = requestWithID.id,
+            val verifLogEntity = verifsRepo.addRequest(
+                NewDVAVerificationRequestLog(
                     exchangeID = requestWithID.exchangeID,
                     contractID = requestWithID.contractID,
                     attesterAgentURL = requestWithID.attesterAgentURL,
                     attesterAgentLabel = requestWithID.attesterAgentLabel,
-                    requestedAt = Clock.System.now(),
+                    receivedDate = Clock.System.now(),
                 )
             )
 
@@ -115,10 +104,14 @@ fun Application.aovRoutes() {
                 }
             val acaPyResp: ACAPyPresentationResponseDTO = resp.body()
 
-            verifReqColl.updateOne(
-                filter = Filters.eq(DVAVerificationRequestMongoDoc::requestID.name, requestWithID.id),
-                update = Updates.set(DVAVerificationRequestMongoDoc::presentationRequestData.name, acaPyResp.aov),
-            )
+            if (verifLogEntity != null) {
+                verifsRepo.updateRequest(
+                    DVAVerificationRequestLogPatch(
+                        id = verifLogEntity.id,
+                        presentationRequestData = acaPyResp.aov,
+                    )
+                )
+            }
 
             call.respond(status = resp.status, message = acaPyResp)
         }
@@ -132,14 +125,3 @@ private fun createMessage(body: String): OutboundMessage =
         properties = MessageProperties.PERSISTENT_BASIC,
         msg = body
     )
-
-private suspend fun <T : Any> logToMongo(coll: CoroutineCollection<T>, req: T) {
-    val logger: Logger = LoggerFactory.getLogger("AoVRoute")
-
-    try {
-        coll.insertOne(req)
-        logger.info("Logged document $req into MongoDB")
-    } catch (e: Exception) {
-        logger.error("Failed to insert document $req into MongoBD due to error: ${e.message}", e)
-    }
-}

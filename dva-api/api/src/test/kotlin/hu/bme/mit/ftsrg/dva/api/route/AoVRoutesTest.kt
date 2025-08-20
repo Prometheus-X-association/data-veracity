@@ -3,6 +3,10 @@ package hu.bme.mit.ftsrg.dva.api.route
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
+import hu.bme.mit.ftsrg.dva.log.DVARequestLogRepository
+import hu.bme.mit.ftsrg.dva.log.DVAVerificationRequestLogRepository
+import hu.bme.mit.ftsrg.dva.log.FakeDVARequestLogRepository
+import hu.bme.mit.ftsrg.dva.log.FakeDVAVerificationRequestLogRepository
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -14,10 +18,6 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
-import org.litote.kmongo.coroutine.CoroutineDatabase
-import org.litote.kmongo.coroutine.coroutine
-import org.litote.kmongo.reactivestreams.KMongo
-import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.containers.RabbitMQContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -30,9 +30,6 @@ class AoVRoutesTest {
     @Container
     val rmqContainer: RabbitMQContainer = RabbitMQContainer("rabbitmq").withExposedPorts(5672)
 
-    @Container
-    val mongoContainer: MongoDBContainer = MongoDBContainer("mongo").withExposedPorts(27017)
-
     @Test
     fun `should create attestation request`() = testApplication {
         val testModule = module {
@@ -43,14 +40,11 @@ class AoVRoutesTest {
                     newConnection()
                 }
             }
-            single<CoroutineDatabase> {
-                KMongo.createClient("mongodb://${mongoContainer.host}:${mongoContainer.firstMappedPort}").coroutine.run {
-                    getDatabase("dva-test")
-                }
-            }
             single<HttpClient> {
                 setupClient()
             }
+            single<DVARequestLogRepository> { FakeDVARequestLogRepository() }
+            single<DVAVerificationRequestLogRepository> { FakeDVAVerificationRequestLogRepository() }
         }
         application {
             aovRoutes()

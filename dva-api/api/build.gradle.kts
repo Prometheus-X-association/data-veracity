@@ -13,7 +13,6 @@ dependencies {
   implementation(libs.ktor.server.html.builder)
 
   implementation(libs.bundles.postgres)
-  implementation(libs.bundles.mongo)
   implementation(libs.rabbitmq.amqp.client)
   implementation(libs.rabbitmq.kotlin)
 
@@ -26,7 +25,6 @@ dependencies {
 
   runtimeOnly(libs.logevents)
 
-  testImplementation(libs.bundles.testcontainers.mongodb)
   testImplementation(libs.bundles.testcontainers.rabbitmq)
   testImplementation(libs.ktor.client.content.negotiation)
   testImplementation(libs.ktor.server.test.host)

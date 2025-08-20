@@ -61,6 +61,3 @@ fun EvaluationMethodEntity.toModel() = EvaluationMethod(
     variableSchema = Json.decodeFromString<JsonObject>(variableSchema),
     implementationTemplate = implementationTemplate,
 )
-
-suspend fun <T> suspendTransaction(block: Transaction.() -> T): T =
-    newSuspendedTransaction(Dispatchers.IO, statement = block)
