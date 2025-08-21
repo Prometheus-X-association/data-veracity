@@ -7,5 +7,9 @@ import io.ktor.resources.*
 class Templates {
 
     @Resource("{id}")
-    class Id(val parent: Templates = Templates(), val id: String)
+    class Id(val parent: Templates = Templates(), val id: String) {
+
+        @Resource("render")
+        class Render(val parent: Id)
+    }
 }

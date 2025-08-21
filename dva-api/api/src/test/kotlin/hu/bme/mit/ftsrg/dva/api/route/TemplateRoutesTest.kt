@@ -68,7 +68,7 @@ class TemplateRoutesTest {
                         }
                     }
                 },
-                implementationTemplate = ".timestamp >= \${date}"
+                implementationTemplate = ".timestamp >= {{ date }}"
             )
         )
         client.post("/template") {

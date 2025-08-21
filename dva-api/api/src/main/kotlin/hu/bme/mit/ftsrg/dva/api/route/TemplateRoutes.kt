@@ -1,6 +1,7 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
 import hu.bme.mit.ftsrg.dva.api.resource.Templates
+import hu.bme.mit.ftsrg.dva.api.service.render
 import hu.bme.mit.ftsrg.dva.dto.ErrorDTO
 import hu.bme.mit.ftsrg.dva.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.vla.NewTemplate
@@ -18,6 +19,7 @@ import io.ktor.server.resources.patch
 import io.ktor.server.resources.post
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.json.JsonObject
 import org.koin.ktor.ext.inject
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -73,6 +75,21 @@ fun Application.templateRoutes() {
             } else {
                 call.respond(NotFound, ErrorDTO(type = "NOT_FOUND", title = "Template not found"))
             }
+        }
+
+        post<Templates.Id.Render> { req ->
+            val template = repo.templateById(Uuid.parse(req.parent.id)) ?: run {
+                call.respond(
+                    NotFound,
+                    ErrorDTO(type = "NOT_FOUND", title = "Template not found")
+                )
+                return@post
+            }
+            val model = call.receive<JsonObject>()
+            val renderedQuality = template.render(model) ?: run {
+                call.respond(BadRequest, ErrorDTO(type = "BAD_REQUEST", title = "Failed to render template"))
+            }
+            call.respond(renderedQuality)
         }
     }
 }

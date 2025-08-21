@@ -7,7 +7,7 @@ info:
     [data veracity assurance building block (DVA)](https://github.com/Prometheus-X-association/data-veracity).
   contact:
     email: bpeter@edu.bme.hu
-  version: 0.4.1
+  version: 0.4.2
 servers:
   - url: http://localhost:9090
     description: Local development server running on default port
@@ -120,6 +120,39 @@ paths:
           $ref: '#/components/responses/Deleted'
         '404':
           $ref: '#/components/responses/NotFound'
+  /template/{id}/render:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+        description: A VLA template’s ID
+    post:
+      tags: [VLA]
+      summary: Render a VLA template
+      description: >
+        Render a VLA template to a complete _data quality fragment_ ready to be included
+        in a VLA.
+        Responds with `200 OK` and the rendered template on success or with `400 BAD
+        REQUEST` if the template could not be rendered.
+      operationId: renderTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateModel'
+      responses:
+        '200':
+          description: The rendered template
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                engine: jq
+                implementation: .url == http://example.com && .someValue == 42
   /vla:
     post:
       tags: [VLA]
@@ -368,13 +401,19 @@ components:
             properties:
               schemaURL:
                 type: string
-          implementationTemplate: $schemaURL
+          implementationTemplate: '{{ schemaURL }}'
     TemplateCreate:
       allOf:
         - $ref: '#/components/schemas/Template'
     TemplateUpdate:
       allOf:
         - $ref: '#/components/schemas/Template'
+    TemplateModel:
+      type: object
+      example:
+        myUrl: http://example.com
+        numericalVariable: 42
+        arbitraryValues: are okay
     VLACreate:
       allOf:
         - $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json
