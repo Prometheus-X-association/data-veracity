@@ -90,7 +90,7 @@ fun Application.aovRoutes() {
             val resp: HttpResponse =
                 httpClient.post(
                     "${
-                        environment.config.property("acaPyAgent.url").getString()
+                        environment.config.property("acaPy.controller.url").getString()
                     }/request_presentation_from_peer"
                 ) {
                     contentType(ContentType.Application.Json)

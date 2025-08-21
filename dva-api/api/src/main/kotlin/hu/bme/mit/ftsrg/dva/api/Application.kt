@@ -6,6 +6,7 @@ import hu.bme.mit.ftsrg.dva.api.db.PostgresTemplateRepository
 import hu.bme.mit.ftsrg.dva.api.error.addHandlers
 import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
+import hu.bme.mit.ftsrg.dva.api.route.infoRoutes
 import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
 import hu.bme.mit.ftsrg.dva.log.DVARequestLogRepository
 import hu.bme.mit.ftsrg.dva.log.DVAVerificationRequestLogRepository
@@ -92,4 +93,5 @@ fun Application.addRoutes() {
     docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
     templateRoutes()
     aovRoutes()
+    infoRoutes()
 }
