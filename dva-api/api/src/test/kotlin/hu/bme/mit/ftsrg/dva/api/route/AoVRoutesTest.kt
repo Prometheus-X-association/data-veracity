@@ -3,10 +3,10 @@ package hu.bme.mit.ftsrg.dva.api.route
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
-import hu.bme.mit.ftsrg.dva.log.DVARequestLogRepository
-import hu.bme.mit.ftsrg.dva.log.DVAVerificationRequestLogRepository
-import hu.bme.mit.ftsrg.dva.log.FakeDVARequestLogRepository
-import hu.bme.mit.ftsrg.dva.log.FakeDVAVerificationRequestLogRepository
+import hu.bme.mit.ftsrg.dva.log.ReqestLogRepo
+import hu.bme.mit.ftsrg.dva.log.VerifRequestLogRepo
+import hu.bme.mit.ftsrg.dva.log.FakeReqestLogRepo
+import hu.bme.mit.ftsrg.dva.log.FakeVerifRequestLogRepo
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -43,8 +43,8 @@ class AoVRoutesTest {
             single<HttpClient> {
                 setupClient()
             }
-            single<DVARequestLogRepository> { FakeDVARequestLogRepository() }
-            single<DVAVerificationRequestLogRepository> { FakeDVAVerificationRequestLogRepository() }
+            single<ReqestLogRepo> { FakeReqestLogRepo() }
+            single<VerifRequestLogRepo> { FakeVerifRequestLogRepo() }
         }
         application {
             aovRoutes()

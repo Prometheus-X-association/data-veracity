@@ -55,7 +55,7 @@ class TemplateRoutesTest {
         setupApplication()
 
         val client = setupClient()
-        val request = NewTemplate(
+        val request = TemplateNew(
             name = "Data is not from before date",
             criterionType = CriterionType.VALID_INVALID,
             targetAspect = QualityAspect.TIMELINESS,

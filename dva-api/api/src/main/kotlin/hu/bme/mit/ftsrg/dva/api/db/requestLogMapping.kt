@@ -2,7 +2,7 @@
 
 package hu.bme.mit.ftsrg.dva.api.db
 
-import hu.bme.mit.ftsrg.dva.log.DVARequestLog
+import hu.bme.mit.ftsrg.dva.log.RequestLog
 import hu.bme.mit.ftsrg.dva.log.RequestType
 import kotlinx.datetime.TimeZone.Companion.UTC
 import kotlinx.datetime.toInstant
@@ -18,7 +18,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
-object DVARequestLogTable : UUIDTable("request_logs") {
+object RequestLogsTable : UUIDTable("request_logs") {
     val type = varchar("type", 255)
     val requestID = varchar("request_id", 255)
     val exchangeID = varchar("exchange_id", 255)
@@ -34,26 +34,26 @@ object DVARequestLogTable : UUIDTable("request_logs") {
     val vcID = varchar("vc_id", 255).nullable()
 }
 
-class DVARequestLogEntity(id: EntityID<UUID>) : UUIDEntity(id) {
-    companion object : UUIDEntityClass<DVARequestLogEntity>(DVARequestLogTable)
+class RequestLogEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+    companion object : UUIDEntityClass<RequestLogEntity>(RequestLogsTable)
 
-    var type by DVARequestLogTable.type
-    var requestID by DVARequestLogTable.requestID
-    var exchangeID by DVARequestLogTable.exchangeID
-    var contractID by DVARequestLogTable.contractID
-    var vlaID by DVARequestLogTable.vlaID
-    var data by DVARequestLogTable.data
-    var attesterID by DVARequestLogTable.attesterID
-    var evaluationPassing by DVARequestLogTable.evaluationPassing
-    var evaluationResults by DVARequestLogTable.evaluationResults
-    var receivedDate by DVARequestLogTable.receivedDate
-    var evaluationDate by DVARequestLogTable.evaluationDate
-    var vcIssuedDate by DVARequestLogTable.vcIssuedDate
-    var vcID by DVARequestLogTable.vcID
+    var type by RequestLogsTable.type
+    var requestID by RequestLogsTable.requestID
+    var exchangeID by RequestLogsTable.exchangeID
+    var contractID by RequestLogsTable.contractID
+    var vlaID by RequestLogsTable.vlaID
+    var data by RequestLogsTable.data
+    var attesterID by RequestLogsTable.attesterID
+    var evaluationPassing by RequestLogsTable.evaluationPassing
+    var evaluationResults by RequestLogsTable.evaluationResults
+    var receivedDate by RequestLogsTable.receivedDate
+    var evaluationDate by RequestLogsTable.evaluationDate
+    var vcIssuedDate by RequestLogsTable.vcIssuedDate
+    var vcID by RequestLogsTable.vcID
 }
 
 @OptIn(ExperimentalTime::class)
-fun DVARequestLogEntity.toModel() = DVARequestLog(
+fun RequestLogEntity.toModel() = RequestLog(
     id = id.value.toKotlinUuid(),
     type = RequestType.valueOf(type),
     requestID = Uuid.parse(requestID),

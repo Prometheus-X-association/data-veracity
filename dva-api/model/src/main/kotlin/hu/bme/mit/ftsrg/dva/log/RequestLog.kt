@@ -14,7 +14,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @Serializable
-data class DVARequestLog(
+data class RequestLog(
     val id: Uuid,
     val type: RequestType,
     val requestID: Uuid,
@@ -35,7 +35,7 @@ data class DVARequestLog(
 enum class RequestType { ATTESTATION_REQUEST, PROOF_REQUEST }
 
 @Serializable
-data class NewDVARequestLog(
+data class RequestLogNew(
     val type: RequestType,
     val requestID: Uuid,
     val exchangeID: String,

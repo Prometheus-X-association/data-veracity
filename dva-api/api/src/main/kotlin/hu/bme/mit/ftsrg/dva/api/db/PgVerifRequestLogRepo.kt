@@ -1,9 +1,9 @@
 package hu.bme.mit.ftsrg.dva.api.db
 
-import hu.bme.mit.ftsrg.dva.log.DVAVerificationRequestLog
-import hu.bme.mit.ftsrg.dva.log.DVAVerificationRequestLogPatch
-import hu.bme.mit.ftsrg.dva.log.DVAVerificationRequestLogRepository
-import hu.bme.mit.ftsrg.dva.log.NewDVAVerificationRequestLog
+import hu.bme.mit.ftsrg.dva.log.VerifRequestLog
+import hu.bme.mit.ftsrg.dva.log.VerifRequestLogNew
+import hu.bme.mit.ftsrg.dva.log.VerifRequestLogPatch
+import hu.bme.mit.ftsrg.dva.log.VerifRequestLogRepo
 import kotlinx.datetime.TimeZone.Companion.UTC
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
@@ -13,18 +13,18 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
-class PostgresDVAVerificationRequestLogRepository : DVAVerificationRequestLogRepository {
-    override suspend fun allRequests(): List<DVAVerificationRequestLog> = suspendTransaction {
-        DVAVerificationRequestLogEntity.all().map { it.toModel() }
+class PgVerifRequestLogRepo : VerifRequestLogRepo {
+    override suspend fun allRequests(): List<VerifRequestLog> = suspendTransaction {
+        VerifRequestLogEntity.all().map { it.toModel() }
     }
 
-    override suspend fun requestByID(id: Uuid): DVAVerificationRequestLog? = suspendTransaction {
-        DVAVerificationRequestLogEntity.findById(id.toJavaUuid())?.toModel()
+    override suspend fun requestByID(id: Uuid): VerifRequestLog? = suspendTransaction {
+        VerifRequestLogEntity.findById(id.toJavaUuid())?.toModel()
     }
 
-    override suspend fun addRequest(request: NewDVAVerificationRequestLog): DVAVerificationRequestLog? =
+    override suspend fun addRequest(request: VerifRequestLogNew): VerifRequestLog? =
         suspendTransaction {
-            DVAVerificationRequestLogEntity.new {
+            VerifRequestLogEntity.new {
                 exchangeID = request.exchangeID
                 contractID = request.contractID
                 attesterAgentURL = request.attesterAgentURL.toURI().toURL().toString()
@@ -33,9 +33,9 @@ class PostgresDVAVerificationRequestLogRepository : DVAVerificationRequestLogRep
             }.toModel()
         }
 
-    override suspend fun updateRequest(patch: DVAVerificationRequestLogPatch): DVAVerificationRequestLog? =
+    override suspend fun updateRequest(patch: VerifRequestLogPatch): VerifRequestLog? =
         suspendTransaction {
-            DVAVerificationRequestLogEntity.findByIdAndUpdate(patch.id.toJavaUuid()) {
+            VerifRequestLogEntity.findByIdAndUpdate(patch.id.toJavaUuid()) {
                 it.verificationDate = patch.verificationDate?.toLocalDateTime(UTC) ?: it.verificationDate
                 it.verified = patch.verified ?: it.verified
                 it.presentationRequestData =

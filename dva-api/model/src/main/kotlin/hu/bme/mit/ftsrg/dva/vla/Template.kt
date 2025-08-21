@@ -33,7 +33,7 @@ enum class CriterionType { VALID_INVALID, IN_RANGE, GREATER_THAN, LESS_THAN }
 enum class QualityAspect { SYNTAX, TIMELINESS, ACCURACY, COMPLETENESS, CONSISTENCY }
 
 @Serializable
-data class NewTemplate(
+data class TemplateNew(
     val name: String,
     val description: String? = null,
     val criterionType: CriterionType,

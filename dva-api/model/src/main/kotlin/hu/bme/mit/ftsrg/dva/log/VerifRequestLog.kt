@@ -16,7 +16,7 @@ import kotlin.uuid.Uuid
 
 
 @Serializable
-data class DVAVerificationRequestLog(
+data class VerifRequestLog(
     val id: Uuid,
     val exchangeID: String,
     val contractID: String,
@@ -29,7 +29,7 @@ data class DVAVerificationRequestLog(
 )
 
 @Serializable
-data class NewDVAVerificationRequestLog(
+data class VerifRequestLogNew(
     val exchangeID: String,
     val contractID: String,
     val attesterAgentURL: URL,
@@ -38,7 +38,7 @@ data class NewDVAVerificationRequestLog(
 )
 
 @Serializable
-data class DVAVerificationRequestLogPatch(
+data class VerifRequestLogPatch(
     val id: Uuid,
     val verificationDate: Instant? = null,
     val verified: Boolean? = null,

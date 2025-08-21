@@ -1,8 +1,5 @@
-package hu.bme.mit.ftsrg.dva.api
+package hu.bme.mit.ftsrg.dva.api.db
 
-import hu.bme.mit.ftsrg.dva.api.db.DVARequestLogTable
-import hu.bme.mit.ftsrg.dva.api.db.DVAVerificationRequestLogTable
-import hu.bme.mit.ftsrg.dva.api.db.TemplatesTable
 import io.ktor.server.application.*
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils.create
@@ -16,6 +13,6 @@ fun Application.configureDatabases() {
     )
 
     transaction {
-        create(TemplatesTable, DVARequestLogTable, DVAVerificationRequestLogTable)
+        create(TemplatesTable, RequestLogsTable, VerifRequestLogsTable)
     }
 }

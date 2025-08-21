@@ -5,15 +5,15 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
-class FakeDVARequestLogRepository : DVARequestLogRepository {
-    private val requests = mutableMapOf<Uuid, DVARequestLog>()
+class FakeReqestLogRepo : ReqestLogRepo {
+    private val requests = mutableMapOf<Uuid, RequestLog>()
 
-    override suspend fun allRequests(): List<DVARequestLog> = requests.values.toList()
+    override suspend fun allRequests(): List<RequestLog> = requests.values.toList()
 
-    override suspend fun requestByID(id: Uuid): DVARequestLog? = requests[id]
+    override suspend fun requestByID(id: Uuid): RequestLog? = requests[id]
 
-    override suspend fun addRequest(request: NewDVARequestLog): DVARequestLog? {
-        val entity = DVARequestLog(
+    override suspend fun addRequest(request: RequestLogNew): RequestLog? {
+        val entity = RequestLog(
             id = Uuid.random(),
             type = request.type,
             requestID = request.requestID,

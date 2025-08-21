@@ -1,8 +1,8 @@
 package hu.bme.mit.ftsrg.dva.api.testutil
 
-import hu.bme.mit.ftsrg.dva.api.error.addHandlers
-import hu.bme.mit.ftsrg.dva.vla.FakeTemplateRepository
-import hu.bme.mit.ftsrg.dva.vla.TemplateRepository
+import hu.bme.mit.ftsrg.dva.api.err.addHandlers
+import hu.bme.mit.ftsrg.dva.vla.FakeTemplateRepo
+import hu.bme.mit.ftsrg.dva.vla.TemplateRepo
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.calllogging.*
@@ -15,7 +15,7 @@ import org.koin.ktor.plugin.Koin
 import org.slf4j.event.Level
 
 fun Application.testModule() {
-    val appModule = module { single<TemplateRepository> { FakeTemplateRepository() } }
+    val appModule = module { single<TemplateRepo> { FakeTemplateRepo() } }
 
     install(CallLogging) { level = Level.DEBUG }
     install(StatusPages) { addHandlers() }

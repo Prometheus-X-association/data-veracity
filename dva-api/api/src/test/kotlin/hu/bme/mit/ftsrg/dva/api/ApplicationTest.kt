@@ -1,8 +1,8 @@
 package hu.bme.mit.ftsrg.dva.api
 
-import hu.bme.mit.ftsrg.dva.api.error.ErrorType
+import hu.bme.mit.ftsrg.dva.api.err.ErrType
 import hu.bme.mit.ftsrg.dva.api.testutil.testModule
-import hu.bme.mit.ftsrg.dva.dto.ErrorDTO
+import hu.bme.mit.ftsrg.dva.dto.ErrDTO
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -20,7 +20,7 @@ class ApplicationTest {
         val client = createClient { install(ClientContentNegotiation) { json() } }
         client.get("/nonexistent").apply {
             assertEquals(HttpStatusCode.NotFound, status)
-            assertEquals(ErrorType.NOT_FOUND.uri.path, body<ErrorDTO>().type)
+            assertEquals(ErrType.NOT_FOUND.uri.path, body<ErrDTO>().type)
         }
     }
 }

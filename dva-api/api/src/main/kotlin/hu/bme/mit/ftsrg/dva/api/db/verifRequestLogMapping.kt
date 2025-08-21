@@ -2,7 +2,7 @@
 
 package hu.bme.mit.ftsrg.dva.api.db
 
-import hu.bme.mit.ftsrg.dva.log.DVAVerificationRequestLog
+import hu.bme.mit.ftsrg.dva.log.VerifRequestLog
 import kotlinx.datetime.TimeZone.Companion.UTC
 import kotlinx.datetime.toInstant
 import kotlinx.serialization.json.Json
@@ -17,7 +17,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.toKotlinUuid
 
-object DVAVerificationRequestLogTable : UUIDTable("verification_request_logs") {
+object VerifRequestLogsTable : UUIDTable("verification_request_logs") {
     val exchangeID = varchar("exchange_id", 255)
     val contractID = varchar("contract_id", 255)
     val attesterAgentURL = varchar("attester_agent_url", 255)
@@ -28,21 +28,21 @@ object DVAVerificationRequestLogTable : UUIDTable("verification_request_logs") {
     val presentationRequestData = text("presentation_request_data")
 }
 
-class DVAVerificationRequestLogEntity(id: EntityID<UUID>) : UUIDEntity(id) {
-    companion object : UUIDEntityClass<DVAVerificationRequestLogEntity>(DVAVerificationRequestLogTable)
+class VerifRequestLogEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+    companion object : UUIDEntityClass<VerifRequestLogEntity>(VerifRequestLogsTable)
 
-    var exchangeID by DVAVerificationRequestLogTable.exchangeID
-    var contractID by DVAVerificationRequestLogTable.contractID
-    var attesterAgentURL by DVAVerificationRequestLogTable.attesterAgentURL
-    var attesterAgentLabel by DVAVerificationRequestLogTable.attesterAgentLabel
-    var receivedDate by DVAVerificationRequestLogTable.receivedDate
-    var verificationDate by DVAVerificationRequestLogTable.verificationDate
-    var verified by DVAVerificationRequestLogTable.verified
-    var presentationRequestData by DVAVerificationRequestLogTable.presentationRequestData
+    var exchangeID by VerifRequestLogsTable.exchangeID
+    var contractID by VerifRequestLogsTable.contractID
+    var attesterAgentURL by VerifRequestLogsTable.attesterAgentURL
+    var attesterAgentLabel by VerifRequestLogsTable.attesterAgentLabel
+    var receivedDate by VerifRequestLogsTable.receivedDate
+    var verificationDate by VerifRequestLogsTable.verificationDate
+    var verified by VerifRequestLogsTable.verified
+    var presentationRequestData by VerifRequestLogsTable.presentationRequestData
 }
 
 @OptIn(ExperimentalTime::class)
-fun DVAVerificationRequestLogEntity.toModel() = DVAVerificationRequestLog(
+fun VerifRequestLogEntity.toModel() = VerifRequestLog(
     id = id.value.toKotlinUuid(),
     exchangeID = exchangeID,
     contractID = contractID,

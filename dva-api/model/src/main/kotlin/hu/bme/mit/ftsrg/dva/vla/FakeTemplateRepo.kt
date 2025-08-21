@@ -9,7 +9,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
-class FakeTemplateRepository : TemplateRepository {
+class FakeTemplateRepo : TemplateRepo {
     private val templates = mutableMapOf(
         Uuid.NIL to Template(
             id = Uuid.NIL,
@@ -41,7 +41,7 @@ class FakeTemplateRepository : TemplateRepository {
         return templates[id]
     }
 
-    override suspend fun addTemplate(template: NewTemplate): Template? {
+    override suspend fun addTemplate(template: TemplateNew): Template? {
         val entity = Template(
             id = Uuid.random(),
             name = template.name,

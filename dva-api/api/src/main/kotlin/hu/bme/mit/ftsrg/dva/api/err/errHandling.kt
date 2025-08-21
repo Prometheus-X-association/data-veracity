@@ -1,7 +1,7 @@
-package hu.bme.mit.ftsrg.dva.api.error
+package hu.bme.mit.ftsrg.dva.api.err
 
-import hu.bme.mit.ftsrg.dva.api.error.ErrorType.*
-import hu.bme.mit.ftsrg.dva.dto.ErrorDTO
+import hu.bme.mit.ftsrg.dva.api.err.ErrType.*
+import hu.bme.mit.ftsrg.dva.dto.ErrDTO
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.HttpStatusCode.Companion.InternalServerError
 import io.ktor.http.HttpStatusCode.Companion.NotFound
@@ -26,7 +26,7 @@ suspend fun handleException(call: ApplicationCall, cause: Throwable) {
     }
 
     when (cause) {
-        is UnimplementedError -> {
+        is UnimplementedErr -> {
             call.respond(message = call.toErrorDTO(UNIMPLEMENTED, cause), status = NotImplemented)
         }
 
@@ -45,11 +45,11 @@ suspend fun handleNotFound(call: ApplicationCall) {
 }
 
 private fun ApplicationCall.toErrorDTO(
-    type: ErrorType,
+    type: ErrType,
     cause: Throwable? = null,
-    init: ErrorDTO.() -> Unit = {}
-): ErrorDTO =
-    errorDTO(type) {
+    init: ErrDTO.() -> Unit = {}
+): ErrDTO =
+    errDTO(type) {
         instance = request.path()
     }.apply {
         if (cause != null) detail = "${cause.message}\n\nStack Trace:\n${cause.stackTraceToString()}"

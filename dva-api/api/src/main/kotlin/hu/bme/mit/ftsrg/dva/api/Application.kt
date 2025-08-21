@@ -1,16 +1,17 @@
 package hu.bme.mit.ftsrg.dva.api
 
-import hu.bme.mit.ftsrg.dva.api.db.PostgresDVARequestLogRepository
-import hu.bme.mit.ftsrg.dva.api.db.PostgresDVAVerificationRequestLogRepository
-import hu.bme.mit.ftsrg.dva.api.db.PostgresTemplateRepository
-import hu.bme.mit.ftsrg.dva.api.error.addHandlers
+import hu.bme.mit.ftsrg.dva.api.db.PgRequestLogRepo
+import hu.bme.mit.ftsrg.dva.api.db.PgTemplateRepo
+import hu.bme.mit.ftsrg.dva.api.db.PgVerifRequestLogRepo
+import hu.bme.mit.ftsrg.dva.api.db.configureDatabases
+import hu.bme.mit.ftsrg.dva.api.err.addHandlers
 import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
 import hu.bme.mit.ftsrg.dva.api.route.infoRoutes
 import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
-import hu.bme.mit.ftsrg.dva.log.DVARequestLogRepository
-import hu.bme.mit.ftsrg.dva.log.DVAVerificationRequestLogRepository
-import hu.bme.mit.ftsrg.dva.vla.TemplateRepository
+import hu.bme.mit.ftsrg.dva.log.ReqestLogRepo
+import hu.bme.mit.ftsrg.dva.log.VerifRequestLogRepo
+import hu.bme.mit.ftsrg.dva.vla.TemplateRepo
 import io.ktor.client.*
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.*
@@ -81,9 +82,9 @@ fun Application.configureKoin() {
                 }
             }
         }
-        single<TemplateRepository> { PostgresTemplateRepository() }
-        single<DVARequestLogRepository> { PostgresDVARequestLogRepository() }
-        single<DVAVerificationRequestLogRepository> { PostgresDVAVerificationRequestLogRepository() }
+        single<TemplateRepo> { PgTemplateRepo() }
+        single<ReqestLogRepo> { PgRequestLogRepo() }
+        single<VerifRequestLogRepo> { PgVerifRequestLogRepo() }
     }
 
     serverInstall(Koin) { modules(appModule) }

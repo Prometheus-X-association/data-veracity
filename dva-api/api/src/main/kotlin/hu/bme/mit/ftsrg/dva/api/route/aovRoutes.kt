@@ -37,8 +37,8 @@ import kotlin.uuid.Uuid
 @OptIn(ExperimentalTime::class, ExperimentalUuidApi::class)
 fun Application.aovRoutes() {
     val rmqConnection by inject<Connection>()
-    val reqsRepo by inject<DVARequestLogRepository>()
-    val verifsRepo by inject<DVAVerificationRequestLogRepository>()
+    val reqsRepo by inject<ReqestLogRepo>()
+    val verifsRepo by inject<VerifRequestLogRepo>()
     val httpClient by inject<HttpClient>()
 
     routing {
@@ -49,7 +49,7 @@ fun Application.aovRoutes() {
             val requestWithID: AttestationRequestDTO = request.copy(id = id)
 
             reqsRepo.addRequest(
-                NewDVARequestLog(
+                RequestLogNew(
                     type = RequestType.ATTESTATION_REQUEST,
                     requestID = Uuid.parse(requestWithID.id!!),
                     exchangeID = requestWithID.exchangeID,
@@ -78,7 +78,7 @@ fun Application.aovRoutes() {
             val requestWithID: AttestationVerificationRequestDTO = request.copy(id = id)
 
             val verifLogEntity = verifsRepo.addRequest(
-                NewDVAVerificationRequestLog(
+                VerifRequestLogNew(
                     exchangeID = requestWithID.exchangeID,
                     contractID = requestWithID.contractID,
                     attesterAgentURL = requestWithID.attesterAgentURL,
@@ -106,7 +106,7 @@ fun Application.aovRoutes() {
 
             if (verifLogEntity != null) {
                 verifsRepo.updateRequest(
-                    DVAVerificationRequestLogPatch(
+                    VerifRequestLogPatch(
                         id = verifLogEntity.id,
                         presentationRequestData = acaPyResp.aov,
                     )

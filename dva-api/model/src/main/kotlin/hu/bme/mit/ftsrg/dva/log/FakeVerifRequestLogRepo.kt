@@ -5,15 +5,15 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
-class FakeDVAVerificationRequestLogRepository : DVAVerificationRequestLogRepository {
-    private val requests = mutableMapOf<Uuid, DVAVerificationRequestLog>()
+class FakeVerifRequestLogRepo : VerifRequestLogRepo {
+    private val requests = mutableMapOf<Uuid, VerifRequestLog>()
 
-    override suspend fun allRequests(): List<DVAVerificationRequestLog> = requests.values.toList()
+    override suspend fun allRequests(): List<VerifRequestLog> = requests.values.toList()
 
-    override suspend fun requestByID(id: Uuid): DVAVerificationRequestLog? = requests[id]
+    override suspend fun requestByID(id: Uuid): VerifRequestLog? = requests[id]
 
-    override suspend fun addRequest(request: NewDVAVerificationRequestLog): DVAVerificationRequestLog? {
-        val entity = DVAVerificationRequestLog(
+    override suspend fun addRequest(request: VerifRequestLogNew): VerifRequestLog? {
+        val entity = VerifRequestLog(
             id = Uuid.random(),
             exchangeID = request.exchangeID,
             contractID = request.contractID,
@@ -25,9 +25,9 @@ class FakeDVAVerificationRequestLogRepository : DVAVerificationRequestLogReposit
         return entity
     }
 
-    override suspend fun updateRequest(patch: DVAVerificationRequestLogPatch): DVAVerificationRequestLog? {
+    override suspend fun updateRequest(patch: VerifRequestLogPatch): VerifRequestLog? {
         val existingRequest = requests[patch.id] ?: return null
-        val updatedRequest = DVAVerificationRequestLog(
+        val updatedRequest = VerifRequestLog(
             id = existingRequest.id,
             exchangeID = existingRequest.exchangeID,
             contractID = existingRequest.contractID,

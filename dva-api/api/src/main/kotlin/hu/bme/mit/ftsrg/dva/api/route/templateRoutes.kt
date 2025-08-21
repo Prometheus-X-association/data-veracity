@@ -2,11 +2,11 @@ package hu.bme.mit.ftsrg.dva.api.route
 
 import hu.bme.mit.ftsrg.dva.api.resource.Templates
 import hu.bme.mit.ftsrg.dva.api.service.render
-import hu.bme.mit.ftsrg.dva.dto.ErrorDTO
+import hu.bme.mit.ftsrg.dva.dto.ErrDTO
 import hu.bme.mit.ftsrg.dva.dto.IDDTO
-import hu.bme.mit.ftsrg.dva.vla.NewTemplate
+import hu.bme.mit.ftsrg.dva.vla.TemplateNew
 import hu.bme.mit.ftsrg.dva.vla.TemplatePatch
-import hu.bme.mit.ftsrg.dva.vla.TemplateRepository
+import hu.bme.mit.ftsrg.dva.vla.TemplateRepo
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.http.HttpStatusCode.Companion.InternalServerError
@@ -26,7 +26,7 @@ import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 fun Application.templateRoutes() {
-    val repo by inject<TemplateRepository>()
+    val repo by inject<TemplateRepo>()
 
     routing {
         get<Templates> {
@@ -42,10 +42,10 @@ fun Application.templateRoutes() {
         }
 
         post<Templates> {
-            val templateReq = call.receive<NewTemplate>()
+            val templateReq = call.receive<TemplateNew>()
 
             val template = repo.addTemplate(templateReq) ?: run {
-                call.respond(InternalServerError, ErrorDTO(type = "UNKNOWN", title = "Failed to create template"))
+                call.respond(InternalServerError, ErrDTO(type = "UNKNOWN", title = "Failed to create template"))
                 return@post
             }
             call.respond(Created, IDDTO(template.id.toString()))
@@ -56,7 +56,7 @@ fun Application.templateRoutes() {
             if (Uuid.parse(req.id) != patch.id) {
                 call.respond(
                     status = BadRequest,
-                    ErrorDTO(type = "BAD_REQUEST", title = "ID path parameter does not match ID in body")
+                    ErrDTO(type = "BAD_REQUEST", title = "ID path parameter does not match ID in body")
                 )
             }
             val updatedTemplate = repo.patchTemplate(patch) ?: run {
@@ -81,7 +81,7 @@ fun Application.templateRoutes() {
             }
             val model = call.receive<JsonObject>()
             val renderedQuality = template.render(model) ?: run {
-                call.respond(BadRequest, ErrorDTO(type = "BAD_REQUEST", title = "Failed to render template"))
+                call.respond(BadRequest, ErrDTO(type = "BAD_REQUEST", title = "Failed to render template"))
             }
             call.respond(renderedQuality)
         }

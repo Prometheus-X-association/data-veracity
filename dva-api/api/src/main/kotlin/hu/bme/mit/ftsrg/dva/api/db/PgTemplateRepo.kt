@@ -1,9 +1,9 @@
 package hu.bme.mit.ftsrg.dva.api.db
 
-import hu.bme.mit.ftsrg.dva.vla.NewTemplate
 import hu.bme.mit.ftsrg.dva.vla.Template
+import hu.bme.mit.ftsrg.dva.vla.TemplateNew
 import hu.bme.mit.ftsrg.dva.vla.TemplatePatch
-import hu.bme.mit.ftsrg.dva.vla.TemplateRepository
+import hu.bme.mit.ftsrg.dva.vla.TemplateRepo
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
 @OptIn(ExperimentalUuidApi::class)
-class PostgresTemplateRepository : TemplateRepository {
+class PgTemplateRepo : TemplateRepo {
     override suspend fun allTemplates(): List<Template> = suspendTransaction {
         TemplateEntity.all().map { it.toModel() }
     }
@@ -21,7 +21,7 @@ class PostgresTemplateRepository : TemplateRepository {
         TemplateEntity.findById(id.toJavaUuid())?.toModel()
     }
 
-    override suspend fun addTemplate(template: NewTemplate): Template? = suspendTransaction {
+    override suspend fun addTemplate(template: TemplateNew): Template? = suspendTransaction {
         TemplateEntity.new {
             name = template.name
             description = template.description ?: ""
