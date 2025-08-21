@@ -35,7 +35,7 @@ fun Application.templateRoutes() {
 
         get<Templates.Id> { req ->
             val template = repo.templateById(Uuid.parse(req.id)) ?: run {
-                call.respond(NotFound, ErrorDTO(type = "NOT_FOUND", title = "Template not found"))
+                call.respond(NotFound)
                 return@get
             }
             call.respond(template)
@@ -60,10 +60,7 @@ fun Application.templateRoutes() {
                 )
             }
             val updatedTemplate = repo.patchTemplate(patch) ?: run {
-                call.respond(
-                    NotFound,
-                    ErrorDTO(type = "NOT_FOUND", title = "Template not found")
-                )
+                call.respond(NotFound)
                 return@patch
             }
             call.respond(updatedTemplate)
@@ -73,16 +70,13 @@ fun Application.templateRoutes() {
             if (repo.removeTemplate(Uuid.parse(req.id))) {
                 call.respond(NoContent)
             } else {
-                call.respond(NotFound, ErrorDTO(type = "NOT_FOUND", title = "Template not found"))
+                call.respond(NotFound)
             }
         }
 
         post<Templates.Id.Render> { req ->
             val template = repo.templateById(Uuid.parse(req.parent.id)) ?: run {
-                call.respond(
-                    NotFound,
-                    ErrorDTO(type = "NOT_FOUND", title = "Template not found")
-                )
+                call.respond(NotFound)
                 return@post
             }
             val model = call.receive<JsonObject>()

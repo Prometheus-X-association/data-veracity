@@ -37,6 +37,10 @@ suspend fun handleException(call: ApplicationCall, cause: Throwable) {
 }
 
 suspend fun handleNotFound(call: ApplicationCall) {
+    logger.atWarn {
+        message = "Handling not found error"
+        payload = mapOf("path" to call.request.path())
+    }
     call.respond(message = call.toErrorDTO(NOT_FOUND), status = NotFound)
 }
 
