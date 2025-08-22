@@ -8,11 +8,11 @@ import kotlin.uuid.Uuid
 class FakeReqestLogRepo : ReqestLogRepo {
     private val requests = mutableMapOf<Uuid, RequestLog>()
 
-    override suspend fun allRequests(): List<RequestLog> = requests.values.toList()
+    override suspend fun all(): List<RequestLog> = requests.values.toList()
 
-    override suspend fun requestByID(id: Uuid): RequestLog? = requests[id]
+    override suspend fun byID(id: Uuid): RequestLog? = requests[id]
 
-    override suspend fun addRequest(request: RequestLogNew): RequestLog? {
+    override suspend fun add(request: RequestLogNew): RequestLog? {
         val entity = RequestLog(
             id = Uuid.random(),
             type = request.type,

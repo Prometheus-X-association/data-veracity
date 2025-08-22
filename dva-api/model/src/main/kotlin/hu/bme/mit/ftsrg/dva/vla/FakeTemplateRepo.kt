@@ -28,20 +28,20 @@ class FakeTemplateRepo : TemplateRepo {
                         }
                     }
                 },
-                implementationTemplate = "\${schemaURL}"
+                implementationTemplate = "{{ schemaURL }}"
             )
         )
     )
 
-    override suspend fun allTemplates(): List<Template> {
+    override suspend fun all(): List<Template> {
         return templates.values.toList()
     }
 
-    override suspend fun templateById(id: Uuid): Template? {
+    override suspend fun byID(id: Uuid): Template? {
         return templates[id]
     }
 
-    override suspend fun addTemplate(template: TemplateNew): Template? {
+    override suspend fun add(template: TemplateNew): Template? {
         val entity = Template(
             id = Uuid.random(),
             name = template.name,
@@ -54,7 +54,7 @@ class FakeTemplateRepo : TemplateRepo {
         return entity
     }
 
-    override suspend fun patchTemplate(patch: TemplatePatch): Template? {
+    override suspend fun update(patch: TemplatePatch): Template? {
         val existingTemplate = templates[patch.id] ?: return null
 
         val patchedTemplate = Template(
@@ -70,7 +70,7 @@ class FakeTemplateRepo : TemplateRepo {
         return patchedTemplate
     }
 
-    override suspend fun removeTemplate(id: Uuid): Boolean {
+    override suspend fun remove(id: Uuid): Boolean {
         if (templates[id] == null) return false
         templates.remove(id)
         return true

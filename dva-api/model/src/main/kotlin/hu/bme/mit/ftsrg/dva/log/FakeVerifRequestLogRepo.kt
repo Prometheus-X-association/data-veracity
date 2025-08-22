@@ -8,11 +8,11 @@ import kotlin.uuid.Uuid
 class FakeVerifRequestLogRepo : VerifRequestLogRepo {
     private val requests = mutableMapOf<Uuid, VerifRequestLog>()
 
-    override suspend fun allRequests(): List<VerifRequestLog> = requests.values.toList()
+    override suspend fun all(): List<VerifRequestLog> = requests.values.toList()
 
-    override suspend fun requestByID(id: Uuid): VerifRequestLog? = requests[id]
+    override suspend fun byID(id: Uuid): VerifRequestLog? = requests[id]
 
-    override suspend fun addRequest(request: VerifRequestLogNew): VerifRequestLog? {
+    override suspend fun add(request: VerifRequestLogNew): VerifRequestLog? {
         val entity = VerifRequestLog(
             id = Uuid.random(),
             exchangeID = request.exchangeID,
@@ -25,7 +25,7 @@ class FakeVerifRequestLogRepo : VerifRequestLogRepo {
         return entity
     }
 
-    override suspend fun updateRequest(patch: VerifRequestLogPatch): VerifRequestLog? {
+    override suspend fun update(patch: VerifRequestLogPatch): VerifRequestLog? {
         val existingRequest = requests[patch.id] ?: return null
         val updatedRequest = VerifRequestLog(
             id = existingRequest.id,

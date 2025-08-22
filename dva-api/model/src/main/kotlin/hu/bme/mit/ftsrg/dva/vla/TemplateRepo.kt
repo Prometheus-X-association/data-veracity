@@ -5,9 +5,9 @@ import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 interface TemplateRepo {
-    suspend fun allTemplates(): List<Template>
-    suspend fun templateById(id: Uuid): Template?
-    suspend fun addTemplate(template: TemplateNew): Template?
-    suspend fun patchTemplate(patch: TemplatePatch): Template?
-    suspend fun removeTemplate(id: Uuid): Boolean
+    suspend fun all(): List<Template>
+    suspend fun byID(id: Uuid): Template?
+    suspend fun add(template: TemplateNew): Template?
+    suspend fun update(patch: TemplatePatch): Template?
+    suspend fun remove(id: Uuid): Boolean
 }

@@ -19,8 +19,8 @@ fun Application.infoRoutes() {
     val acaPyAgentURL = environment.config.property("acaPy.agent.url").getString()
 
     routing {
-        get<Info.Requests> { call.respond(reqsRepo.allRequests()) }
-        get<Info.Presentations> { call.respond(verifsRepo.allRequests()) }
+        get<Info.Requests> { call.respond(reqsRepo.all()) }
+        get<Info.Presentations> { call.respond(verifsRepo.all()) }
         get<Info.Credentials> { call.respond(httpClient.get("$acaPyAgentURL/credentials")) }
     }
 }

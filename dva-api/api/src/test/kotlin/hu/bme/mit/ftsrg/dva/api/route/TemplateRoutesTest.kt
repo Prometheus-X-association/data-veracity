@@ -3,6 +3,7 @@ package hu.bme.mit.ftsrg.dva.api.route
 import hu.bme.mit.ftsrg.dva.api.testutil.testModule
 import hu.bme.mit.ftsrg.dva.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.vla.*
+import hu.bme.mit.ftsrg.odcs.DataQuality
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -149,6 +150,26 @@ class TemplateRoutesTest {
         }
     }
 
+
+    @Test
+    fun `should render template`() = testApplication {
+        setupApplication()
+
+        val client = setupClient()
+        client.post("/template/${Uuid.NIL}/render") {
+            contentType(Application.Json)
+            setBody(buildJsonObject {
+                put("schemaURL", "http://example.com")
+            })
+        }.apply {
+            assertEquals(OK, status)
+
+            val rendered = body<DataQuality>()
+            assertEquals(Engine.SCHEMA.toString(), rendered.engine)
+            assertEquals("http://example.com", rendered.implementation)
+        }
+    }
+
     @Test
     fun `should return 404 when template not found`() = testApplication {
         setupApplication()
@@ -158,6 +179,12 @@ class TemplateRoutesTest {
         val client = setupClient()
         val randomUUID = Uuid.random()
         client.get("/template/$randomUUID").apply {
+            assertEquals(NotFound, status)
+        }
+        client.post("/template/$randomUUID/render") {
+            contentType(Application.Json)
+            setBody(buildJsonObject {})
+        }.apply {
             assertEquals(NotFound, status)
         }
         client.patch("/template/$randomUUID") {

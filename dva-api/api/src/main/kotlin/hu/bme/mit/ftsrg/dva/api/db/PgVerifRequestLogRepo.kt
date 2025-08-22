@@ -14,15 +14,15 @@ import kotlin.uuid.toJavaUuid
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
 class PgVerifRequestLogRepo : VerifRequestLogRepo {
-    override suspend fun allRequests(): List<VerifRequestLog> = suspendTransaction {
+    override suspend fun all(): List<VerifRequestLog> = suspendTransaction {
         VerifRequestLogEntity.all().map { it.toModel() }
     }
 
-    override suspend fun requestByID(id: Uuid): VerifRequestLog? = suspendTransaction {
+    override suspend fun byID(id: Uuid): VerifRequestLog? = suspendTransaction {
         VerifRequestLogEntity.findById(id.toJavaUuid())?.toModel()
     }
 
-    override suspend fun addRequest(request: VerifRequestLogNew): VerifRequestLog? =
+    override suspend fun add(request: VerifRequestLogNew): VerifRequestLog? =
         suspendTransaction {
             VerifRequestLogEntity.new {
                 exchangeID = request.exchangeID
@@ -33,7 +33,7 @@ class PgVerifRequestLogRepo : VerifRequestLogRepo {
             }.toModel()
         }
 
-    override suspend fun updateRequest(patch: VerifRequestLogPatch): VerifRequestLog? =
+    override suspend fun update(patch: VerifRequestLogPatch): VerifRequestLog? =
         suspendTransaction {
             VerifRequestLogEntity.findByIdAndUpdate(patch.id.toJavaUuid()) {
                 it.verificationDate = patch.verificationDate?.toLocalDateTime(UTC) ?: it.verificationDate

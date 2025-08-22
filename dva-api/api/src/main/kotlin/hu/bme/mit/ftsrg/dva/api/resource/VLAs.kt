@@ -5,14 +5,13 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @Suppress("unused")
-@Resource("/template")
-class Templates {
+@Resource("/vla")
+class VLAs {
 
     @OptIn(ExperimentalUuidApi::class)
     @Resource("{id}")
-    class Id(val parent: Templates = Templates(), val id: Uuid) {
+    class Id(val parent: VLAs = VLAs(), val id: Uuid)
 
-        @Resource("render")
-        class Render(val parent: Id)
-    }
+    @Resource("from-templates")
+    class FromTemplates(val parent: VLAs = VLAs())
 }

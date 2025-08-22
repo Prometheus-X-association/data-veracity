@@ -13,15 +13,15 @@ import kotlin.uuid.toJavaUuid
 
 @OptIn(ExperimentalUuidApi::class)
 class PgTemplateRepo : TemplateRepo {
-    override suspend fun allTemplates(): List<Template> = suspendTransaction {
+    override suspend fun all(): List<Template> = suspendTransaction {
         TemplateEntity.all().map { it.toModel() }
     }
 
-    override suspend fun templateById(id: Uuid): Template? = suspendTransaction {
+    override suspend fun byID(id: Uuid): Template? = suspendTransaction {
         TemplateEntity.findById(id.toJavaUuid())?.toModel()
     }
 
-    override suspend fun addTemplate(template: TemplateNew): Template? = suspendTransaction {
+    override suspend fun add(template: TemplateNew): Template? = suspendTransaction {
         TemplateEntity.new {
             name = template.name
             description = template.description ?: ""
@@ -35,7 +35,7 @@ class PgTemplateRepo : TemplateRepo {
         }.toModel()
     }
 
-    override suspend fun patchTemplate(patch: TemplatePatch): Template? = suspendTransaction {
+    override suspend fun update(patch: TemplatePatch): Template? = suspendTransaction {
         TemplateEntity.findById(patch.id.toJavaUuid())?.apply {
             name = patch.name ?: name
             description = patch.description ?: description
@@ -49,7 +49,7 @@ class PgTemplateRepo : TemplateRepo {
         }?.toModel()
     }
 
-    override suspend fun removeTemplate(id: Uuid): Boolean = suspendTransaction {
+    override suspend fun remove(id: Uuid): Boolean = suspendTransaction {
         val rowsDeleted = TemplatesTable.deleteWhere {
             TemplatesTable.id eq id.toJavaUuid()
         }

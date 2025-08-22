@@ -48,7 +48,7 @@ fun Application.aovRoutes() {
             val id = UUID.randomUUID().toString()
             val requestWithID: AttestationRequestDTO = request.copy(id = id)
 
-            reqsRepo.addRequest(
+            reqsRepo.add(
                 RequestLogNew(
                     type = RequestType.ATTESTATION_REQUEST,
                     requestID = Uuid.parse(requestWithID.id!!),
@@ -77,7 +77,7 @@ fun Application.aovRoutes() {
             val id = UUID.randomUUID().toString()
             val requestWithID: AttestationVerificationRequestDTO = request.copy(id = id)
 
-            val verifLogEntity = verifsRepo.addRequest(
+            val verifLogEntity = verifsRepo.add(
                 VerifRequestLogNew(
                     exchangeID = requestWithID.exchangeID,
                     contractID = requestWithID.contractID,
@@ -105,7 +105,7 @@ fun Application.aovRoutes() {
             val acaPyResp: ACAPyPresentationResponseDTO = resp.body()
 
             if (verifLogEntity != null) {
-                verifsRepo.updateRequest(
+                verifsRepo.update(
                     VerifRequestLogPatch(
                         id = verifLogEntity.id,
                         presentationRequestData = acaPyResp.aov,

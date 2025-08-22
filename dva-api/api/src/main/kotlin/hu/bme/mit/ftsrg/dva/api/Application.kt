@@ -1,17 +1,12 @@
 package hu.bme.mit.ftsrg.dva.api
 
-import hu.bme.mit.ftsrg.dva.api.db.PgRequestLogRepo
-import hu.bme.mit.ftsrg.dva.api.db.PgTemplateRepo
-import hu.bme.mit.ftsrg.dva.api.db.PgVerifRequestLogRepo
-import hu.bme.mit.ftsrg.dva.api.db.configureDatabases
+import hu.bme.mit.ftsrg.dva.api.db.*
 import hu.bme.mit.ftsrg.dva.api.err.addHandlers
-import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
-import hu.bme.mit.ftsrg.dva.api.route.docRoutes
-import hu.bme.mit.ftsrg.dva.api.route.infoRoutes
-import hu.bme.mit.ftsrg.dva.api.route.templateRoutes
+import hu.bme.mit.ftsrg.dva.api.route.*
 import hu.bme.mit.ftsrg.dva.log.ReqestLogRepo
 import hu.bme.mit.ftsrg.dva.log.VerifRequestLogRepo
 import hu.bme.mit.ftsrg.dva.vla.TemplateRepo
+import hu.bme.mit.ftsrg.dva.vla.VLARepo
 import io.ktor.client.*
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.*
@@ -85,6 +80,7 @@ fun Application.configureKoin() {
         single<TemplateRepo> { PgTemplateRepo() }
         single<ReqestLogRepo> { PgRequestLogRepo() }
         single<VerifRequestLogRepo> { PgVerifRequestLogRepo() }
+        single<VLARepo> { PgVLARepo() }
     }
 
     serverInstall(Koin) { modules(appModule) }
@@ -94,5 +90,6 @@ fun Application.addRoutes() {
     docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
     templateRoutes()
     aovRoutes()
+    vlaRoutes()
     infoRoutes()
 }

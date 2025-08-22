@@ -22,7 +22,6 @@ import io.ktor.server.routing.*
 import kotlinx.serialization.json.JsonObject
 import org.koin.ktor.ext.inject
 import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 fun Application.templateRoutes() {
@@ -30,11 +29,11 @@ fun Application.templateRoutes() {
 
     routing {
         get<Templates> {
-            call.respond(repo.allTemplates())
+            call.respond(repo.all())
         }
 
         get<Templates.Id> { req ->
-            val template = repo.templateById(Uuid.parse(req.id)) ?: run {
+            val template = repo.byID(req.id) ?: run {
                 call.respond(NotFound)
                 return@get
             }
@@ -44,7 +43,7 @@ fun Application.templateRoutes() {
         post<Templates> {
             val templateReq = call.receive<TemplateNew>()
 
-            val template = repo.addTemplate(templateReq) ?: run {
+            val template = repo.add(templateReq) ?: run {
                 call.respond(InternalServerError, ErrDTO(type = "UNKNOWN", title = "Failed to create template"))
                 return@post
             }
@@ -53,13 +52,13 @@ fun Application.templateRoutes() {
 
         patch<Templates.Id> { req ->
             val patch = call.receive<TemplatePatch>()
-            if (Uuid.parse(req.id) != patch.id) {
+            if (req.id != patch.id) {
                 call.respond(
                     status = BadRequest,
                     ErrDTO(type = "BAD_REQUEST", title = "ID path parameter does not match ID in body")
                 )
             }
-            val updatedTemplate = repo.patchTemplate(patch) ?: run {
+            val updatedTemplate = repo.update(patch) ?: run {
                 call.respond(NotFound)
                 return@patch
             }
@@ -67,7 +66,7 @@ fun Application.templateRoutes() {
         }
 
         delete<Templates.Id> { req ->
-            if (repo.removeTemplate(Uuid.parse(req.id))) {
+            if (repo.remove(req.id)) {
                 call.respond(NoContent)
             } else {
                 call.respond(NotFound)
@@ -75,7 +74,7 @@ fun Application.templateRoutes() {
         }
 
         post<Templates.Id.Render> { req ->
-            val template = repo.templateById(Uuid.parse(req.parent.id)) ?: run {
+            val template = repo.byID(req.parent.id) ?: run {
                 call.respond(NotFound)
                 return@post
             }

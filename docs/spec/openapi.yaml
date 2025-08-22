@@ -7,7 +7,7 @@ info:
     [data veracity assurance building block (DVA)](https://github.com/Prometheus-X-association/data-veracity).
   contact:
     email: bpeter@edu.bme.hu
-  version: 0.4.2
+  version: 0.4.3
 servers:
   - url: http://localhost:9090
     description: Local development server running on default port
@@ -187,6 +187,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VLAArray'
+  /vla/from-templates:
+    post:
+      tags: [VLA]
+      summary: Create a new VLA using template rendering
+      description: >
+        Create a new **Veracity Level Agreement (VLA).**
+        Responds `201 CREATED` if the VLA was successfully created or `400 BAD REQUEST`
+        if creation failed.
+      operationId: createVLAFromTemplates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VLACreateFromTemplates'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/InvalidData'
   /vla/{id}:
     parameters:
       - name: id
@@ -417,6 +437,38 @@ components:
     VLACreate:
       allOf:
         - $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json
+      example:
+        description: Data is recent and valid
+        schema:
+          properties:
+            timestamp:
+              type: string
+            result:
+              type: integer
+        quality:
+          - engine: jq
+            implementation: .timestamp >= 20250101T0000Z
+          - engine: jq
+            implementation: .result >= 1 && .result <= 5
+    VLACreateFromTemplates:
+      allOf:
+        - $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json
+      example:
+        description: Data is recent and valid
+        schema:
+          properties:
+            timestamp:
+              type: string
+            result:
+              type: integer
+        qualityTemplates:
+          - id: 718a3c91-886b-49c4-9f70-5198f98d21c0
+            model:
+              date: 20250101T000000Z
+          - id: 28972cb3-a008-465b-a0d2-cd20ef45497a
+            model:
+              minimum: 1
+              maximum: 5
     VLAArray:
       type: array
       items:

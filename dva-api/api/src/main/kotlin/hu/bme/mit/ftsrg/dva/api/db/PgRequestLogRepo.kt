@@ -13,15 +13,15 @@ import kotlin.uuid.toJavaUuid
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
 class PgRequestLogRepo : ReqestLogRepo {
-    override suspend fun allRequests(): List<RequestLog> = suspendTransaction {
+    override suspend fun all(): List<RequestLog> = suspendTransaction {
         RequestLogEntity.all().map { it.toModel() }
     }
 
-    override suspend fun requestByID(id: Uuid): RequestLog? = suspendTransaction {
+    override suspend fun byID(id: Uuid): RequestLog? = suspendTransaction {
         RequestLogEntity.findById(id.toJavaUuid())?.toModel()
     }
 
-    override suspend fun addRequest(request: RequestLogNew): RequestLog? = suspendTransaction {
+    override suspend fun add(request: RequestLogNew): RequestLog? = suspendTransaction {
         RequestLogEntity.new {
             type = request.type.name
             requestID = request.requestID.toString()

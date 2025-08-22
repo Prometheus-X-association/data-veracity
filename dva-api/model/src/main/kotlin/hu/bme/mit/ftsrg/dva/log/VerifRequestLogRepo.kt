@@ -5,8 +5,8 @@ import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 interface VerifRequestLogRepo {
-    suspend fun allRequests(): List<VerifRequestLog>
-    suspend fun requestByID(id: Uuid): VerifRequestLog?
-    suspend fun addRequest(request: VerifRequestLogNew): VerifRequestLog?
-    suspend fun updateRequest(patch: VerifRequestLogPatch): VerifRequestLog?
+    suspend fun all(): List<VerifRequestLog>
+    suspend fun byID(id: Uuid): VerifRequestLog?
+    suspend fun add(request: VerifRequestLogNew): VerifRequestLog?
+    suspend fun update(patch: VerifRequestLogPatch): VerifRequestLog?
 }
