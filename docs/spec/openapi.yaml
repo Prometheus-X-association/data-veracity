@@ -11,6 +11,10 @@ info:
 servers:
   - url: http://localhost:9090
     description: Local development server running on default port
+  - url: http://localhost:9091
+    description: Test environment – **provider side**
+  - url: http://localhost:9092
+    description: Test environment – **consumer side**
   - url: '{server}'
     description: Custom parameterizable server
     variables:
