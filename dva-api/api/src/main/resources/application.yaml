@@ -8,6 +8,11 @@ ktor:
 swagger:
   openapiFile: "$DVA_OPENAPI_FILE:../docs/spec/openapi.yaml"
 
+postgres:
+  url: "$DVA_POSTGRES_URL:postgresql://localhost:5432/dva"
+  user: "$DVA_POSTGRES_USER:postgres"
+  password: "$DVA_POSTGRES_PASSWORD:postgres"
+
 rabbitmq:
   host: "$DVA_RABBITMQ_HOST:localhost"
 

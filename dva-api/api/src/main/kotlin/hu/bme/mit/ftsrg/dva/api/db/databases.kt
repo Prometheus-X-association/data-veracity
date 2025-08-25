@@ -6,10 +6,14 @@ import org.jetbrains.exposed.v1.jdbc.SchemaUtils.create
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 fun Application.configureDatabases() {
+    val pgURL = environment.config.property("postgres.url").getString()
+    val pgUser = environment.config.property("postgres.user").getString()
+    val pgPass = environment.config.property("postgres.password").getString()
+
     Database.connect(
-        "jdbc:postgresql://localhost:5432/dva",
-        user = "postgres",
-        password = "pw"
+        "jdbc:$pgURL",
+        user = pgUser,
+        password = pgPass,
     )
 
     transaction {
