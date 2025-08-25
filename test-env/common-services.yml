@@ -9,8 +9,6 @@ services:
       context: ../
       dockerfile: ./dva-processing/Dockerfile
     init: true
-    environment:
-      DVA_RABBITMQ_HOST: rabbit
   rabbit:
     image: rabbitmq:4-management-alpine
     healthcheck:
@@ -26,6 +24,16 @@ services:
         | mongosh localhost:27017/test --quiet
       interval: 5s
       timeout: 10s
+      retries: 5
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: dva
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: pg_isready
+      interval: 5s
+      timeout: 5s
       retries: 5
   karate:
     build: karate/

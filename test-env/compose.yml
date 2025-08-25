@@ -6,28 +6,30 @@ services:
       service: dva-api
     environment:
       DVA_RABBITMQ_HOST: rabbit-provider
+      DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
       DVA_MONGODB_HOST: mongo-provider
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-provider:8050
     ports: [9091:9090]
     depends_on:
-      rabbit-provider:
-        condition: service_healthy
-      mongo-provider:
-        condition: service_healthy
+      rabbit-provider: {condition: service_healthy}
+      postgres-provider: {condition: service_healthy}
+      aca-py-provider: {condition: service_healthy}
+      dva-aca-py-controller-provider: {condition: service_healthy}
   dva-api-consumer:
     extends:
       file: common-services.yml
       service: dva-api
     environment:
       DVA_RABBITMQ_HOST: rabbit-consumer
+      DVA_POSTGRES_URL: postgresql://postgres-consumer:5432/dva
       DVA_MONGODB_HOST: mongo-consumer
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-consumer:8050
     ports: [9092:9090]
     depends_on:
-      rabbit-consumer:
-        condition: service_healthy
-      mongo-consumer:
-        condition: service_healthy
+      rabbit-consumer: {condition: service_healthy}
+      postgres-consumer: {condition: service_healthy}
+      aca-py-consumer: {condition: service_healthy}
+      dva-aca-py-controller-consumer: {condition: service_healthy}
   dva-processing-provider:
     extends:
       file: common-services.yml
@@ -37,10 +39,9 @@ services:
       DVA_MONGODB_URL: mongodb://mongo-provider:27017
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-provider:8050
     depends_on:
-      rabbit-consumer:
-        condition: service_healthy
-      mongo-provider:
-        condition: service_healthy
+      rabbit-consumer: {condition: service_healthy}
+      postgres-provider: {condition: service_healthy}
+      mongo-provider: {condition: service_healthy}
   dva-processing-consumer:
     extends:
       file: common-services.yml
@@ -50,10 +51,9 @@ services:
       DVA_MONGODB_URL: mongodb://mongo-consumer:27017
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-consumer:8050
     depends_on:
-      rabbit-consumer:
-        condition: service_healthy
-      mongo-consumer:
-        condition: service_healthy
+      rabbit-consumer: {condition: service_healthy}
+      postgres-consumer: {condition: service_healthy}
+      mongo-consumer: {condition: service_healthy}
   rabbit-provider:
     extends:
       file: common-services.yml
@@ -62,6 +62,16 @@ services:
     extends:
       file: common-services.yml
       service: rabbit
+  postgres-provider:
+    extends:
+      file: common-services.yml
+      service: postgres
+    ports: [5401:5432]
+  postgres-consumer:
+    extends:
+      file: common-services.yml
+      service: postgres
+    ports: [5402:5432]
   mongo-provider:
     extends:
       file: common-services.yml
@@ -77,6 +87,11 @@ services:
     extends:
       file: common-services.yml
       service: karate
+    depends_on:
+      dva-api-provider: {condition: service_healthy}
+      dva-api-consumer: {condition: service_healthy}
+      dva-processing-provider: {condition: service_started}
+      dva-processing-consumer: {condition: service_started}
   aca-py-provider:
     extends:
       file: common-services.yml
@@ -161,10 +176,9 @@ services:
       DVA_MONGODB_URL: mongodb://mongo-provider:27017
     ports: [8051:8050]
     depends_on:
-      aca-py-provider:
-        condition: service_healthy
-      mongo-provider:
-        condition: service_healthy
+      aca-py-provider: {condition: service_healthy}
+      postgres-provider: {condition: service_healthy}
+      mongo-provider: {condition: service_healthy}
   dva-aca-py-controller-consumer:
     extends:
       file: common-services.yml
@@ -181,10 +195,9 @@ services:
       DVA_MONGODB_URL: mongodb://mongo-provider:27017
     ports: [8052:8050]
     depends_on:
-      aca-py-consumer:
-        condition: service_healthy
-      mongo-consumer:
-        condition: service_healthy
+      aca-py-consumer: {condition: service_healthy}
+      postgres-consumer: {condition: service_healthy}
+      mongo-consumer: {condition: service_healthy}
   dva-dashboard-backend-provider:
     extends:
       file: common-services.yml
@@ -194,8 +207,8 @@ services:
       DVA_ACA_PY_URL: http://aca-py-provider:8030
     ports: [3001:3000]
     depends_on:
-      mongo-consumer:
-        condition: service_healthy
+      postgres-provider: {condition: service_healthy}
+      mongo-provider: {condition: service_healthy}
   dva-dashboard-backend-consumer:
     extends:
       file: common-services.yml
@@ -205,8 +218,8 @@ services:
       DVA_ACA_PY_URL: http://aca-py-consumer:8030
     ports: [3002:3000]
     depends_on:
-      mongo-consumer:
-        condition: service_healthy
+      postgres-consumer: {condition: service_healthy}
+      mongo-consumer: {condition: service_healthy}
   dva-dashboard-frontend-provider:
     extends:
       file: common-services.yml
@@ -216,8 +229,7 @@ services:
         DVA_DASHBOARD_BACKEND_URL: http://localhost:3001
     ports: [3011:80]
     depends_on:
-      dva-dashboard-backend-provider:
-        condition: service_healthy
+      dva-dashboard-backend-provider: {condition: service_healthy}
   dva-dashboard-frontend-consumer:
     extends:
       file: common-services.yml
@@ -227,5 +239,4 @@ services:
         DVA_DASHBOARD_BACKEND_URL: http://localhost:3002
     ports: [3012:80]
     depends_on:
-      dva-dashboard-backend-consumer:
-        condition: service_healthy
+      dva-dashboard-backend-consumer: {condition: service_healthy}
