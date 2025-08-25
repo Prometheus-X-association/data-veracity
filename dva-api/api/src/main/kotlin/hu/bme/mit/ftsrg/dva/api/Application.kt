@@ -1,7 +1,10 @@
 package hu.bme.mit.ftsrg.dva.api
 
+import com.rabbitmq.client.Connection
+import com.rabbitmq.client.ConnectionFactory
 import hu.bme.mit.ftsrg.dva.api.db.*
 import hu.bme.mit.ftsrg.dva.api.err.addHandlers
+import hu.bme.mit.ftsrg.dva.api.rabbit.connectWithRetry
 import hu.bme.mit.ftsrg.dva.api.route.*
 import hu.bme.mit.ftsrg.dva.log.ReqestLogRepo
 import hu.bme.mit.ftsrg.dva.log.VerifRequestLogRepo
@@ -61,12 +64,12 @@ fun Application.configureKoin() {
     val rabbitHost = environment.config.property("rabbitmq.host").getString()
 
     val appModule = module {
-        //single<Connection> {
-        //    ConnectionFactory().run {
-        //        host = rabbitHost
-        //        connectWithRetry(logger = log)
-        //    }
-        //}
+        single<Connection> {
+            ConnectionFactory().run {
+                host = rabbitHost
+                connectWithRetry(logger = log)
+            }
+        }
         single<HttpClient> {
             HttpClient(CIO) {
                 install(ClientContentNegotiation) {
