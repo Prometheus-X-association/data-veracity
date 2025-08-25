@@ -12,8 +12,22 @@ import dva_processing.dryrun
     help="Dry run: works standalone and does not actually send any messages",
     abbrev="n",
 )
-def main(dry_run=False):
+@plac.flg(
+    "verbose",
+    help="Be more verbose (INFO loglevel)",
+    abbrev="v",
+)
+@plac.flg(
+    "debug",
+    help="Enable DEBUG log verbosity",
+    abbrev="d",
+)
+def main(dry_run=False, verbose=False, debug=False):
     dva_processing.config.cfg.dry_run = dry_run
+    if debug:
+        dva_processing.config.cfg.log_level = "debug"
+    elif verbose:
+        dva_processing.config.cfg.log_level = "info"
     dva_processing.log.setup_logging()
 
     if dry_run:

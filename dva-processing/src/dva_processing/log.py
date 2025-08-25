@@ -24,7 +24,7 @@ def setup_logging():
     structlog.configure(
         processors=processors,
         context_class=dict,
-        wrapper_class=make_filtering_bound_logger(dva_processing.config.LOG_LEVEL),
+        wrapper_class=make_filtering_bound_logger(dva_processing.config.cfg.log_level),
     )
 
 
