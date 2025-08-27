@@ -15,9 +15,9 @@ At the moment, DVA has several subcomponents:
 * **RabbitMQ** from [`rabbitmq`](https://hub.docker.com/_/rabbitmq) – message queue facilitating communication between the API server and the processing module
 * **ACA-Py Controller** in [`dva-acapy-controller/`](dva-acapy-controller/) – contains SSI/VC-related logic
 * **ACA-Py Agent** from [`ghcr.io/hyperledger/aries-cloudagent-python`](https://github.com/orgs/hyperledger/packages/container/package/aries-cloudagent-python) – an SSI cloud agent (~ wallet)
-* **MongoDB** from [`mongo`](https://hub.docker.com/_/mongo) – stores application state, events, and _logs_
-* **Dashboard** in [`dva-dashboard/`](dva-dashboard/) – full stack application that displays MongoDB contents on a dashboard interface
-* **VLA Manager** in [`vla-manager`](vla-manager/) – full stack application that manages VLAs (creation, display, etc)
+* **PostgreSQL** from [`postgres`](https://hub.docker.com/_/postgres) – stores application state, events, and _logs_
+* **Dashboard** in [`dva-dashboard/`](dva-dashboard/) – frontend application that displays database contents on a dashboard interface
+* **VLA Manager** in [`vla-manager`](vla-manager/) – frontend application for VLAs management (creation, display, etc)
 
 All of these are either existing Docker images or have been prepared for docker image building.
 Note that some of the subcomponents currently require the build context to be the root of the repository.
@@ -30,7 +30,7 @@ $ docker buildx build -t dva-processing:latest -f dva-processing/Dockerfile ./
 $ docker pull rabbitmq:4-management-alpine
 $ docker buildx build -t dva-aca-py-controller:latest -f dva-acapy-controller/Dockerfile ./
 $ docker pull ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.12.6
-$ docker pull mongo:0.8.9
+$ docker pull postgres:17-alpine
 $ docker buildx build -t dva-dashboard-backend:latest -f dva-dashboard/backend/Dockerfile ./
 $ docker buildx build -t dva-dashboard-frontend:latest -f dva-dashboard/frontend/Dockerfile ./
 $ docker buildx build -t vla-manager-backend:latest -f vla-manager/backend/Dockerfile ./
@@ -38,7 +38,7 @@ $ docker buildx build -t vla-manager-frontend:latest -f vla-manager/frontend/Doc
 ```
 
 > [!NOTE]
-> Check the currently used RabbitMQ, MongoDB, and ACA-Py versions in [`test-env/common-services.yml`](test-env/common-services.yml).
+> Check the currently used RabbitMQ, PostgreSQL, and ACA-Py versions in [`test-env/common-services.yml`](test-env/common-services.yml).
 
 You normally do not have to do this however as you should be using Docker Compose to set up your DVA instance (see the [_test environment_](test-env/)).
 
@@ -56,9 +56,7 @@ You can find more information in the README in [`test-env/`](test-env/).
 
 The following additional Docker Compose profiles are available:
 
-* **`dev`:** in addition to the necessary subcomponents, it includes a `callback-dummy` component that can be used to verify callbacks sent by `dva-api` (used in Karate-based tests).  
-   Use `docker compose --profile dev up --detach` to start a test environment with a `callback-dummy`.
-* **`karate`:** in addition to `dev`, this also includes an ephemeral `karate` container that executes availble Karate tests.  
+* **`karate`:** in addition to the default services, this profile also includes an ephemeral `karate` container that executes availble Karate tests.  
    Use `docker compose --profile karate up --detach` to start a test environment and run all Karate tests.
    Check the `karate` container’s logs and/or the [`karate-reports/`](test-env/karate-reports/) subdirectory inside [`test-env/`](test-env/) to analyze the results.
 
@@ -68,27 +66,31 @@ The following additional Docker Compose profiles are available:
 > [!TIP]
 > More detailed test definitions can be found [here](docs/test-definitions.md).
 
-The currently implemented endpoints are `/template`, `/attestation`, and `/attestation/verify`.
-See the [OpenAPI specification](docs/spec/openapi.yaml) for more information.
+See the [OpenAPI specification](docs/spec/openapi.yaml) for available endpoints.
 
 > [!NOTE]
-> By default, the API is available at **`http://127.0.0.1:9090`** when using the [test environment](test-env/) with the default settings.
+> By default, an API is available at **`http://127.0.0.1:9091`** when using the [test environment](test-env/) with the default settings.
 > All endpoints in the table below are relative to this URL.
 
 > [!TIP]
 > * Example **input** data can be found in [`test-env/test-data/`](test-env/test-data/).
 > * Example **output** data can be found in [`test-env/example-outputs/`](test-env/example-outputs/).
 
-Example requests to test functionality manually:
+Example requests to test functionality manually (non-exhaustive):
 
-| Endpoint              | HTTP Method | Example parameters                             | Example input (request body)                                                     | Expected output                                                                                                          |
-|-----------------------|-------------|------------------------------------------------|----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| `/template`           | `GET`       | *nothing*                                      | *empty*                                                                          | `200 OK` and a [list of VLA templates](test-env/example-outputs/template-get.json)                                       |
-| `/template`           | `POST`      | *nothing*                                      | a [VLA template](test-env/test-data/vla-template/template.json)                  | `201 CREATED` and [an ID](test-env/example-outputs/id-template.json)                                                     |
-| `/template/{id}`      | `GET`       | `id`: a VLA template ID (eg `template-test-0`) | *empty*                                                                          | `200 OK` and the requested VLA template ([example for `template-test-0`](test-env/example-outputs/template-id-get.json)) |
-| `/template/{id}`      | `DELETE`    | `id`: a VLA template ID (eg `template-test-0`) | *empty*                                                                          | `200 OK`                                                                                                                 |
-| `/attestation`        | `POST`      | *nothing*                                      | an [AoV request](test-env/test-data/aov/timestamp-in-range/request-good.json)    | `200 OK` and [an ID](test-env/example-outputs/id-aov_request.json)                                                       |
-| `/attestation/verify` | `POST`      | *nothing*                                      | an [AoV verification request](test-env/test-data/demo/presentation-request.json) | `200 OK` and AoV JSON object from ACA-Py                                                                                 |
+| Endpoint                | HTTP Method | Example parameters                                                  | Example input (request body)                                                                                                                                                    | Expected output                                                                                                                                                         |
+|-------------------------|-------------|---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/template`             | `GET`       | *nothing*                                                           | *empty*                                                                                                                                                                         | `200 OK` and a [list of VLA templates](test-env/example-outputs/template-get.json)                                                                                      |
+| `/template`             | `POST`      | *nothing*                                                           | a [VLA template](test-env/test-data/vla-template/template.json)                                                                                                                 | `201 CREATED` and [an ID](test-env/example-outputs/id.json)                                                                                                             |
+| `/template/{id}`        | `GET`       | `id`: a VLA template ID (eg `3c58c2fd-6d7a-4953-9f76-7c71fc3ac7e2`) | *empty*                                                                                                                                                                         | `200 OK` and the requested VLA template ([example for `a3be74b8-a7dc-4c42-aa83-59b678004748`](test-env/example-outputs/template-id-get.json))                           |
+| `/template/{id}`        | `DELETE`    | `id`: a VLA template ID (eg `3c58c2fd-6d7a-4953-9f76-7c71fc3ac7e2`) | *empty*                                                                                                                                                                         | `204 NO CONTENT`                                                                                                                                                        |
+| `/template/{id}/render` | `POST`      | `id`: a VLA template ID (eg `3c58c2fd-6d7a-4953-9f76-7c71fc3ac7e2`) | a VLA template’s model, according to its `variableSchema` ([example for `test-env/test-data/vla-template/template.json`](test-env/test-data/vla-template/template-render.json)) | `200 OK` and a rendered VLA template with the given data ([example for `test-env/test-data/vla-template/template.json`](test-env/example-outputs/template-render.json)) |
+| `/vla`                  | `GET`       | *nothing*                                                           | *empty*                                                                                                                                                                         | `200 OK` and a [list of VLAs](test-env/example-outputs/vla-get.json)                                                                                                    |
+| `/vla`                  | `POST`      | *nothing*                                                           | a [VLA request](test-env/test-data/vla-request/request.json)                                                                                                                    | `201 CREATED` and [an ID](test-env/example-outputs/id.json)                                                                                                             |
+| `/vla/from-templates`   | `POST`      | *nothing*                                                           | a [VLA request using templates](test-env/test-data/vla-request/request-from-templates.json)                                                                                     | `201 CREATED` and [an ID](test-env/example-outputs/id.json)                                                                                                             |
+| `/vla/{id}`             | `GET`       | `id`: a VLA ID (eg `570b22e0-2e90-4e02-8c7b-1d6d274629f3`)          | *empty*                                                                                                                                                                         | `200 OK` and the VLA template ([example](test-env/example-outputs/vla-id-get.json))                                                                                     |
+| `/attestation`          | `POST`      | *nothing*                                                           | an [AoV request](test-env/test-data/aov/timestamp-in-range/request-good.json)                                                                                                   | `200 OK` and [an ID](test-env/example-outputs/id.json)                                                                                                                  |
+| `/attestation/verify`   | `POST`      | *nothing*                                                           | an [AoV verification request](test-env/test-data/aov/verif-req.json)                                                                                                            | `200 OK` and an AoV JSON object from ACA-Py                                                                                                                            |
 
 > [!NOTE]
 > AoV requests (`POST /attestation`) are processed asynchronously.
