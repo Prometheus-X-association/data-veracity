@@ -1,12 +1,11 @@
 import json
+import psycopg as pg
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel
-from pymongo import MongoClient
-from pymongo.errors import PyMongoError
 from typing import Any
 
-from .config import MONGO_URL, MONGO_DB, MONGO_COLLECTION
+from .config import PG_URL, PG_USER, PG_PASS
 from .log import get_logger
 from .qc import validate_data
 
@@ -44,20 +43,26 @@ def handle_aov_request(req: AoVRequest) -> AoVGenerationRequest:
             logger.warning("Failed validation", results=results_dict)
 
         try:
-            req_coll = MongoClient(MONGO_URL)[MONGO_DB][MONGO_COLLECTION]
-            req_coll.update_one(
-                {"requestID": req.id},
-                {
-                    "$set": {
-                        "evaluationPassing": results["success"],
-                        "evaluationDate": datetime.utcnow(),
-                        "evaluationResults": json.dumps(results_dict),
-                    }
-                },
-            )
-            logger.info(f"Successfully updated MongoDB entry for request {req.id}")
-        except PyMongoError as e:
-            logger.error(f"Failed to update MongoDB entry due to {e}", error=e)
+            with pg.connect(f"{PG_URL}?user={PG_USER}&password={PG_PASS}") as conn:
+                conn.execute(
+                    """
+                UPDATE request_logs
+                SET
+                  evaluation_passing = %s,
+                  evaluation_date = %s,
+                  evaluation_results = %s
+                WHERE request_id = %s
+                """,
+                    (
+                        results["success"],
+                        datetime.now(timezone.utc),
+                        json.dumps(results_dict),
+                        req.id,
+                    ),
+                )
+            logger.info(f"Successfully updated PostgreSQL entry for request {req.id}")
+        except Exception as ex:
+            logger.error(f"Failed to update request log entry due to {ex}", error=ex)
 
         return AoVGenerationRequest(
             request_id=req.id,

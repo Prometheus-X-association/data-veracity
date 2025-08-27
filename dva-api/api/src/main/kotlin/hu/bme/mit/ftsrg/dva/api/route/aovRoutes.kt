@@ -19,6 +19,7 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.http.HttpStatusCode.Companion.Accepted
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.resources.post
@@ -68,7 +69,7 @@ fun Application.aovRoutes() {
                 }
             }
 
-            call.respond(status = HttpStatusCode.Created, message = IDDTO(id))
+            call.respond(status = Accepted, message = IDDTO(id))
         }
 
         post<Attestations.Verify> {

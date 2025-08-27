@@ -41,6 +41,8 @@ services:
       - ./karate-features:/app/features:ro
       - ./test-data:/app/test-data:ro
       - ./karate-reports:/app/target/karate-reports
+      - ./karate-configs:/app/classpath:ro
+      - ./karate-logs:/app/target/karate-logs
     command: ./features/
   aca-py:
     image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.12.6

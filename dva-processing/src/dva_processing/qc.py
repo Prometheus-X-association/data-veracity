@@ -21,7 +21,10 @@ def validate_data(data, vla):
         except ValueError:
             pass
 
-    ctx = gx.get_context()
+    ctx = gx.get_context(mode="ephemeral")
+    ctx.variables.progress_bars = gx.data_context.types.base.ProgressBarsConfig(
+        globally=False
+    )
 
     data_src_name = "test_src"
     data_asset_name = "test_asset"

@@ -35,8 +35,9 @@ services:
       file: common-services.yml
       service: dva-processing
     environment:
+      DVA_LOG_LEVEL: debug
       DVA_RABBITMQ_HOST: rabbit-provider
-      DVA_MONGODB_URL: mongodb://mongo-provider:27017
+      DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-provider:8050
     depends_on:
       rabbit-consumer: {condition: service_healthy}
@@ -47,8 +48,9 @@ services:
       file: common-services.yml
       service: dva-processing
     environment:
+      DVA_LOG_LEVEL: debug
       DVA_RABBITMQ_HOST: rabbit-consumer
-      DVA_MONGODB_URL: mongodb://mongo-consumer:27017
+      DVA_POSTGRES_URL: postgresql://postgres-consumer:5432/dva
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-consumer:8050
     depends_on:
       rabbit-consumer: {condition: service_healthy}

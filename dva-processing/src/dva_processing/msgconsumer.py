@@ -32,9 +32,6 @@ def consume_loop():
         logger.info("Received AoV request", request=aov_request)
         aov_gen_req = handle_aov_request(aov_request)
         logger.info("Sending AoV VC generation request", request=aov_gen_req)
-        print("AoV Generation Request as a JSON string {{{")
-        print(aov_gen_req.model_dump_json())
-        print("}}} ----- ")
         requests.post(
             f"{ACA_PY_CONTROLLER_URL}/generate_aov",
             json=aov_gen_req.model_dump(),

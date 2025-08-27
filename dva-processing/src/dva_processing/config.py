@@ -7,10 +7,10 @@ QUEUE_NAME = "ATTESTATION_REQUESTS"
 # RabbitMQ server hostname
 RABBITMQ_HOST = env.get("DVA_RABBITMQ_HOST", default="localhost")
 
-# MongoDB data
-MONGO_URL = env.get("DVA_MONGODB_URL", default="mongodb://localhost:27017")
-MONGO_DB = env.get("DVA_MONGODB_DB", default="dva")
-MONGO_COLLECTION = env.get("DVA_MONGODB_COLLECTION_REQUESTS", default="requests")
+# Postgres connection data
+PG_URL = env.get("DVA_POSTGRES_URL", default="postgresql://localhost:5432")
+PG_USER = env.get("DVA_POSTGRES_USER", default="postgres")
+PG_PASS = env.get("DVA_POSTGRES_PASSWORD", default="postgres")
 
 # Log level (must be supported by structlog)
 LOG_LEVEL = env.get("DVA_LOG_LEVEL", default="warn")

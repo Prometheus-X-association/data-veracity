@@ -24,8 +24,8 @@ object VerifRequestLogsTable : UUIDTable("verification_request_logs") {
     val attesterAgentLabel = varchar("attester_agent_label", 255)
     val receivedDate = datetime("received_date")
     val verificationDate = datetime("verification_date").nullable()
-    val verified = bool("verified")
-    val presentationRequestData = text("presentation_request_data")
+    val verified = bool("verified").default(false)
+    val presentationRequestData = text("presentation_request_data").nullable()
 }
 
 class VerifRequestLogEntity(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -51,5 +51,5 @@ fun VerifRequestLogEntity.toModel() = VerifRequestLog(
     receivedDate = receivedDate.toInstant(UTC),
     verificationDate = verificationDate?.toInstant(UTC),
     verified = verified,
-    presentationRequestData = Json.decodeFromString(presentationRequestData),
+    presentationRequestData = presentationRequestData?.let { Json.decodeFromString(it) },
 )

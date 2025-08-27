@@ -24,6 +24,8 @@ servers:
 tags:
   - name: VLA
     description: Endpoints related to veracity level agreements (VLAs)
+  - name: Templates
+    description: Endpoints related to the management of VLA templates
   - name: AoV
     description: Endpoints related to attestations of veracity (AoVs)
   - name: PoV
@@ -33,7 +35,7 @@ tags:
 paths:
   /template:
     post:
-      tags: [VLA]
+      tags: [VLA, Templates]
       summary: Create new VLA template
       description: >
         Add a new **VLA template** to the database.
@@ -53,7 +55,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidData'
     get:
-      tags: [VLA]
+      tags: [VLA, Templates]
       summary: Get all VLA templates
       description: >
         Returns all available **VLA templates** from the database as an array.
@@ -74,7 +76,7 @@ paths:
           $ref: '#/components/schemas/Id'
         description: A VLA template’s ID
     get:
-      tags: [VLA]
+      tags: [VLA, Templates]
       summary: Get VLA template by ID
       description: >
         Queries a specific **VLA template** by its unique ID.
@@ -91,7 +93,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
-      tags: [VLA]
+      tags: [VLA, Templates]
       summary: Update VLA template
       description: >
         Used to update an existing **VLA template** specified by its ID.
@@ -112,7 +114,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
-      tags: [VLA]
+      tags: [VLA, Templates]
       summary: Delete VLA template
       description: >
         Delete a **VLA template** specified by its ID.
@@ -133,7 +135,7 @@ paths:
           $ref: '#/components/schemas/Id'
         description: A VLA template’s ID
     post:
-      tags: [VLA]
+      tags: [VLA, Templates]
       summary: Render a VLA template
       description: >
         Render a VLA template to a complete _data quality fragment_ ready to be included
