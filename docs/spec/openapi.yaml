@@ -39,7 +39,7 @@ paths:
       summary: Create new VLA template
       description: >
         Add a new **VLA template** to the database.
-        You need to specify the ID of the template yourself.
+        An ID will be automatically generated for the template.
         A `201 CREATED` response is given if the template has been successfully created.
         Otherwise, you will get a `400 BAD REQUEST` (in case of invalid request data).
       operationId: createTemplate
