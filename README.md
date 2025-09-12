@@ -31,10 +31,10 @@ docker pull rabbitmq:4-management-alpine
 docker buildx build -t dva-aca-py-controller:latest -f dva-acapy-controller/Dockerfile ./
 docker pull ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.12.6
 docker pull postgres:17-alpine
-docker buildx build -t dva-dashboard-backend:latest -f dva-dashboard/backend/Dockerfile ./
-docker buildx build -t dva-dashboard-frontend:latest -f dva-dashboard/frontend/Dockerfile ./
-docker buildx build -t vla-manager-backend:latest -f vla-manager/backend/Dockerfile ./
-docker buildx build -t vla-manager-frontend:latest -f vla-manager/frontend/Dockerfile ./
+docker buildx build -t dva-dashboard-backend:latest ./dva-dashboard/backend/
+docker buildx build -t dva-dashboard-frontend:latest ./dva-dashboard/frontend/
+docker buildx build -t vla-manager-backend:latest ./vla-manager/backend/
+docker buildx build -t vla-manager-frontend:latest ./vla-manager/frontend/
 ```
 
 > [!NOTE]
