@@ -20,8 +20,8 @@ Then, you would do the following:
 **Please use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).**
 
 You can configure Git locally to use the template in this directory like this:
-```shell-session
-$ git config commit.template docs/commit-message-template.txt
+```console
+git config commit.template docs/commit-message-template.txt
 ```
 
 We use the following commit types:

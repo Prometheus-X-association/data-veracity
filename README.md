@@ -25,16 +25,16 @@ Note that some of the subcomponents currently require the build context to be th
 You can use the following commands to build / pull the images (from the repository root):
 
 ```console
-$ docker buildx build -t dva-api:latest -f dva-api/Dockerfile ./
-$ docker buildx build -t dva-processing:latest -f dva-processing/Dockerfile ./
-$ docker pull rabbitmq:4-management-alpine
-$ docker buildx build -t dva-aca-py-controller:latest -f dva-acapy-controller/Dockerfile ./
-$ docker pull ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.12.6
-$ docker pull postgres:17-alpine
-$ docker buildx build -t dva-dashboard-backend:latest -f dva-dashboard/backend/Dockerfile ./
-$ docker buildx build -t dva-dashboard-frontend:latest -f dva-dashboard/frontend/Dockerfile ./
-$ docker buildx build -t vla-manager-backend:latest -f vla-manager/backend/Dockerfile ./
-$ docker buildx build -t vla-manager-frontend:latest -f vla-manager/frontend/Dockerfile ./
+docker buildx build -t dva-api:latest -f dva-api/Dockerfile ./
+docker buildx build -t dva-processing:latest -f dva-processing/Dockerfile ./
+docker pull rabbitmq:4-management-alpine
+docker buildx build -t dva-aca-py-controller:latest -f dva-acapy-controller/Dockerfile ./
+docker pull ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.12.6
+docker pull postgres:17-alpine
+docker buildx build -t dva-dashboard-backend:latest -f dva-dashboard/backend/Dockerfile ./
+docker buildx build -t dva-dashboard-frontend:latest -f dva-dashboard/frontend/Dockerfile ./
+docker buildx build -t vla-manager-backend:latest -f vla-manager/backend/Dockerfile ./
+docker buildx build -t vla-manager-frontend:latest -f vla-manager/frontend/Dockerfile ./
 ```
 
 > [!NOTE]
@@ -108,7 +108,7 @@ _No setup needed._
 
 Set your working directory to `dva-api/` and execute:
 ```console
-$ ./gradlew test
+./gradlew test
 ```
 
 #### Expected results
@@ -140,7 +140,7 @@ In the test output, you should see all JUnit tests passing.
 > [!NOTE]
 > A nice way to run the tests from the repository root using Docker without having to touch your local environment:
 > ```console
-> $ docker run --rm -it -v ./dva-processing:/app ghcr.io/astral-sh/uv:debian-slim uv --directory /app/ run pytest
+> docker run --rm -it -v ./dva-processing:/app ghcr.io/astral-sh/uv:debian-slim uv --directory /app/ run pytest
 > ```
 
 #### Setup test environment
@@ -151,7 +151,7 @@ Find a way to run [uv](https://docs.astral.sh/uv) → [installation instructions
 
 Set your working directory to `dva-processing/` and execute:
 ```console
-$ uv run pytest
+uv run pytest
 ```
 
 #### Expected results
@@ -179,7 +179,7 @@ In the test output, you should see all PyTest tests passing.
 > [!NOTE]
 > A nice way to run the tests from the repository root using Docker without having to touch your local environment:
 > ```console
-> $ docker run --rm -it -v ./dva-acapy-controller:/app ghcr.io/astral-sh/uv:debian-slim uv --directory /app/ run pytest
+> docker run --rm -it -v ./dva-acapy-controller:/app ghcr.io/astral-sh/uv:debian-slim uv --directory /app/ run pytest
 > ```
 
 #### Setup test environment
@@ -190,7 +190,7 @@ Find a way to run [uv](https://docs.astral.sh/uv) → [installation instructions
 
 Set your working directory to `dva-acapy-controller/` and execute:
 ```console
-$ uv run pytest
+uv run pytest
 ```
 
 #### Expected results
@@ -223,7 +223,7 @@ _No setup needed, but you need to have Docker- and Docker Compose installed._
 
 Change your working directory to `test-env/` and run the following:
 ```console
-$ docker compose --profile karate up
+docker compose --profile karate up
 ```
 
 ### Expected results

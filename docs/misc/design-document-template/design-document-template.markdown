@@ -88,7 +88,7 @@ _Mermaid has no such feature, but you may use PlantUML to automatically visualiz
 _Creating the diagram via the PlantUML JAR:_
 
 ```shell-session
-$ java -jar plantuml.jar -tsvg json.puml
+java -jar plantuml.jar -tsvg json.puml
 ```
 
 _Gives:_
