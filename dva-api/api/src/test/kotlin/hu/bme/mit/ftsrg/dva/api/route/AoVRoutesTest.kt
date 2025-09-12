@@ -2,16 +2,19 @@ package hu.bme.mit.ftsrg.dva.api.route
 
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
+import hu.bme.mit.ftsrg.dva.api.testutil.createTestClient
+import hu.bme.mit.ftsrg.dva.api.testutil.setupTestApplication
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
-import hu.bme.mit.ftsrg.dva.log.ReqestLogRepo
-import hu.bme.mit.ftsrg.dva.log.VerifRequestLogRepo
 import hu.bme.mit.ftsrg.dva.log.FakeReqestLogRepo
 import hu.bme.mit.ftsrg.dva.log.FakeVerifRequestLogRepo
+import hu.bme.mit.ftsrg.dva.log.ReqestLogRepo
+import hu.bme.mit.ftsrg.dva.log.VerifRequestLogRepo
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
 import io.ktor.server.testing.*
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Assertions
@@ -23,7 +26,6 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
 
-/* TODO: These tests should not be coupled with FakeAttestationRequestRepository */
 @Testcontainers
 class AoVRoutesTest {
 
@@ -32,26 +34,8 @@ class AoVRoutesTest {
 
     @Test
     fun `should create attestation request`() = testApplication {
-        val testModule = module {
-            single<Connection> {
-                ConnectionFactory().run {
-                    host = rmqContainer.host
-                    port = rmqContainer.firstMappedPort
-                    newConnection()
-                }
-            }
-            single<HttpClient> {
-                setupClient()
-            }
-            single<ReqestLogRepo> { FakeReqestLogRepo() }
-            single<VerifRequestLogRepo> { FakeVerifRequestLogRepo() }
-        }
-        application {
-            aovRoutes()
-        }
-        install(Koin) { modules(testModule) }
-
-        val client = setupClient()
+        setupApplication()
+        val client = createTestClient()
 
         val request = AttestationRequestDTO(
             id = "request-test-0000",
@@ -213,11 +197,25 @@ class AoVRoutesTest {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.apply {
-            Assertions.assertEquals(HttpStatusCode.Created, status)
+            Assertions.assertEquals(HttpStatusCode.Accepted, status)
         }
     }
 
-    private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {
-        install(ContentNegotiation) { json() }
+    private fun ApplicationTestBuilder.setupApplication() = setupTestApplication {
+        val testModule = module {
+            single<ReqestLogRepo> { FakeReqestLogRepo() }
+            single<VerifRequestLogRepo> { FakeVerifRequestLogRepo() }
+            single<HttpClient> { HttpClient { install(ContentNegotiation) { json() } } }
+            single<Connection> {
+                ConnectionFactory().run {
+                    host = rmqContainer.host
+                    port = rmqContainer.firstMappedPort
+                    newConnection()
+                }
+            }
+        }
+        this.install(Koin) { modules(testModule) }
+
+        aovRoutes()
     }
 }

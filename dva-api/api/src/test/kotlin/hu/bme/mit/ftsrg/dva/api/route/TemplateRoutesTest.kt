@@ -1,12 +1,11 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
-import hu.bme.mit.ftsrg.dva.api.testutil.testModule
+import hu.bme.mit.ftsrg.dva.api.testutil.createTestClient
+import hu.bme.mit.ftsrg.dva.api.testutil.setupTestApplication
 import hu.bme.mit.ftsrg.dva.dto.IDDTO
 import hu.bme.mit.ftsrg.dva.vla.*
 import hu.bme.mit.ftsrg.odcs.DataQuality
-import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.http.ContentType.*
@@ -14,7 +13,7 @@ import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.http.HttpStatusCode.Companion.NoContent
 import io.ktor.http.HttpStatusCode.Companion.NotFound
 import io.ktor.http.HttpStatusCode.Companion.OK
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.install
 import io.ktor.server.testing.*
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -22,6 +21,8 @@ import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import org.koin.dsl.module
+import org.koin.ktor.plugin.Koin
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -32,7 +33,7 @@ class TemplateRoutesTest {
     fun `should return list of templates`() = testApplication {
         setupApplication()
 
-        val client = setupClient()
+        val client = createTestClient()
         client.get("/template").apply {
             assertEquals(OK, status)
             // Fake template repository seeds itself with 1 template
@@ -44,7 +45,7 @@ class TemplateRoutesTest {
     fun `should return template by ID`() = testApplication {
         setupApplication()
 
-        val client = setupClient()
+        val client = createTestClient()
         client.get("/template/${Uuid.NIL}").apply {
             assertEquals(OK, status)
             assertNotNull(body<Template>())
@@ -55,7 +56,7 @@ class TemplateRoutesTest {
     fun `should create template`() = testApplication {
         setupApplication()
 
-        val client = setupClient()
+        val client = createTestClient()
         val request = TemplateNew(
             name = "Data is not from before date",
             criterionType = CriterionType.VALID_INVALID,
@@ -101,7 +102,7 @@ class TemplateRoutesTest {
     fun `should update template`() = testApplication {
         setupApplication()
 
-        val client = setupClient()
+        val client = createTestClient()
         // Adds description to the default seed template
         val patch = TemplatePatch(
             id = Uuid.NIL,
@@ -138,7 +139,7 @@ class TemplateRoutesTest {
     fun `should remove template`() = testApplication {
         setupApplication()
 
-        val client = setupClient()
+        val client = createTestClient()
         client.delete("/template/${Uuid.NIL}").apply {
             assertEquals(NoContent, status)
 
@@ -155,7 +156,7 @@ class TemplateRoutesTest {
     fun `should render template`() = testApplication {
         setupApplication()
 
-        val client = setupClient()
+        val client = createTestClient()
         client.post("/template/${Uuid.NIL}/render") {
             contentType(Application.Json)
             setBody(buildJsonObject {
@@ -176,7 +177,7 @@ class TemplateRoutesTest {
 
         val patch = TemplatePatch(id = Uuid.NIL)
 
-        val client = setupClient()
+        val client = createTestClient()
         val randomUUID = Uuid.random()
         client.get("/template/$randomUUID").apply {
             assertEquals(NotFound, status)
@@ -197,13 +198,13 @@ class TemplateRoutesTest {
             assertEquals(NotFound, status)
         }
     }
-}
 
-private fun ApplicationTestBuilder.setupApplication() = application {
-    testModule()
-    templateRoutes()
-}
+    private fun ApplicationTestBuilder.setupApplication() = setupTestApplication {
+        val testModule = module {
+            single<TemplateRepo> { FakeTemplateRepo() }
+        }
+        this.install(Koin) { modules(testModule) }
 
-private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {
-    install(ContentNegotiation) { json() }
+        templateRoutes()
+    }
 }

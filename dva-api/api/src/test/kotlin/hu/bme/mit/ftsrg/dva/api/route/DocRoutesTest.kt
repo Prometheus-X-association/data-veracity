@@ -1,6 +1,6 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
-import hu.bme.mit.ftsrg.dva.api.testutil.testModule
+import hu.bme.mit.ftsrg.dva.api.testutil.setupTestApplication
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -31,11 +31,7 @@ class DocRoutesTest {
             }
         }
     }
-}
 
-private fun ApplicationTestBuilder.setupApplication() {
-    application {
-        testModule()
-        docRoutes(openapiPath = "../../docs/spec/openapi.yaml")
-    }
+    private fun ApplicationTestBuilder.setupApplication() =
+        setupTestApplication { docRoutes(openapiPath = "../../docs/spec/openapi.yaml") }
 }

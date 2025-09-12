@@ -1,21 +1,26 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
-import hu.bme.mit.ftsrg.dva.api.testutil.testModule
+import hu.bme.mit.ftsrg.dva.api.testutil.createTestClient
+import hu.bme.mit.ftsrg.dva.api.testutil.setupTestApplication
 import hu.bme.mit.ftsrg.dva.dto.IDDTO
-import io.ktor.client.*
+import hu.bme.mit.ftsrg.dva.vla.FakeTemplateRepo
+import hu.bme.mit.ftsrg.dva.vla.FakeVLARepo
+import hu.bme.mit.ftsrg.dva.vla.TemplateRepo
+import hu.bme.mit.ftsrg.dva.vla.VLARepo
 import io.ktor.client.call.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.http.HttpStatusCode.Companion.NotFound
 import io.ktor.http.HttpStatusCode.Companion.OK
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
 import io.ktor.server.testing.*
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import org.koin.dsl.module
+import org.koin.ktor.plugin.Koin
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -26,7 +31,7 @@ class VLARoutesTest {
     fun `should return list of VLAs`() = testApplication {
         setupApplication()
 
-        val client = setupClient()
+        val client = createTestClient()
         client.get("/vla").apply {
             assertEquals(OK, status)
             // Fake VLA repository seeds itself with 1 template
@@ -38,7 +43,7 @@ class VLARoutesTest {
     fun `should return VLA by ID`() = testApplication {
         setupApplication()
 
-        val client = setupClient()
+        val client = createTestClient()
         client.get("/vla/${Uuid.NIL}").apply {
             assertEquals(OK, status)
             assertNotNull(body<JsonObject>())
@@ -49,7 +54,7 @@ class VLARoutesTest {
     fun `should create VLA`() = testApplication {
         setupApplication()
 
-        val client = setupClient()
+        val client = createTestClient()
         client.post("/vla") {
             contentType(ContentType.Application.Json)
             setBody(buildJsonObject {
@@ -97,7 +102,7 @@ class VLARoutesTest {
     fun `should create VLA from templates`() = testApplication {
         setupApplication()
 
-        val client = setupClient()
+        val client = createTestClient()
         client.post("/vla/from-templates") {
             contentType(ContentType.Application.Json)
             setBody(buildJsonObject {
@@ -135,19 +140,20 @@ class VLARoutesTest {
     fun `should return 404 when VLA not found`() = testApplication {
         setupApplication()
 
-        val client = setupClient()
+        val client = createTestClient()
         val randomUUID = Uuid.random()
         client.get("/vla/$randomUUID").apply {
             assertEquals(NotFound, status)
         }
     }
-}
 
-private fun ApplicationTestBuilder.setupApplication() = application {
-    testModule()
-    vlaRoutes()
-}
+    private fun ApplicationTestBuilder.setupApplication() = setupTestApplication {
+        val testModule = module {
+            single<VLARepo> { FakeVLARepo() }
+            single<TemplateRepo> { FakeTemplateRepo() }
+        }
+        this.install(Koin) { modules(testModule) }
 
-private fun ApplicationTestBuilder.setupClient(): HttpClient = createClient {
-    install(ContentNegotiation) { json() }
+        vlaRoutes()
+    }
 }
