@@ -12,10 +12,34 @@
         <section class="modal-body">
           <label for="fragment">Choose a fragment:</label>
           <select v-model="chosenFragment" id="fragment">
-            <option value="ge-value-between">GreatExpetations: Value between</option>
-            <option value="jq-simple-relation">jq: Simple numeric relation</option>
+            <option v-for="item in fragmentOptions" :key="item" :value="item">
+              {{ item.name }} {{ item.description !== "" ? `- ${item.description}` : "" }}
+            </option>
           </select>
 
+          <form 
+            v-if="chosenFragment !== null"
+            class="req-form"
+          >
+            <label for="element">Element:</label>
+            <input id="element" type="text" :disabled="true" :value="element" />
+            <template v-for="(value, key) in chosenFragment.evaluationMethod.variableSchema.properties" :key="key">
+              <template v-if="key !== 'property'">
+                <template v-if="value.enum">
+                  <label :for="key">{{ capitalize(key) }}</label>
+                  <select :id="key" v-model="values[key]">
+                    <option v-for="v in value.enum" :value="v">{{ v }}</option>
+                  </select>
+                </template>
+                <template v-else>
+                  <label :for="key">{{ capitalize(key) }}</label>
+                  <input :id="key" :type="value.type" v-model="values[key]" />
+                </template>
+              </template>
+            </template>
+          </form>
+
+          <!--
           <form
             v-if="chosenFragment === 'ge-value-between'"
             class="req-form"
@@ -45,6 +69,7 @@
             <label for="otherOperand">Other operand:</label>
             <input id="otherOperand" v-model="otherOperand" type="text" />
           </form>
+          -->
         </section>
         
         <footer>
@@ -62,9 +87,14 @@
 
 <script setup>
   import { ref } from 'vue'
+  import { watch, reactive, toRaw } from 'vue'
   import FileSelector from './FileSelector.vue'
 
   const dialog = ref(null)
+
+  const fragmentOptions = ref([])
+  const values = reactive({})
+
   const chosenFragment = ref(null)
 
   const minValue = ref(null)
@@ -73,17 +103,85 @@
   const relOp = ref(null)
   const otherOperand = ref(null)
 
-  const showModal = async () => dialog.value?.showModal()
+  watch(chosenFragment, (newChosenFragment) => {
+    if(newChosenFragment) {
+      for(const key in values) {
+        delete values[key]
+      }
+      for(const key in newChosenFragment.evaluationMethod.variableSchema.properties) {
+        if(key === 'property') {
+          values[key] = props.element
+        } else {
+          values[key] = ""
+        }
+      }
+    }
+  })
+
+  const capitalize = str => str && typeof str === "string" && str.length >= 1 ? str.charAt(0).toUpperCase() + str.slice(1) : "" 
+
+  const showModal = async () => {
+    try {
+      const res = await fetch("http://localhost:9091/template")
+      const json = await res.json()
+
+      if(Array.isArray(json)) {
+        fragmentOptions.value = json
+      }
+    } catch (err) {}
+
+
+    dialog.value?.showModal()
+  }
 
   const handleBackdropClick = (e) => {
-    if (e.target === dialog.value) dialog.value?.close()
+    if (e.target === dialog.value) {
+      chosenFragment.value = null 
+      dialog.value?.close()
+    }
   }
 
   const emit = defineEmits(['req-added'])
   const props = defineProps(['element'])
   defineExpose({ show: showModal })
 
-  const addRequirement = () => {
+  const addRequirement = async () => {
+    const rawValues = toRaw(values)
+    const template = {}
+    const model = {}
+
+    for(const key in rawValues) {
+      model[key] = rawValues[key]
+    }
+
+    template["id"] = chosenFragment.value.id
+    template["model"] = model    
+
+    emit('req-added', template)
+
+    for(const key in values) {
+        delete values[key]
+    }
+    /*try {
+      const res = await fetch(`http://localhost:9091/template/${chosenFragment.value.id}/render`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(toRaw(values))
+      })
+
+      const data = await res.json()
+      console.log(data)
+
+      const emitData = {
+        data_quality_type: 'hu.bme.mit.ftsrg.odcs.model.quality.DataQualityCustom',
+        engine: data.engine,
+        implementation: data.implementation
+      }
+
+      emit('req-added', emitData)
+    } catch (err) {}
     if (chosenFragment.value === 'ge-value-between') {
       emit('req-added', {
         data_quality_type: 'hu.bme.mit.ftsrg.odcs.model.quality.DataQualityCustom',
@@ -98,8 +196,9 @@
       })
     } else {
       console.log('unknown fragment')
-    }
+    }*/
 
+    chosenFragment.value = null
     dialog.value?.close()
   }
 </script>
