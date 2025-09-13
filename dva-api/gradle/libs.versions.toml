@@ -50,6 +50,7 @@ ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref 
 ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
 ktor-server-swagger = { module = "io.ktor:ktor-server-swagger", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
+ktor-cors = { module = "io.ktor:ktor-server-cors", version.ref = "ktor" }
 logevents = { module = "org.logevents:logevents", version.ref = "logevents" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 rabbitmq-amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "rabbitmq-amqp-client" }
