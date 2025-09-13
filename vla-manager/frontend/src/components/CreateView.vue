@@ -88,6 +88,7 @@
 
 <script setup>
   import { ref } from 'vue'
+  import { toRaw } from 'vue'
   import { useRouter } from 'vue-router'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
@@ -119,8 +120,25 @@
 
   const handleCreateVLA = async () => {
     console.log("posting")
-    console.log(fragments.value)
-    axios.post('http://localhost:9091/vla/from-fragments', fragments.value)
+    const body = {
+      description: "Data is recent and valid",
+      schema: {
+        properties: {
+          timestamp: {
+            type: "string"
+          },
+          result: {
+            type: "integer"
+          }
+        }
+      },
+      qualityTemplates: [...toRaw(fragments.value)]
+    }
+
+    console.log(JSON.stringify(body))
+    try {
+      await axios.post('http://localhost:9091/vla/from-templates', body)
+    } catch (err) {}
     alert(`Created VLA from ${fragments.value.length} fragments`)
     router.push({ path: "/list" })
   }
