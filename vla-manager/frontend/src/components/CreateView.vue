@@ -119,7 +119,8 @@
 
   const handleCreateVLA = async () => {
     console.log("posting")
-    axios.post('/api/vla/from-fragments', fragments.value)
+    console.log(fragments.value)
+    axios.post('http://localhost:9091/vla/from-fragments', fragments.value)
     alert(`Created VLA from ${fragments.value.length} fragments`)
     router.push({ path: "/list" })
   }
