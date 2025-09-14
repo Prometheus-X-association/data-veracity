@@ -1,5 +1,5 @@
 ---
-openapi: 3.0.3
+openapi: 3.1.1
 info:
   title: Data Veracity Assurance
   description: |-
@@ -7,7 +7,7 @@ info:
     [data veracity assurance building block (DVA)](https://github.com/Prometheus-X-association/data-veracity).
   contact:
     email: bpeter@edu.bme.hu
-  version: 0.4.3
+  version: 0.4.4
 servers:
   - url: http://localhost:9090
     description: Local development server running on default port
@@ -32,6 +32,9 @@ tags:
     description: Endpoints related to proofs of veracity (PoVs)
   - name: Info
     description: Endpoints related to retrieving information about the running instance
+  - name: Future
+    description: Endpoints that are not available yet but will be implemented in the
+      future
 paths:
   /template:
     post:
@@ -49,6 +52,71 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TemplateCreate'
+            examples:
+              PropertyValueBetween:
+                summary: Property value between min-max with GE
+                value:
+                  name: Property Value Between Min-Max
+                  description: >-
+                    The value of a JSON property has to fall between a
+                    minimum and a maximum value; evaluated using
+                    GreatExpectations
+                  criterionType: WITHIN_RANGE
+                  targetAspect: ACCURACY
+                  evaluationMethod:
+                    engine: GREAT_EXPECTATIONS
+                    variableSchema:
+                      properties:
+                        property:
+                          type: string
+                        minimum:
+                          type: string
+                        maximum:
+                          type: string
+                    implementationTemplate: |
+                      ---
+                      type: ExpectColumnValuesToBeBetween
+                      kwargs:
+                        column: {{ property }}
+                        min_value: '{{ minimum }}'
+                        max_value: '{{ maximum }}'
+                      ...
+              PropertyNotBlank:
+                summary: Property has a non-blank value
+                value:
+                  name: Property non-blank
+                  description: >-
+                    Checks that the value of a specific JSON property is
+                    not blank (using jq)
+                  criterionType: VALID_INVALID
+                  targetAspect: COMPLETENESS
+                  evaluationMethod:
+                    engine: JQ
+                    variableSchema:
+                      properties:
+                        property:
+                          type: string
+                    implementationTemplate: >-
+                      if {{ property }} != ''
+                      then 'Response is a valid nonempty string'
+                      else error('Response is blank')
+                      end
+              JsonShema:
+                summary: JSON data conforms to schema
+                value:
+                  name: JSON Schema
+                  description: >-
+                    Data should conform to a JSON schema with the
+                    given URL
+                  criterionType: VALID_INVALID
+                  targetAspect: SYNTAX
+                  evaluationMethod:
+                    engine: SCHEMA
+                    variableSchema:
+                      properties:
+                        schemaURL:
+                          type: string
+                    implementationTemplate: '{{ schemaURL }}'
       responses:
         '201':
           $ref: '#/components/responses/Created'
@@ -69,12 +137,7 @@ paths:
                 $ref: '#/components/schemas/TemplateArray'
   /template/{id}:
     parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          $ref: '#/components/schemas/Id'
-        description: A VLA template’s ID
+      - $ref: '#/components/parameters/idParam'
     get:
       tags: [VLA, Templates]
       summary: Get VLA template by ID
@@ -128,12 +191,7 @@ paths:
           $ref: '#/components/responses/NotFound'
   /template/{id}/render:
     parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          $ref: '#/components/schemas/Id'
-        description: A VLA template’s ID
+      - $ref: '#/components/parameters/idParam'
     post:
       tags: [VLA, Templates]
       summary: Render a VLA template
@@ -159,6 +217,8 @@ paths:
               example:
                 engine: jq
                 implementation: .url == http://example.com && .someValue == 42
+        '400':
+          $ref: '#/components/responses/InvalidData'
   /vla:
     post:
       tags: [VLA]
@@ -215,12 +275,7 @@ paths:
           $ref: '#/components/responses/InvalidData'
   /vla/{id}:
     parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          $ref: '#/components/schemas/Id'
-        description: A VLA’s ID
+      - $ref: '#/components/parameters/idParam'
     get:
       tags: [VLA]
       summary: Get VLA by ID
@@ -247,7 +302,7 @@ paths:
         Requests are processed asynchronously.
         If your request has been accepted for processing, the response will be `202
         ACCEPTED`.
-        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST`
+        Otherwise, in the case of an invalid request, you will get a `400 BAD REQUEST`
         error.
       operationId: requestAov
       requestBody:
@@ -270,7 +325,7 @@ paths:
         Requests are processed asynchronously.
         If your request has been accepted for processing, the response will be `202
         ACCEPTED`.
-        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST`
+        Otherwise, in the case of an invalid request, you will get a `400 BAD REQUEST`
         error.
       operationId: requestAovVerification
       requestBody:
@@ -286,14 +341,14 @@ paths:
           $ref: '#/components/responses/InvalidData'
   /proof:
     post:
-      tags: [PoV]
+      tags: [PoV, Future]
       summary: Submit proof generation request
       description: >
         Create a new **PoV request** for a given data exchange.
         Requests are processed asynchronously.
         If your request has been accepted for processing, the response will be `202
         ACCEPTED`.
-        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST`
+        Otherwise, in the case of an invalid request, you will get a `400 BAD REQUEST`
         error.
       operationId: requestPov
       requestBody:
@@ -309,14 +364,14 @@ paths:
           $ref: '#/components/responses/InvalidData'
   /proof/verify:
     post:
-      tags: [PoV]
+      tags: [PoV, Future]
       summary: Submit PoV verification request
       description: >
         Create a new **PoV verification request** for a given PoV.
         Requests are processed asynchronously.
         If your request has been accepted for processing, the response will be `202
         ACCEPTED`.
-        Otherwise, in the case of an invalid request, you will get a `404 BAD REQUEST`
+        Otherwise, in the case of an invalid request, you will get a `400 BAD REQUEST`
         error.
       operationId: requestPovVerification
       requestBody:
@@ -410,7 +465,7 @@ components:
           additionalProperties: false
           properties:
             engine:
-              type: string
+              $ref: '#/components/schemas/QualityEngine'
             variableSchema:
               type: object
             implementationTemplate:
@@ -481,10 +536,13 @@ components:
         $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json
     CriterionType:
       type: string
-      enum: [validInvalid, withinRange, greaterOrLessThan]
+      enum: [VALID_INVALID, WITHIN_RANGE, GREATER_OR_LESS_THAN]
     QualityAspect:
       type: string
-      enum: [syntax, timeliness, accuracy, completeness, consistency]
+      enum: [SYNTAX, TIMELINESS, ACCURACY, COMPLETENESS, CONSISTENCY]
+    QualityEngine:
+      type: string
+      enum: [SCHEMA, GREAT_EXPECTATIONS, JQ]
     VeracityRequest:
       type: object
       required: [exchangeID, contract, data]
@@ -569,6 +627,7 @@ components:
           result:
             success: true
           timestamp: '2025-03-16T03:25:00Z'
+        attesterID: attester-0000
     AttestationRequest:
       allOf:
         - $ref: '#/components/schemas/VeracityRequest'
@@ -601,6 +660,11 @@ components:
           format: url
         attesterAgentLabel:
           type: string
+      example:
+        exchangeID: xchg-0001
+        contractID: contract-0001
+        attesterAgentURL: http://aca-py-provider:8030
+        attesterAgentLabel: provider
     Error:
       type: object
       required: [message]
@@ -608,17 +672,34 @@ components:
         message:
           type: string
     AnyValue: {}
+  parameters:
+    idParam:
+      name: id
+      description: A resource’s ID
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
   responses:
     Created:
-      description: The resource has been created successfully
+      description: >-
+        The resource has been created successfully.
+        You may be able to query the created resource later by the ID
+        returned or refer to the resource using its ID in
+        other requests.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/IdObject'
     Deleted:
-      description: The resource has been deleted successfully
+      description: >-
+        The resource has been deleted successfully.
+        The associated ID (if any) is no longer valid.
     Accepted:
-      description: The request has been accepted for processing
+      description: >-
+        The request has been accepted for processing.
+        You may be able to query the status of the processing by the
+        ID returned.
       content:
         application/json:
           schema:
@@ -631,25 +712,41 @@ components:
             $ref: '#/components/schemas/Error'
           examples:
             Template:
+              summary: Template not found
               value:
                 type: NOT_FOUND
                 message: Could not find VLA template with id 'foo-123'
             AoV:
+              summary: Attestation (AoV) not found
               value:
                 type: NOT_FOUND
                 message: Could not find AoV with id 'bar-123'
+            VLA:
+              summary: VLA not found
+              value:
+                type: NOT_FOUND
+                message: Could not find VLA with id 'bar-123'
     InvalidData:
-      description: The request body was invalid
+      description: >-
+        The request body was invalid.
+        Please do not retry the request without correcting the payload.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
           examples:
             Template:
+              summary: Template data invalid
               value:
                 type: INVALID_DATA
                 message: Invalid template data supplied
+            TemplateRender:
+              summary: Template model to render invalid
+              value:
+                type: INVALID_DATA
+                message: Invalid template render request
             AoV:
+              summary: Attestation (AoV) generation payload invalid
               value:
                 type: INVALID_DATA
                 message: Invalid AoV data supplied
