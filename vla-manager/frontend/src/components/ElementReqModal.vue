@@ -27,7 +27,7 @@
               <template v-if="key !== 'property'">
                 <template v-if="value.enum">
                   <label :for="key">{{ capitalize(key) }}</label>
-                  <select :id="key" v-model="values[key]">
+                  <select :id="key" v-model="values[key]" @change="convertType(value.type, key)">
                     <option v-for="v in value.enum" :value="v">{{ v }}</option>
                   </select>
                 </template>
@@ -119,6 +119,17 @@
   })
 
   const capitalize = str => str && typeof str === "string" && str.length >= 1 ? str.charAt(0).toUpperCase() + str.slice(1) : "" 
+
+  const convertType = (type, key) => {
+    switch(type) {
+      case "number":
+        values[key] = Number(values[key])
+        break
+      case "boolean":
+        values[key] = values[key] === "true"
+        break
+    }
+  }
 
   const showModal = async () => {
     try {
