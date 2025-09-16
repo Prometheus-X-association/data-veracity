@@ -21,8 +21,11 @@
             v-if="chosenFragment !== null"
             class="req-form"
           >
-            <label for="element">Element:</label>
+            <template v-if="chosenFragment.evaluationMethod.variableSchema.properties.property">
+              <label for="element">Element:</label>
             <input id="element" type="text" :disabled="true" :value="element" />
+            </template>
+            
             <template v-for="(value, key) in chosenFragment.evaluationMethod.variableSchema.properties" :key="key">
               <template v-if="key !== 'property'">
                 <template v-if="value.enum">
@@ -33,7 +36,7 @@
                 </template>
                 <template v-else>
                   <label :for="key">{{ capitalize(key) }}</label>
-                  <input :id="key" :type="value.type" v-model="values[key]" />
+                  <input :id="key" :type="value.type" v-model="values[key]" @change="convertType(value.type, key)" />
                 </template>
               </template>
             </template>
