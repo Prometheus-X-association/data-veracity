@@ -117,6 +117,30 @@ paths:
                         schemaURL:
                           type: string
                     implementationTemplate: '{{ schemaURL }}'
+              JQBoolValues:
+                summary: JSON data conforms to JQ and bools
+                value:
+                  name: JQ
+                  description: Bools
+                  criterionType: VALID_INVALID
+                  targetAspect: SYNTAX
+                  evaluationMethod:
+                    engine: JQ
+                    variableSchema:
+                      properties:
+                        property:
+                          type: string
+                        operand:
+                          type: string
+                          enum:
+                            - "=="
+                            - "!="
+                        operator:
+                          type: boolean
+                          enum:
+                            - true
+                            - false
+                    implementationTemplate: "{{ property }} {{{ operand }}} {{ operator }}"
       responses:
         '201':
           $ref: '#/components/responses/Created'
@@ -311,6 +335,138 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AttestationRequest'
+            examples:
+              ForDemoSchemaCheck:
+                summary: Data to check a schema with a meta schema
+                value:
+                  exchangeID: xchg-0001
+                  contract:
+                    id: contract-0001
+                    dataProvider: /catalog/participants/provider-test-id
+                    dataConsumer: /catalog/participants/consumer-test-did
+                    serviceOffering: /catalog/serviceofferings/serviceoffering-test-did
+                    purpose: []
+                    negotiators:
+                      - did: /catalog/participants/provider-test-id
+                      - did: /catalog/participants/consumer-test-did
+                    status: PENDING
+                    policy:
+                      - uid: /policy/policy-0-uid
+                        permission:
+                          - type: permission
+                            uid: /target/3f8d1b0e-8e2e-4b69-9b1f-089fe2f3e9d7
+                            action: use
+                    vla:
+                      id: ddf4a56a-228b-461c-9448-d0e16135e315
+                      kind: DataContract
+                      schema:
+                        name: xapi_statement
+                        logicalType: object
+                        properties:
+                          - name: actor
+                            logicalType: object
+                            required: true
+                          - name: verb
+                            logicalType: object
+                            required: true
+                          - name: object
+                            logicalType: object
+                            required: true
+                          - name: result
+                            logicalType: object
+                            required: true
+                          - name: timestamp
+                            logicalType: string
+                            required: true
+                        quality:
+                          - engine: SCHEMA
+                            implementation: https://json-schema.org/draft/2020-12/schema
+                  data:
+                    $schema: 1
+                    type: object
+                    properties:
+                      postOfficeBox:
+                        type: string
+                      streetAddress:
+                        type: string
+                      locality:
+                        type: string
+                      region:
+                        type: string
+                      postalCode:
+                        type: string
+                      countryName:
+                        type: string
+                    required:
+                      - postOfficeBox
+                      - streetAddress
+                      - locality
+                  attesterID: attester-0000
+              ForDemoJQBoolCheck:
+                summary: Data to check a bool value with JQ
+                value:
+                  exchangeID: xchg-0001
+                  contract:
+                    id: contract-0001
+                    dataProvider: /catalog/participants/provider-test-id
+                    dataConsumer: /catalog/participants/consumer-test-did
+                    serviceOffering: /catalog/serviceofferings/serviceoffering-test-did
+                    purpose: []
+                    negotiators:
+                      - did: /catalog/participants/provider-test-id
+                      - did: /catalog/participants/consumer-test-did
+                    status: PENDING
+                    policy:
+                      - uid: /policy/policy-0-uid
+                        permission:
+                          - type: permission
+                            uid: /target/3f8d1b0e-8e2e-4b69-9b1f-089fe2f3e9d7
+                            action: use
+                    vla:
+                      id: f552b189-1231-41b7-b31b-aa2579034f06
+                      kind: DataContract
+                      schema:
+                        name: xapi_statement
+                        logicalType: object
+                        properties:
+                          - name: actor
+                            logicalType: object
+                            required: true
+                          - name: verb
+                            logicalType: object
+                            required: true
+                          - name: object
+                            logicalType: object
+                            required: true
+                          - name: result
+                            logicalType: object
+                            required: true
+                          - name: timestamp
+                            logicalType: string
+                            required: true
+                        quality:
+                          - engine: JQ
+                            implementation: ".result.success == true"
+                  data:
+                    actor:
+                      name: Jean Dupont
+                      mbox: mailto:jeandupont@example.com
+                    verb:
+                      id: http://adlnet.gov/expapi/verbs/interacted
+                    object:
+                      id: https://navy.mil/netc/xapi/activities/simulations/b9e16535-4fc9-4c66-ac87-3ad7ce515f5c/events/0221144
+                      definition:
+                        name:
+                          en-US: Event in Simulator
+                        description:
+                          en-US: You're wearing all your PPE
+                        type: http://adlnet.gov/expapi/activities/interaction
+                    result:
+                      success: true
+                    timestamp: "2025-03-16T03:25:00Z"
+                  attesterID: attester-0000
+
+
       responses:
         '202':
           $ref: '#/components/responses/Accepted'
