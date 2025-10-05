@@ -12,6 +12,10 @@ from .log import get_logger
 
 import requests
 
+import validators
+
+import html, json
+
 
 logger = get_logger()
 
@@ -70,7 +74,11 @@ def validate_data(data, vla):
             result["details"] = results.to_dict()
 
         elif engine == "SCHEMA":
-            schema = requests.get(safe_load(check_str)).json()
+            schema = check_str
+            if validators.url(schema):
+                schema = requests.get(schema).json()
+            else:
+                schema = json.loads(html.unescape(schema))
                 
             try:
                 validate(instance=data_df.to_dict(orient="records")[0], schema=schema)
