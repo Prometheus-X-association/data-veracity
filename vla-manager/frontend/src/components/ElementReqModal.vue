@@ -28,15 +28,31 @@
             
             <template v-for="(value, key) in chosenFragment.evaluationMethod.variableSchema.properties" :key="key">
               <template v-if="key !== 'property'">
-                <template v-if="value.enum">
-                  <label :for="key">{{ capitalize(key) }}</label>
-                  <select :id="key" v-model="values[key]" @change="convertType(value.type, key)">
-                    <option v-for="v in value.enum" :value="v">{{ v }}</option>
-                  </select>
+                <label :for="key">{{ capitalize(key) }}</label>
+                <template v-if="key === 'schema'">
+                  <textarea 
+                    :id="key" 
+                    v-model="values[key]" 
+                    rows="6"
+                    @input="updateSchemaJSON(key)">
+                  </textarea>
+                  <vue-json-pretty
+                    :data="schemaJSON"
+                    :show-double-quotes="false"
+                    :show-length="false"
+                    root-path=""
+                    :virtual="true"
+                   />
                 </template>
                 <template v-else>
-                  <label :for="key">{{ capitalize(key) }}</label>
-                  <input :id="key" :type="value.type" v-model="values[key]" @change="convertType(value.type, key)" />
+                  <template v-if="value.enum">
+                    <select :id="key" v-model="values[key]" @input="convertType(value.type, key)">
+                      <option v-for="v in value.enum" :value="v">{{ v }}</option>
+                    </select>
+                  </template>
+                  <template v-else>
+                    <input :id="key" :type="value.type" v-model="values[key]" @input="convertType(value.type, key)" />
+                  </template>
                 </template>
               </template>
             </template>
@@ -91,23 +107,21 @@
 <script setup>
   import { ref } from 'vue'
   import { watch, reactive, toRaw } from 'vue'
-  import FileSelector from './FileSelector.vue'
+  import VueJsonPretty from 'vue-json-pretty'
+  import 'vue-json-pretty/lib/styles.css'
 
   const dialog = ref(null)
 
   const fragmentOptions = ref([])
   const values = reactive({})
 
+  const schemaJSON = ref({})
+
   const chosenFragment = ref(null)
-
-  const minValue = ref(null)
-  const maxValue = ref(null)
-
-  const relOp = ref(null)
-  const otherOperand = ref(null)
 
   watch(chosenFragment, (newChosenFragment) => {
     if(newChosenFragment) {
+      schemaJSON.value = {}
       for(const key in values) {
         delete values[key]
       }
@@ -131,6 +145,14 @@
       case "boolean":
         values[key] = values[key] === "true"
         break
+    }
+  }
+
+  const updateSchemaJSON = (key) => {
+    try {
+      schemaJSON.value = JSON.parse(values[key])
+    } catch (err) {
+      schemaJSON.value = {}
     }
   }
 
