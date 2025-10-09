@@ -105,6 +105,7 @@
 </template>
 
 <script setup>
+  import axios from 'axios'
   import { ref } from 'vue'
   import { watch, reactive, toRaw } from 'vue'
   import VueJsonPretty from 'vue-json-pretty'
@@ -158,8 +159,8 @@
 
   const showModal = async () => {
     try {
-      const res = await fetch("http://localhost:9091/template")
-      const json = await res.json()
+      const res = await axios.get("/api/template")
+      const json = await res.data
 
       if(Array.isArray(json)) {
         fragmentOptions.value = json
@@ -199,7 +200,7 @@
         delete values[key]
     }
     /*try {
-      const res = await fetch(`http://localhost:9091/template/${chosenFragment.value.id}/render`, {
+      const res = await axios.get(`/api/template/${chosenFragment.value.id}/render`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -207,7 +208,7 @@
         body: JSON.stringify(toRaw(values))
       })
 
-      const data = await res.json()
+      const data = await res.data
       console.log(data)
 
       const emitData = {
