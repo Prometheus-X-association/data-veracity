@@ -137,7 +137,7 @@
 
     console.log(JSON.stringify(body))
     try {
-      await axios.post('http://localhost:9091/vla/from-templates', body)
+      await axios.post('/api/vla/from-templates', body)
     } catch (err) {}
     alert(`Created VLA from ${fragments.value.length} fragments`)
     router.push({ path: "/list" })

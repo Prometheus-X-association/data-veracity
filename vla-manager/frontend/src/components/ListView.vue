@@ -19,7 +19,7 @@
   const vlas = ref([])
 
   onMounted(async () => {
-    const response = await axios.get('http://localhost:9091/vla')
+    const response = await axios.get('/api/vla')
     vlas.value = response.data
   })
 </script>
