@@ -60,3 +60,5 @@ services:
     build: ../dva-dashboard/backend/
   dva-dashboard-frontend:
     build: ../dva-dashboard/frontend/
+  vla-manager-frontend:
+    build: ../vla-manager/frontend/
