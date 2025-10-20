@@ -1,0 +1,115 @@
+#!/bin/sh -euC
+
+log() { echo "$@"; }
+erho() { >&2 echo "error: $@"; }
+usage() { echo "usage: $0 [-h] [-h backend url]"; }
+curl_get() { curl --silent "$@"; }
+curl_post() {
+	curl --silent --header "Content-Type: application/json" "$@"
+}
+
+# Parse options
+backend_url=http://localhost:9099
+while getopts hu: opt; do
+	case "$opt" in
+	h)
+		usage
+		exit 0
+		;;
+	u) backend_url="$OPTARG" ;;
+	esac
+done
+shift $(expr $OPTIND - 1)
+
+# Check prerequisites
+for cmd in curl jq; do
+	command -v "$cmd" >/dev/null 2>&1 || {
+		erho "$cmd is required"
+	}
+done
+
+#          ╭──────────────────────────────────────────────────────────╮
+#          │                     CREATE TEMPLATES                     │
+#          ╰──────────────────────────────────────────────────────────╯
+
+# ── JSON SCHEMA ───────────────────────────────────────────────────────
+template_schema="$(curl_get "$backend_url/template" | jq -r '[.[] | select(.name == "JSON Schema")][0].id')"
+if [ "$template_schema" = null ]; then
+	template_schema="$(
+		curl_post -d @- "$backend_url/template" <<EOF | jq -r .id
+{
+  "name": "JSON Schema",
+  "description": "Data should conform to a JSON schema.  The schema parameter is either an entire JSON schema string or a URL that will be resolved to a schema description.",
+  "criterionType": "VALID_INVALID",
+  "targetAspect": "SYNTAX",
+  "evaluationMethod": {
+    "engine": "SCHEMA",
+    "variableSchema": {
+      "properties": {
+	"schema": { "type": "string" }
+      }
+    },
+    "implementationTemplate": "{{ schema }}"
+  }
+}
+EOF
+	)"
+	log "📝 Created JSON schema template $template_schema"
+else
+	log "ℹ️ JSON schema template already seems to exist as $template_schema"
+fi
+# ── JQ EXPRESSION ─────────────────────────────────────────────────────
+template_jq="$(curl_get "$backend_url/template" | jq -r '[.[] | select(.name == "JQ Property Expression")][0].id')"
+if [ "$template_jq" = null ]; then
+	template_jq="$(
+		curl_post -d @- "$backend_url/template" <<EOF | jq -r .id
+{
+  "name": "JQ Property Expression",
+  "description": "A specific property in the JSON data must fulfill a basic requirement of either being equal or not equal to a given value.",
+  "criterionType": "VALID_INVALID",
+  "targetAspect": "SYNTAX",
+  "evaluationMethod": {
+    "engine": "JQ",
+    "variableSchema": {
+      "properties": {
+	"property": { "type": "string" },
+	"operator": { "type": "string", "enum": [ "==", "!=" ] },
+	"operand": { "type": "boolean" }
+      }
+    },
+    "implementationTemplate": "{{ property }} {{{ operand }}} {{ operator }}"
+  }
+}
+EOF
+	)"
+	log "📝 Created JQ expression template $template_jq"
+else
+	log "ℹ️ JQ expression template already seems to exist as $template_jq"
+fi
+
+#          ╭──────────────────────────────────────────────────────────╮
+#          │                    CREATE SAMPLE VLAS                    │
+#          ╰──────────────────────────────────────────────────────────╯
+
+vla="$(curl_get "$backend_url/vla" | jq -r '[.[] | select(.description == "Sample VLA")][0].id')"
+if [ "$vla" = null ]; then
+	vla="$(
+		curl_post -d @- "$backend_url/vla/from-templates" <<EOF | jq -r .id
+{
+  "description": "Sample VLA",
+  "schema": {},
+  "qualityTemplates": [
+    {
+      "id": "$template_schema",
+      "model": {
+        "schema": $(cat ../test-data/xapi-schema.json)
+      }
+    }
+  ]
+}
+EOF
+	)"
+	log "📃 Created VLA $vla"
+else
+	log "ℹ️ VLA already seems to exist as $vla"
+fi
