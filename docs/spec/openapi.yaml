@@ -42,7 +42,7 @@ tags:
 paths:
   /template:
     post:
-      tags: [VLA, Templates]
+      tags: [Templates]
       summary: Create new VLA template
       description: >
         Add a new **VLA template** to the database.
@@ -153,7 +153,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidData'
     get:
-      tags: [VLA, Templates]
+      tags: [Templates]
       summary: Get all VLA templates
       description: >
         Returns all available **VLA templates** from the database as an array.
@@ -166,7 +166,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TemplateArray'
     delete:
-      tags: [VLA, Templates, Dev]
+      tags: [Dev]
       summary: Delete all VLA templatees
       description: >
         Delete all **VLA templates**.
@@ -179,7 +179,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/idParam'
     get:
-      tags: [VLA, Templates]
+      tags: [Templates]
       summary: Get VLA template by ID
       description: >
         Queries a specific **VLA template** by its unique ID.
@@ -196,7 +196,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
-      tags: [VLA, Templates]
+      tags: [Templates]
       summary: Update VLA template
       description: >
         Used to update an existing **VLA template** specified by its ID.
@@ -217,7 +217,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
-      tags: [VLA, Templates]
+      tags: [Templates]
       summary: Delete VLA template
       description: >
         Delete a **VLA template** specified by its ID.
@@ -233,7 +233,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/idParam'
     post:
-      tags: [VLA, Templates]
+      tags: [Templates]
       summary: Render a VLA template
       description: >
         Render a VLA template to a complete _data quality fragment_ ready to be included
@@ -294,7 +294,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/VLAArray'
     delete:
-      tags: [VLA, Dev]
+      tags: [Dev]
       summary: Delete all VLAs
       description: >
         Delete all **Veracity Level Agreeements.**
@@ -518,7 +518,7 @@ paths:
           $ref: '#/components/responses/InvalidData'
   /proof:
     post:
-      tags: [PoV, Future]
+      tags: [Future]
       summary: Submit proof generation request
       description: >
         Create a new **PoV request** for a given data exchange.
@@ -541,7 +541,7 @@ paths:
           $ref: '#/components/responses/InvalidData'
   /proof/verify:
     post:
-      tags: [PoV, Future]
+      tags: [Future]
       summary: Submit PoV verification request
       description: >
         Create a new **PoV verification request** for a given PoV.
