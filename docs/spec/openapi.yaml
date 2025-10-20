@@ -9,17 +9,19 @@ info:
     email: bpeter@edu.bme.hu
   version: 0.4.4
 servers:
+  - url: http://localhost:9099
+    description: Test environment – VLA manager service
+  - url: http://localhost:9091
+    description: Test environment – provider side
+  - url: http://localhost:9092
+    description: Test environment – consumer side
   - url: http://localhost:9090
     description: Local development server running on default port
-  - url: http://localhost:9091
-    description: Test environment – **provider side**
-  - url: http://localhost:9092
-    description: Test environment – **consumer side**
   - url: '{server}'
     description: Custom parameterizable server
     variables:
       server:
-        default: http://example.com:1234
+        default: http://localhost:9090
         description: Custom server URL
 tags:
   - name: VLA
