@@ -28,4 +28,8 @@ class FakeVLARepo : VLARepo {
         vlas.put(id, vlaWithID)
         return id
     }
+
+    override suspend fun removeAll() {
+        vlas.clear()
+    }
 }
