@@ -35,7 +35,7 @@ def handle_aov_request(req: AoVRequest) -> AoVGenerationRequest:
     contract = req.contract
     vla = contract["vla"]
     try:
-        results = validate_data(req.data, vla)
+        results = validate_data(req.data, vla["schema"]["quality"])
         results_dict = results
         if results["success"]:
             logger.info("Successful validation", results=results_dict)
