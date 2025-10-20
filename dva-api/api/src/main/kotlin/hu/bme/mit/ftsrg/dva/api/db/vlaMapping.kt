@@ -2,6 +2,7 @@ package hu.bme.mit.ftsrg.dva.api.db
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.dao.id.UUIDTable
 import org.jetbrains.exposed.v1.dao.UUIDEntity
@@ -18,4 +19,5 @@ class VLAEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var odcs by VLAsTable.odcs
 }
 
-fun VLAEntity.toModel() = Json.decodeFromString<JsonObject>(odcs)
+fun VLAEntity.toModel() =
+    JsonObject(Json.decodeFromString<JsonObject>(odcs) + ("id" to JsonPrimitive(id.value.toString())))
