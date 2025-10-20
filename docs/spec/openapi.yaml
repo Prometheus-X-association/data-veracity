@@ -65,7 +65,7 @@ paths:
                     The value of a JSON property has to fall between a
                     minimum and a maximum value; evaluated using
                     GreatExpectations
-                  criterionType: WITHIN_RANGE
+                  criterionType: IN_RANGE
                   targetAspect: ACCURACY
                   evaluationMethod:
                     engine: GREAT_EXPECTATIONS
@@ -110,22 +110,28 @@ paths:
                 value:
                   name: JSON Schema
                   description: >-
-                    Data should conform to a JSON schema with the
-                    given URL
+                    Data should conform to a JSON schema.  The `schema`
+                    parameter is either an entire JSON schema string or
+                    a URL that will be resolved to a schema description.
                   criterionType: VALID_INVALID
                   targetAspect: SYNTAX
                   evaluationMethod:
                     engine: SCHEMA
                     variableSchema:
                       properties:
-                        schemaURL:
+                        schema:
                           type: string
-                    implementationTemplate: '{{ schemaURL }}'
-              JQBoolValues:
-                summary: JSON data conforms to JQ and bools
+                    implementationTemplate: '{{ schema }}'
+              PropertyExpression:
+                summary: >-
+                  A property in the JSON data conforms to a simple
+                  requirement
                 value:
-                  name: JQ
-                  description: Bools
+                  name: JQ Property Expression
+                  description: >-
+                    A specific property in the JSON data must fulfill a
+                    basic requirement of either being equal or not equal
+                    to a given value.
                   criterionType: VALID_INVALID
                   targetAspect: SYNTAX
                   evaluationMethod:
@@ -134,17 +140,13 @@ paths:
                       properties:
                         property:
                           type: string
-                        operand:
-                          type: string
-                          enum:
-                            - "=="
-                            - "!="
                         operator:
+                          type: string
+                          enum: [==, '!=']
+                        operand:
                           type: boolean
-                          enum:
-                            - true
-                            - false
-                    implementationTemplate: "{{ property }} {{{ operand }}} {{ operator }}"
+                          enum: [true, false]
+                    implementationTemplate: '{{ property }} {{{ operand }}} {{ operator }}'
       responses:
         '201':
           $ref: '#/components/responses/Created'
@@ -219,7 +221,7 @@ paths:
       summary: Delete VLA template
       description: >
         Delete a **VLA template** specified by its ID.
-        Responds `200 OK` if the template was successfully deleted or `404  FOUND`
+        Responds `204 NO CONTENT` if the template was successfully deleted or `404  FOUND`
         if no template with the specified ID exists.
       operationId: deleteTemplate
       responses:
@@ -421,10 +423,7 @@ paths:
                         type: string
                       countryName:
                         type: string
-                    required:
-                      - postOfficeBox
-                      - streetAddress
-                      - locality
+                    required: [postOfficeBox, streetAddress, locality]
                   attesterID: attester-0000
               ForDemoJQBoolCheck:
                 summary: Data to check a bool value with JQ
@@ -470,7 +469,7 @@ paths:
                             required: true
                         quality:
                           - engine: JQ
-                            implementation: ".result.success == true"
+                            implementation: .result.success == true
                   data:
                     actor:
                       name: Jean Dupont
@@ -487,10 +486,8 @@ paths:
                         type: http://adlnet.gov/expapi/activities/interaction
                     result:
                       success: true
-                    timestamp: "2025-03-16T03:25:00Z"
+                    timestamp: '2025-03-16T03:25:00Z'
                   attesterID: attester-0000
-
-
       responses:
         '202':
           $ref: '#/components/responses/Accepted'
@@ -716,7 +713,7 @@ components:
         $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json
     CriterionType:
       type: string
-      enum: [VALID_INVALID, WITHIN_RANGE, GREATER_OR_LESS_THAN]
+      enum: [VALID_INVALID, IN_RANGE, GREATER_OR_LESS_THAN]
     QualityAspect:
       type: string
       enum: [SYNTAX, TIMELINESS, ACCURACY, COMPLETENESS, CONSISTENCY]
