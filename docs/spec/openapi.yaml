@@ -34,6 +34,8 @@ tags:
     description: Endpoints related to proofs of veracity (PoVs)
   - name: Info
     description: Endpoints related to retrieving information about the running instance
+  - name: Dev
+    description: Endpoints meant to be used only for development
   - name: Future
     description: Endpoints that are not available yet but will be implemented in the
       future
@@ -161,6 +163,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TemplateArray'
+    delete:
+      tags: [VLA, Templates, Dev]
+      summary: Delete all VLA templatees
+      description: >
+        Delete all **VLA templates**.
+        Should always respond with `204 NO CONTENT`.
+      operationId: deleteTemplates
+      responses:
+        '204':
+          $ref: '#/components/responses/Deleted'
   /template/{id}:
     parameters:
       - $ref: '#/components/parameters/idParam'
@@ -279,6 +291,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VLAArray'
+    delete:
+      tags: [VLA, Dev]
+      summary: Delete all VLAs
+      description: >
+        Delete all **Veracity Level Agreeements.**
+        Should always respond with `204 NO CONTENT`.
+      operationId: deleteVLAs
+      responses:
+        '204':
+          $ref: '#/components/responses/Deleted'
   /vla/from-templates:
     post:
       tags: [VLA]

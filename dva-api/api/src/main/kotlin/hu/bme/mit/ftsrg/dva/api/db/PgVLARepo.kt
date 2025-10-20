@@ -3,6 +3,7 @@ package hu.bme.mit.ftsrg.dva.api.db
 import hu.bme.mit.ftsrg.dva.vla.VLARepo
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import org.jetbrains.exposed.v1.jdbc.deleteAll
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -19,4 +20,6 @@ class PgVLARepo : VLARepo {
         val entity = VLAEntity.new { odcs = Json.encodeToString(vla) }
         entity.id.value.toKotlinUuid()
     }
+
+    override suspend fun removeAll(): Unit = suspendTransaction { VLAsTable.deleteAll() }
 }

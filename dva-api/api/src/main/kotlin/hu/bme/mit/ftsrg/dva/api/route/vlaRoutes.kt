@@ -120,5 +120,9 @@ fun Application.vlaRoutes() {
 
             call.respond(Created, IDDTO(id.toString()))
         }
+
+        delete<VLAs> {
+            vlaRepo.removeAll()
+        }
     }
 }
