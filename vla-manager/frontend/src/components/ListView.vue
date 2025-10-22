@@ -17,7 +17,7 @@
           </ul>
           <template #action>
             <button
-              @click="showModalAndSetID(vla.id)"
+              @click="showModalAndSetFields(vla.id, vla.quality)"
               class="add-button">
               Try 
             </button>
@@ -40,14 +40,18 @@
 
   const sampleModal = ref(null)
 
-  const showModalAndSetID = (id) => {
+  const showModalAndSetFields = (id, qua) => {
     sampleModal.value?.show()
     vlaID.value = id
+    quality.value = qua
+    console.log(id)
+    console.log(qua)
   }
 
   const data = ref(null)
 
   const vlaID = ref(null)
+  const quality = ref(null)
 
   const onDataSelected = async (newData) => {
     const body = {
@@ -56,8 +60,12 @@
       "data": newData,
       "contract": {
         "id": "contract-0001",
+        "dataProvider": "/catalog/participants/provider-test-id",
         "vla": {
-          "id": vlaID.value
+          "id": vlaID.value,
+          "schema": {
+            "quality": quality.value
+          }
         }
       }
     }
@@ -71,6 +79,7 @@
     } catch (err) {}
 
     vlaID.value = null
+    quality.value = null
   }
 
   onMounted(async () => {

@@ -48,7 +48,7 @@ services:
       service: dva-processing
     environment:
       DVA_LOG_LEVEL: debug
-      DVA_RABBITMQ_HOST: rabbit-provider
+      DVA_RABBITMQ_HOST: rabbit-vla-manager
       DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-provider:8050
     depends_on:
