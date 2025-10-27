@@ -102,7 +102,7 @@ if [ "$vla" = null ]; then
     {
       "id": "$template_schema",
       "model": {
-        "schema": $(cat ../test-data/xapi-schema.json)
+        "schema": $(cat "$(dirname $0)/../test-data/xapi-schema.json")
       }
     }
   ]
