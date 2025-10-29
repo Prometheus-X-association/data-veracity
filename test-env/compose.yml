@@ -6,7 +6,7 @@ services:
       service: dva-api
     environment:
       DVA_RABBITMQ_HOST: rabbit-provider
-      DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
+      DVA_POSTGRES_URL: postgresql://postgres-vla-manager:5432/dva
       DVA_MONGODB_HOST: mongo-provider
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-provider:8050
     ports: [9091:9090]
@@ -49,7 +49,7 @@ services:
     environment:
       DVA_LOG_LEVEL: debug
       DVA_RABBITMQ_HOST: rabbit-vla-manager
-      DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
+      DVA_POSTGRES_URL: postgresql://postgres-vla-manager:5432/dva
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-provider:8050
     depends_on:
       rabbit-consumer: {condition: service_healthy}
@@ -247,22 +247,22 @@ services:
     extends:
       file: common-services.yml
       service: dva-dashboard-frontend
-    build:
-      args:
-        DVA_DASHBOARD_BACKEND_URL: http://localhost:3001
+    environment:
+      DVA_API_URL: http://dva-api-provider:9090
     ports: [3011:80]
     depends_on:
       dva-dashboard-backend-provider: {condition: service_healthy}
+      dva-api-provider: {condition: service_healthy}
   dva-dashboard-frontend-consumer:
     extends:
       file: common-services.yml
       service: dva-dashboard-frontend
-    build:
-      args:
-        DVA_DASHBOARD_BACKEND_URL: http://localhost:3002
+    environment:
+      DVA_API_URL: http://dva-api-consumer:9090
     ports: [3012:80]
     depends_on:
       dva-dashboard-backend-consumer: {condition: service_healthy}
+      dva-api-consumer: {condition: service_healthy}
   vla-manager-frontend:
     extends:
       file: common-services.yml
