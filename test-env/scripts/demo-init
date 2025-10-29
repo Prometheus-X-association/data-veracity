@@ -1,22 +1,35 @@
 #!/bin/sh -euC
 
+default_backend=http://localhost:9099
+
 log() { echo "$@"; }
 erho() { >&2 echo "error: $@"; }
-usage() { echo "usage: $0 [-h] [-h backend url]"; }
+
+usage() {
+	cat <<EOF
+usage: $0 [-fht] [-u backend url]
+  -f		Force recreate (calls dev DELETE endpoints before POSTing)
+  -h		Display this help message
+  -t		Only create templates, skip VLAs
+  -u URL	Override backend DVA API backend URL [$default_backend]
+EOF
+}
+
 curl_get() { curl --silent "$@"; }
 curl_post() {
 	curl --silent --header "Content-Type: application/json" "$@"
 }
+curl_del() { curl --silent -X DELETE "$@"; }
 
 # Parse options
-backend_url=http://localhost:9099
-while getopts hu: opt; do
+backend_url="$default_backend" force= only_templates=
+while getopts fhtu: opt; do
 	case "$opt" in
-	h)
-		usage
-		exit 0
-		;;
+	f) force=yes ;;
+	h) usage; exit 0 ;;
+	t) only_templates=yes ;;
 	u) backend_url="$OPTARG" ;;
+        ?) usage; exit 2 ;;
 	esac
 done
 shift $(expr $OPTIND - 1)
@@ -31,6 +44,15 @@ done
 #          ╭──────────────────────────────────────────────────────────╮
 #          │                     CREATE TEMPLATES                     │
 #          ╰──────────────────────────────────────────────────────────╯
+
+[ "$force" = yes ] && {
+	log "🗑️ Deleting all templates due to -f flag"
+	if curl_del "$backend_url/template"; then
+		log "✔️ Templates cleared"
+	else
+		log "❌ Failed to clear templates"
+	fi
+}
 
 # ── JSON SCHEMA ───────────────────────────────────────────────────────
 template_schema="$(curl_get "$backend_url/template" | jq -r '[.[] | select(.name == "JSON Schema")][0].id')"
@@ -58,38 +80,66 @@ EOF
 else
 	log "ℹ️ JSON schema template already seems to exist as $template_schema"
 fi
-# ── JQ EXPRESSION ─────────────────────────────────────────────────────
-template_jq="$(curl_get "$backend_url/template" | jq -r '[.[] | select(.name == "JQ Property Expression")][0].id')"
+# ── VERB IMPLICATION ─────────────────────────────────────────────────────
+template_jq="$(curl_get "$backend_url/template" | jq -r '[.[] | select(.name == "xAPI Verb Implication")][0].id')"
 if [ "$template_jq" = null ]; then
 	template_jq="$(
 		curl_post -d @- "$backend_url/template" <<EOF | jq -r .id
 {
-  "name": "JQ Property Expression",
-  "description": "A specific property in the JSON data must fulfill a basic requirement of either being equal or not equal to a given value.",
+  "name": "xAPI Verb Implication",
+  "description": "Given data that is a list of xAPI statements, the presence of the verb specified as <antecedent> in one of the statements implies the presence of another statement that has the verb <consequent> where the actor is the same",
   "criterionType": "VALID_INVALID",
-  "targetAspect": "SYNTAX",
+  "targetAspect": "CONSISTENCY",
   "evaluationMethod": {
     "engine": "JQ",
     "variableSchema": {
       "properties": {
-	"property": { "type": "string" },
-	"operator": { "type": "string", "enum": [ "==", "!=" ] },
-	"operand": { "type": "boolean" }
+	"antecedent": { "type": "string" },
+	"consequent": { "type": "string" }
       }
     },
-    "implementationTemplate": "{{ property }} {{{ operator }}} {{ operand }}"
+    "implementationTemplate": "
+      . as \$root | all(
+        .[];
+        . as \$item
+        | (.verb.id == \"{{ antecedent }}\") as \$matching
+        | if \$matching then
+            any(
+              \$root[];
+              .actor == \$item.actor
+              and .verb.id == \"{{ consequent }}\"
+            )
+          else
+            true
+          end
+      )
+    "
   }
 }
 EOF
 	)"
-	log "📝 Created JQ expression template $template_jq"
+	log "📝 Created xAPI verb implication template $template_jq"
 else
-	log "ℹ️ JQ expression template already seems to exist as $template_jq"
+	log "ℹ️ xAPI verb implication template already seems to exist as $template_jq"
 fi
 
 #          ╭──────────────────────────────────────────────────────────╮
 #          │                    CREATE SAMPLE VLAS                    │
 #          ╰──────────────────────────────────────────────────────────╯
+
+[ "$only_templates" = yes ] && {
+	log "⏩ Skipping VLA creation on user request"
+	exit 0
+}
+
+[ "$force" = yes ] && {
+	log "🗑️ Deleting all VLAs due to -f flag"
+	if curl_del "$backend_url/vla"; then
+		log "✔️ VLAs cleared"
+	else
+		log "❌ Failed to clear VLAs"
+	fi
+}
 
 vla_1="$(curl_get "$backend_url/vla" | jq -r '[.[] | select(.description == "Sample VLA 1")][0].id')"
 if [ "$vla_1" = null ]; then
@@ -125,9 +175,8 @@ if [ "$vla_2" = null ]; then
     {
       "id": "$template_jq",
       "model": {
-        "property": ".foo",
-	"operator": "==",
-	"operand": true
+        "antecedent": "https://w3id.org/xapi/netc/verbs/downloaded",
+	"consequent": "https://w3id.org/xapi/netc/verbs/accessed"
       }
     }
   ]
