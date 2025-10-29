@@ -16,12 +16,9 @@
   
   onMounted(async () => {
     try {
-      let url = '/api/requests'
-      if (import.meta.env.MODE === 'production') {
-        const BACKEND_URL = import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:3000'
-	url = `${BACKEND_URL}${url}`
-      }
+      let url = '/api/info/requests'
       const reqsFromAPI = await axios.get(url)
+      console.log(reqsFromAPI)
       reqs.value = reqsFromAPI.data
     } catch (err) {
       console.error('Fetch error:', err)

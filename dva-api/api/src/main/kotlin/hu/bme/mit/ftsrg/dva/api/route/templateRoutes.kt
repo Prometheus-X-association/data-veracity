@@ -73,6 +73,11 @@ fun Application.templateRoutes() {
             }
         }
 
+        delete<Templates> {
+            repo.removeAll()
+            call.respond(NoContent)
+        }
+
         post<Templates.Id.Render> { req ->
             val template = repo.byID(req.parent.id) ?: run {
                 call.respond(NotFound)

@@ -10,4 +10,5 @@ interface TemplateRepo {
     suspend fun add(template: TemplateNew): Template?
     suspend fun update(patch: TemplatePatch): Template?
     suspend fun remove(id: Uuid): Boolean
+    suspend fun removeAll()
 }

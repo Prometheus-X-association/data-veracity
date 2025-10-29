@@ -55,15 +55,15 @@
             </p>
             <button
               @click="showElementReqModal"
-              :disabled="lastPath === null"
             >
-              Add requirement for data element
+              Add requirement
             </button>
           </div>
-
+          <!--
           <button @click="showGenericReqModal">
             Add generic requirement
           </button>
+          -->
         </section>
 
         <section class="column fragments">
@@ -88,6 +88,7 @@
 
 <script setup>
   import { ref } from 'vue'
+  import { toRaw } from 'vue'
   import { useRouter } from 'vue-router'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
@@ -119,7 +120,25 @@
 
   const handleCreateVLA = async () => {
     console.log("posting")
-    axios.post('/api/vla/from-fragments', fragments.value)
+    const body = {
+      description: "Data is recent and valid",
+      schema: {
+        properties: {
+          timestamp: {
+            type: "string"
+          },
+          result: {
+            type: "integer"
+          }
+        }
+      },
+      qualityTemplates: [...toRaw(fragments.value)]
+    }
+
+    console.log(JSON.stringify(body))
+    try {
+      await axios.post('/api/vla/from-templates', body)
+    } catch (err) {}
     alert(`Created VLA from ${fragments.value.length} fragments`)
     router.push({ path: "/list" })
   }

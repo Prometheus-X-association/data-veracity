@@ -75,4 +75,8 @@ class FakeTemplateRepo : TemplateRepo {
         templates.remove(id)
         return true
     }
+
+    override suspend fun removeAll() {
+        templates.clear()
+    }
 }

@@ -6,6 +6,7 @@ import hu.bme.mit.ftsrg.dva.vla.TemplatePatch
 import hu.bme.mit.ftsrg.dva.vla.TemplateRepo
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.v1.jdbc.deleteAll
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -55,4 +56,6 @@ class PgTemplateRepo : TemplateRepo {
         }
         rowsDeleted == 1
     }
+
+    override suspend fun removeAll(): Unit = suspendTransaction { TemplatesTable.deleteAll() }
 }
