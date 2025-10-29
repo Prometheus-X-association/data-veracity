@@ -96,7 +96,7 @@ def validate_data_schema(data, schema):
     except ValidationError as e:
         return False, {
             "message": "Schema validation failed",
-            "error": e,
+            "error": e.message,
         }
 
     return True, {"message": "Schema successfully validated"}
