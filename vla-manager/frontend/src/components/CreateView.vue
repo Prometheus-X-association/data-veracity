@@ -55,7 +55,6 @@
             </p>
             <button
               @click="showElementReqModal"
-              :disabled="lastPath === null"
             >
               Add requirement
             </button>
