@@ -18,7 +18,6 @@
     try {
       let url = '/api/info/requests'
       const reqsFromAPI = await axios.get(url)
-      console.log(reqsFromAPI)
       reqs.value = reqsFromAPI.data
     } catch (err) {
       console.error('Fetch error:', err)
