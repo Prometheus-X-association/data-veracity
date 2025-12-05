@@ -36,7 +36,7 @@ def handle_aov_request(req: AoVRequest) -> AoVGenerationRequest:
     vla = contract["vla"]
     try:
         results = validate_data(req.data, vla)
-        results_dict = results.to_json_dict()
+        results_dict = results
         if results["success"]:
             logger.info("Successful validation", results=results_dict)
         else:
@@ -72,7 +72,7 @@ def handle_aov_request(req: AoVRequest) -> AoVGenerationRequest:
             issuer_id=req.attesterID,
             payload={
                 "success": results["success"],
-                "results": results_dict,
+                "results": json.dumps(results_dict),
             },
             target="self",
         )
