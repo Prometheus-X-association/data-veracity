@@ -59,11 +59,6 @@
               Add requirement
             </button>
           </div>
-          <!--
-          <button @click="showGenericReqModal">
-            Add generic requirement
-          </button>
-          -->
         </section>
 
         <section class="column fragments">
