@@ -247,22 +247,22 @@ services:
     extends:
       file: common-services.yml
       service: dva-dashboard-frontend
-    build:
-      args:
-        DVA_DASHBOARD_BACKEND_URL: http://localhost:3001
+    environment:
+      DVA_API_URL: http://dva-api-provider:9090
     ports: [3011:80]
     depends_on:
       dva-dashboard-backend-provider: {condition: service_healthy}
+      dva-api-provider: {condition: service_healthy}
   dva-dashboard-frontend-consumer:
     extends:
       file: common-services.yml
       service: dva-dashboard-frontend
-    build:
-      args:
-        DVA_DASHBOARD_BACKEND_URL: http://localhost:3002
+    environment:
+      DVA_API_URL: http://dva-api-consumer:9090
     ports: [3012:80]
     depends_on:
       dva-dashboard-backend-consumer: {condition: service_healthy}
+      dva-api-consumer: {condition: service_healthy}
   vla-manager-frontend:
     extends:
       file: common-services.yml
