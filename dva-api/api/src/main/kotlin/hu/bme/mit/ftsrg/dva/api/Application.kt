@@ -24,7 +24,6 @@ import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import org.slf4j.event.Level
-import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 import io.ktor.server.application.install as serverInstall
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
@@ -57,14 +56,6 @@ fun Application.installPlugins() {
     serverInstall(StatusPages) { addHandlers() }
 
     serverInstall(ServerContentNegotiation) { json(Json { explicitNulls = true }) }
-
-    serverInstall(CORS) {
-        allowHost("localhost:5173", listOf("http"))
-        allowHeader(HttpHeaders.ContentType)
-        allowMethod(HttpMethod.Get)
-        allowMethod(HttpMethod.Post)
-        allowMethod(HttpMethod.Options)
-    }
 
     serverInstall(Resources)
 }
