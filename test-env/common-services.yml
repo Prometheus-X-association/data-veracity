@@ -56,9 +56,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
-  dva-dashboard-backend:
-    build: ../dva-dashboard/backend/
-  dva-dashboard-frontend:
-    build: ../dva-dashboard/frontend/
-  vla-manager-frontend:
-    build: ../vla-manager/frontend/
+  dva-dashboard:
+    build: ../dva-dashboard/
+  vla-manager:
+    build: ../vla-manager/

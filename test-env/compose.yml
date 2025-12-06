@@ -221,52 +221,28 @@ services:
       aca-py-consumer: {condition: service_healthy}
       postgres-consumer: {condition: service_healthy}
       mongo-consumer: {condition: service_healthy}
-  dva-dashboard-backend-provider:
+  dva-dashboard-provider:
     extends:
       file: common-services.yml
-      service: dva-dashboard-backend
-    environment:
-      DVA_MONGODB_URL: mongodb://mongo-provider:27017
-      DVA_ACA_PY_URL: http://aca-py-provider:8030
-    ports: [3001:3000]
-    depends_on:
-      postgres-provider: {condition: service_healthy}
-      mongo-provider: {condition: service_healthy}
-  dva-dashboard-backend-consumer:
-    extends:
-      file: common-services.yml
-      service: dva-dashboard-backend
-    environment:
-      DVA_MONGODB_URL: mongodb://mongo-consumer:27017
-      DVA_ACA_PY_URL: http://aca-py-consumer:8030
-    ports: [3002:3000]
-    depends_on:
-      postgres-consumer: {condition: service_healthy}
-      mongo-consumer: {condition: service_healthy}
-  dva-dashboard-frontend-provider:
-    extends:
-      file: common-services.yml
-      service: dva-dashboard-frontend
+      service: dva-dashboard
     environment:
       DVA_API_URL: http://dva-api-provider:9090
     ports: [3011:80]
     depends_on:
-      dva-dashboard-backend-provider: {condition: service_healthy}
       dva-api-provider: {condition: service_healthy}
-  dva-dashboard-frontend-consumer:
+  dva-dashboard-consumer:
     extends:
       file: common-services.yml
-      service: dva-dashboard-frontend
+      service: dva-dashboard
     environment:
       DVA_API_URL: http://dva-api-consumer:9090
     ports: [3012:80]
     depends_on:
-      dva-dashboard-backend-consumer: {condition: service_healthy}
       dva-api-consumer: {condition: service_healthy}
-  vla-manager-frontend:
+  vla-manager:
     extends:
       file: common-services.yml
-      service: vla-manager-frontend
+      service: vla-manager
     environment:
       VLA_MANAGER_BACKEND_URL: http://dva-api-vla-manager:9090
     ports: [3020:80]
