@@ -94,5 +94,6 @@ fun Application.addRoutes() {
     templateRoutes()
     aovRoutes()
     vlaRoutes()
+    evaluationRoutes()
     infoRoutes()
 }

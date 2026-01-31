@@ -16,6 +16,9 @@ postgres:
 rabbitmq:
   host: "$DVA_RABBITMQ_HOST:localhost"
 
+processing:
+  url: "$DVA_PROCESSING_URL:http://localhost:5000"
+
 acaPy:
   agent:
     url: "$DVA_ACA_PY_AGENT_URL:http://localhost:8030"

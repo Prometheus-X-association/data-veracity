@@ -7,7 +7,7 @@ info:
     [data veracity assurance building block (DVA)](https://github.com/Prometheus-X-association/data-veracity).
   contact:
     email: bpeter@edu.bme.hu
-  version: 0.4.4
+  version: 0.5.0
 servers:
   - url: http://localhost:9099
     description: Test environment – VLA manager service
@@ -32,6 +32,8 @@ tags:
     description: Endpoints related to attestations of veracity (AoVs)
   - name: PoV
     description: Endpoints related to proofs of veracity (PoVs)
+  - name: Evaluation
+    description: Endpoints related to evaluating VLAs/requirements
   - name: Info
     description: Endpoints related to retrieving information about the running instance
   - name: Dev
@@ -577,6 +579,28 @@ paths:
           $ref: '#/components/responses/Accepted'
         '400':
           $ref: '#/components/responses/InvalidData'
+  /evaluate:
+    post:
+      tags: [Evaluation]
+      summary: Evaluate a requirement against some data
+      description: >
+        Takes some requirement (that could be part of a VLA) and a piece of data in
+        the request body.
+        The response is the result of evaluating the requirement on that data.
+        This endpoint is useful for testing requirements in the process of building
+        VLAs.
+      operationId: evaluate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Evaluated'
+        '400':
+          $ref: '#/components/responses/InvalidData'
   /info/requests:
     get:
       tags: [Info]
@@ -857,6 +881,44 @@ components:
         contractID: contract-0001
         attesterAgentURL: http://aca-py-provider:8030
         attesterAgentLabel: provider
+    EvaluationRequest:
+      type: object
+      required: [requirement, data]
+      additionalProperties: false
+      properties:
+        requirement:
+          $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json#/$defs/DataQualityCustom
+        data:
+          type: object
+      example:
+        requirement:
+          engine: JQ
+          implementation: >-
+            if .actor == 'Expected Actor'
+            then { success: true, details: 'Actor name is correct' }
+            else { success: false, details: 'Unexpected actor name' }
+            end
+    EvaluationResult:
+      type: object
+      required: [timestamp, success]
+      additionalProperties: false
+      properties:
+        engine:
+          type: QualityEngine
+        timestamp:
+          type: string
+          format: datetime
+        success:
+          type: bool
+        details:
+          type: string
+        error:
+          type: string
+      example:
+        engine: JQ
+        timestamp: '2026-01-31T17:48:10.904264Z'
+        success: true
+        details: Actor name is correct
     Error:
       type: object
       required: [message]
@@ -948,3 +1010,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Template'
+    Evaluated:
+      description: The requirement has been evaluated successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/EvaluationResult'
