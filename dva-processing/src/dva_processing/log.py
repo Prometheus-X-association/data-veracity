@@ -3,7 +3,7 @@ from sys import stderr
 import structlog
 from structlog import make_filtering_bound_logger
 from structlog.dev import ConsoleRenderer
-from structlog.processors import TimeStamper, StackInfoRenderer, JSONRenderer
+from structlog.processors import JSONRenderer, StackInfoRenderer, TimeStamper
 from structlog.stdlib import add_log_level
 
 import dva_processing.config

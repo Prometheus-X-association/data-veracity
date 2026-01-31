@@ -1,5 +1,6 @@
 from os import environ as env
 
+from pydantic import BaseModel
 
 # RabbitMQ queue name for AoV requests
 QUEUE_NAME = "ATTESTATION_REQUESTS"
@@ -19,13 +20,8 @@ LOG_LEVEL = env.get("DVA_LOG_LEVEL", default="warn")
 ACA_PY_CONTROLLER_URL = env.get("DVA_ACA_PY_CONTROLLER_URL", default="localhost:8050")
 
 
-class Configuration:
-    dry_run: bool
-    log_level: str
-
-    def __init__(self, dry_run=False, log_level=LOG_LEVEL):
-        self.dry_run = dry_run
-        self.log_level = log_level
+class Configuration(BaseModel):
+    log_level: str = LOG_LEVEL
 
 
 cfg = Configuration()

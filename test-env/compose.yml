@@ -5,12 +5,14 @@ services:
       file: common-services.yml
       service: dva-api
     environment:
+      DVA_PROCESSING_URL: http://dva-processing-provider:5000
       DVA_RABBITMQ_HOST: rabbit-provider
       DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
       DVA_MONGODB_HOST: mongo-provider
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-provider:8050
     ports: [9091:9090]
     depends_on:
+      dva-processing-provider: {condition: service_healthy}
       rabbit-provider: {condition: service_healthy}
       postgres-provider: {condition: service_healthy}
       aca-py-provider: {condition: service_healthy}
@@ -20,12 +22,14 @@ services:
       file: common-services.yml
       service: dva-api
     environment:
+      DVA_PROCESSING_URL: http://dva-processing-consumer:5000
       DVA_RABBITMQ_HOST: rabbit-consumer
       DVA_POSTGRES_URL: postgresql://postgres-consumer:5432/dva
       DVA_MONGODB_HOST: mongo-consumer
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-consumer:8050
     ports: [9092:9090]
     depends_on:
+      dva-processing-consumer: {condition: service_healthy}
       rabbit-consumer: {condition: service_healthy}
       postgres-consumer: {condition: service_healthy}
       aca-py-consumer: {condition: service_healthy}
@@ -35,11 +39,13 @@ services:
       file: common-services.yml
       service: dva-api
     environment:
+      DVA_PROCESSING_URL: http://dva-processing-vla-manager:5000
       DVA_RABBITMQ_HOST: rabbit-vla-manager
       DVA_POSTGRES_URL: postgresql://postgres-vla-manager:5432/dva
       DVA_MONGODB_HOST: mongo-vla-manager
     ports: [9099:9090]
     depends_on:
+      dva-processing-vla-manager: {condition: service_healthy}
       rabbit-vla-manager: {condition: service_healthy}
       postgres-vla-manager: {condition: service_healthy}
   dva-processing-provider:
@@ -51,6 +57,11 @@ services:
       DVA_RABBITMQ_HOST: rabbit-provider
       DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-provider:8050
+    healthcheck:
+      test: nc -z localhost 5000
+      interval: 5s
+      timeout: 5s
+      retries: 3
     depends_on:
       rabbit-consumer: {condition: service_healthy}
       postgres-provider: {condition: service_healthy}
@@ -64,10 +75,27 @@ services:
       DVA_RABBITMQ_HOST: rabbit-consumer
       DVA_POSTGRES_URL: postgresql://postgres-consumer:5432/dva
       DVA_ACA_PY_CONTROLLER_URL: http://dva-aca-py-controller-consumer:8050
+    healthcheck:
+      test: nc -z localhost 5000
+      interval: 5s
+      timeout: 5s
+      retries: 3
     depends_on:
       rabbit-consumer: {condition: service_healthy}
       postgres-consumer: {condition: service_healthy}
       mongo-consumer: {condition: service_healthy}
+  dva-processing-vla-manager:
+    extends:
+      file: common-services.yml
+      service: dva-processing
+    command: [--no-rmq]
+    environment:
+      DVA_LOG_LEVEL: debug
+    healthcheck:
+      test: nc -z localhost 5000
+      interval: 5s
+      timeout: 5s
+      retries: 3
   rabbit-provider:
     extends:
       file: common-services.yml
