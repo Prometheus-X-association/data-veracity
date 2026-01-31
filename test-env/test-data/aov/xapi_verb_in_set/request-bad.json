@@ -114,8 +114,8 @@
           "quality": [
             {
               "data_quality_type": "hu.bme.mit.ftsrg.odcs.model.quality.DataQualityCustom",
-              "engine": "jq",
-              "implementation": "if [.verb.id] | inside(['https://w3id.org/xapi/netc/verbs/accessed', 'https://w3id.org/xapi/netc/verbs/reviewed']) then 'Verb is in allowlist' else error('Verb is not allowed') end",
+              "engine": "JQ",
+              "implementation": "if [.verb.id] | inside(['https://w3id.org/xapi/netc/verbs/accessed', 'https://w3id.org/xapi/netc/verbs/reviewed']) then { success: true, details: 'Verb is in allowlist' } else { success: false, details: 'Verb is not allowed' } end",
               "dataQuality": {
                 "data_quality_type": "hu.bme.mit.ftsrg.odcs.model.quality.DataQuality",
                 "type": "custom"

@@ -1,4 +1,4 @@
 {
   "engine": "JQ",
-  "implementation": ".date == 20250101T000000Z"
+  "implementation": "{ success: .date == '20250101T000000Z' }"
 }

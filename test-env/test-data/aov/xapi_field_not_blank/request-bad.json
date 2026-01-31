@@ -114,8 +114,8 @@
           "quality": [
             {
               "data_quality_type": "hu.bme.mit.ftsrg.odcs.model.quality.DataQualityCustom",
-              "engine": "jq",
-              "implementation": "if .result.response != '' then 'Response is a valid nonempty string' else error('Response is blank') end",
+              "engine": "JQ",
+              "implementation": "if .result.response != '' then { success: true, details: 'Response is a valid nonempty string' } else { success: false, details: 'Response is blank' } end",
               "dataQuality": {
                 "data_quality_type": "hu.bme.mit.ftsrg.odcs.model.quality.DataQuality",
                 "type": "custom"

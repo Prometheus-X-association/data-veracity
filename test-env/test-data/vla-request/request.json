@@ -12,12 +12,12 @@
   },
   "quality": [
     {
-      "engine": "jq",
-      "implementation": ".timestamp >= 20250101T0000Z"
+      "engine": "JQ",
+      "implementation": "{ success: .timestamp >= '20250101T0000Z' }"
     },
     {
-      "engine": "jq",
-      "implementation": ".result >= 1 && .result <= 5"
+      "engine": "JQ",
+      "implementation": "{ success: .result >= 1 and .result <= 5 }"
     }
   ]
 }

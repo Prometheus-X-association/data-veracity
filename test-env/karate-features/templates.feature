@@ -42,7 +42,7 @@ Feature: Veracity Level Agreement (VLA) template management
     And request { date: '20250101' }
     When method post
     Then status 200
-    And match response == { engine: 'JQ', implementation: '.date == 20250101' }
+    And match response == { engine: 'JQ', implementation: "{ success: .date == '20250101' }" }
 
     Given path id
     When method delete

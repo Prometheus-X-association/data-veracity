@@ -114,8 +114,8 @@
           "quality": [
             {
               "data_quality_type": "hu.bme.mit.ftsrg.odcs.model.quality.DataQualityCustom",
-              "engine": "jq",
-              "implementation": "if .result.score.raw >= .result.score.min and .result.score.raw <= .result.score.max then 'Score is within range' else 'Invalid score is out of range' end",
+              "engine": "JQ",
+              "implementation": "if .result.score.raw >= .result.score.min and .result.score.raw <= .result.score.max then { success: true, details: 'Score is within range' } else { success: false, details: 'Invalid score is out of range' } end",
               "dataQuality": {
                 "data_quality_type": "hu.bme.mit.ftsrg.odcs.model.quality.DataQuality",
                 "type": "custom"

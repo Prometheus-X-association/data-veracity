@@ -13,6 +13,6 @@
         }
       }
     },
-    "implementationTemplate": ".date == {{ date }}"
+    "implementationTemplate": "{ success: .date == '{{ date }}' }"
   }
 }

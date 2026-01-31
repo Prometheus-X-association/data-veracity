@@ -99,20 +99,22 @@ if [ "$template_jq" = null ]; then
       }
     },
     "implementationTemplate": "
-      . as \$root | all(
-        .[];
-        . as \$item
-        | (.verb.id == \"{{ antecedent }}\") as \$matching
-        | if \$matching then
-            any(
-              \$root[];
-              .actor == \$item.actor
-              and .verb.id == \"{{ consequent }}\"
-            )
-          else
-            true
-          end
-      )
+      . as \$root | {
+	success: all(
+          .[];
+          . as \$item
+          | (.verb.id == \"{{ antecedent }}\") as \$matching
+          | if \$matching then
+              any(
+                \$root[];
+                .actor == \$item.actor
+                and .verb.id == \"{{ consequent }}\"
+              )
+            else
+              true
+            end
+        )
+      }
     "
   }
 }

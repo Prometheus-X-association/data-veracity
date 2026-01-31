@@ -43,7 +43,7 @@ Feature: Veracity Level Agreement (VLA) management
     Given path 'vla', id
     When method get
     Then status 200
-    And match response.quality contains { engine: 'JQ', implementation: '.date == 20250101' }
+    And match response.quality contains { engine: 'JQ', implementation: "{ success: .date == '20250101' }" }
 
     Given path 'template', templateID
     When method delete

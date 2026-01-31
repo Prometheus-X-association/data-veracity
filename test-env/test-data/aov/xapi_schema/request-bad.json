@@ -114,7 +114,7 @@
           "quality": [
             {
               "data_quality_type": "hu.bme.mit.ftsrg.odcs.model.quality.DataQualityCustom",
-              "engine": "jsonSchema",
+              "engine": "SCHEMA",
               "implementation": "https://w3id.org/xapi/lms",
               "dataQuality": {
                 "data_quality_type": "hu.bme.mit.ftsrg.odcs.model.quality.DataQuality",
@@ -192,5 +192,5 @@
     }
   ],
   "attesterID": "attester-0000",
-  "callbackURL": "http://callback-dummy/callback",
+  "callbackURL": "http://callback-dummy/callback"
 }

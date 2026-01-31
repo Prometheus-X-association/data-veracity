@@ -17,7 +17,7 @@
   "quality": [
     {
       "engine": "JQ",
-      "implementation": ".date == 20250101"
+      "implementation": "{ success: .date == '20250101' }"
     }
   ]
 }

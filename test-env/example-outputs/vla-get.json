@@ -18,11 +18,11 @@
     "quality": [
       {
         "engine": "JQ",
-        "implementation": ".timestamp >= 20250101T0000Z"
+        "implementation": "{ success: .timestamp >= '20250101T0000Z' }"
       },
       {
         "engine": "JQ",
-        "implementation": ".result >= 1 && .result <= 5"
+        "implementation": "{ success: .result >= 1 and .result <= 5 }"
       }
     ]
   },
@@ -45,7 +45,7 @@
     "quality": [
       {
         "engine": "JQ",
-        "implementation": ".date == 20250101"
+        "implementation": "{ success: .date == '20250101' }"
       }
     ]
   }
