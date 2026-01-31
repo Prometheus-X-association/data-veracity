@@ -84,6 +84,10 @@ paths:
                         column: {{ property }}
                         min_value: '{{ minimum }}'
                         max_value: '{{ maximum }}'
+                      meta:
+                        schema:
+                          columns:
+                            {{ property }}:
                       ...
               PropertyNotBlank:
                 summary: Property has a non-blank value
@@ -102,8 +106,14 @@ paths:
                           type: string
                     implementationTemplate: >-
                       if {{ property }} != ''
-                      then 'Response is a valid nonempty string'
-                      else error('Response is blank')
+                      then {
+                        success: true,
+                        details: 'Response is a valid nonempty string'
+                      }
+                      else {
+                        success: false,
+                        details: 'Response is blank'
+                      }
                       end
               JsonShema:
                 summary: JSON data conforms to schema
@@ -146,7 +156,8 @@ paths:
                         operand:
                           type: boolean
                           enum: [true, false]
-                    implementationTemplate: '{{ property }} {{{ operand }}} {{ operator }}'
+                    implementationTemplate: >-
+                      { success: {{ property }} {{{ operand }}} {{ operator }} }
       responses:
         '201':
           $ref: '#/components/responses/Created'
@@ -255,8 +266,9 @@ paths:
               schema:
                 type: object
               example:
-                engine: jq
-                implementation: .url == http://example.com && .someValue == 42
+                engine: JQ
+                implementation: >-
+                  { success: .url == 'http://example.com' and .someValue == 42 }
         '400':
           $ref: '#/components/responses/InvalidData'
   /vla:
@@ -469,9 +481,10 @@ paths:
                                   format: date-time
                               required: [actor, object, result, timestamp, verb]
                           - engine: JQ
-                            implementation: .result.success == true
+                            implementation: '{ success: .result.success }'
                           - engine: JQ
-                            implementation: .actor.name | contains("Dupont")
+                            implementation: >-
+                              { success: .actor.name | contains('Dupont') }
                   attesterID: attester-0000
                   data:
                     actor:
@@ -686,10 +699,10 @@ components:
             result:
               type: integer
         quality:
-          - engine: jq
-            implementation: .timestamp >= 20250101T0000Z
-          - engine: jq
-            implementation: .result >= 1 && .result <= 5
+          - engine: JQ
+            implementation: '{ success: .timestamp >= "20250101T0000Z" }'
+          - engine: JQ
+            implementation: '{ success: .result >= 1 and .result <= 5 }'
     VLACreateFromTemplates:
       allOf:
         - $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json

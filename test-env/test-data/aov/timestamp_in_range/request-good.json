@@ -113,13 +113,8 @@
           ],
           "quality": [
             {
-              "data_quality_type": "hu.bme.mit.ftsrg.odcs.model.quality.DataQualityCustom",
-              "engine": "greatExpectations",
-              "implementation": "type: ExpectColumnValuesToBeBetween\nkwargs:\n  column: timestamp\n  min_value: '2025-01-01T00:00:00Z'\n  max_value: '2026-01-01T00:00:00Z'",
-              "dataQuality": {
-                "data_quality_type": "hu.bme.mit.ftsrg.odcs.model.quality.DataQuality",
-                "type": "custom"
-              }
+              "engine": "GREAT_EXPECTATIONS",
+              "implementation": "type: ExpectColumnValuesToBeBetween\nkwargs:\n  column: timestamp\n  min_value: '2025-01-01T00:00:00Z'\n  max_value: '2026-01-01T00:00:00Z'\nmeta:\n  schema:\n    columns:\n      timestamp:\n        dtype: datetime\n"
             }
           ],
           "schemaElement": {
@@ -162,8 +157,8 @@
       }
     },
     "result": {
-        "success":true,
-        "extensions": {
+      "success": true,
+      "extensions": {
         "http://id.tincanapi.com/extension/severity": "info"
       }
     },
