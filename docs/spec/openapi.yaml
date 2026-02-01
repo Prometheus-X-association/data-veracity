@@ -7,7 +7,7 @@ info:
     [data veracity assurance building block (DVA)](https://github.com/Prometheus-X-association/data-veracity).
   contact:
     email: bpeter@edu.bme.hu
-  version: 0.5.0
+  version: 0.5.1
 servers:
   - url: http://localhost:9099
     description: Test environment – VLA manager service
@@ -601,6 +601,30 @@ paths:
           $ref: '#/components/responses/Evaluated'
         '400':
           $ref: '#/components/responses/InvalidData'
+  /evaluate/from-template:
+    post:
+      tags: [Evaluation]
+      summary: Render a template and evaluate the result against some  data
+      description: >
+        Takes a template ID and some data in the request body.
+        The template with the given ID is rendered internally and the resulting
+        requirement is evaluated on the data passed.
+        This endpoint is useful for testing requirements in the process of building
+        VLAs.
+      operationId: evaluteFromTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationFromTemplateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Evaluated'
+        '400':
+          $ref: '#/components/responses/InvalidData'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /info/requests:
     get:
       tags: [Info]
@@ -898,6 +922,32 @@ components:
             then { success: true, details: 'Actor name is correct' }
             else { success: false, details: 'Unexpected actor name' }
             end
+        data:
+          statement_id: 123
+          actor: Unexpected Uriel
+          action: read
+          object: course_materials/lecturenotes/1
+    EvaluationFromTemplateRequest:
+      type: object
+      required: [templateID, templateModel, data]
+      additionalProperties: false
+      properties:
+        templateID:
+          type: string
+        templateModel:
+          type: object
+        data:
+          type: object
+      example:
+        templateID: 74d696f2-b217-4d2f-a0c1-5ff65cd2258d
+        templateModel:
+          target_field: .actor
+          required_value: Expected Actor
+        data:
+          statement_id: 123
+          actor: Unexpected Uriel
+          action: read
+          object: course_materials/lecturenotes/1
     EvaluationResult:
       type: object
       required: [timestamp, success]

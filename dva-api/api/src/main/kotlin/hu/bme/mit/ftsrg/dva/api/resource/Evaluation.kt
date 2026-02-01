@@ -4,4 +4,8 @@ import io.ktor.resources.*
 
 @Suppress("unused")
 @Resource("/evaluate")
-class Evaluation
+class Evaluation {
+
+    @Resource(path = "from-template")
+    class FromTemplate(val parent: Evaluation = Evaluation())
+}
