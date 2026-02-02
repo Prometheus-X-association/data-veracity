@@ -6,7 +6,7 @@
     >
       <div class="modal-content">
         <header>
-          <h3>Insert sample JSON</h3>
+          <h3>{{ props.title ?? 'Insert sample JSON' }}</h3>
         </header>
 
         <section class="modal-body">
@@ -17,14 +17,38 @@
     
           <!-- Text Input -->
           <section class="paste-area">
-            <label for="json-textarea">Or paste JSON here:</label>
-            <textarea
-              id="json-textarea"
-              v-model="jsonText"
-              @input="handleTextInput"
-              placeholder="Paste your JSON here..."
-              rows="8"
-            ></textarea>
+            <label for="json-input">Or paste JSON here:</label>
+            <div class="paste-json">
+              <textarea
+                id="json-textarea"
+                v-model="jsonText"
+                @input="handleTextInput"
+                placeholder="Paste your JSON here..."
+                rows="20"
+                ></textarea>
+              <vue-json-pretty
+                id="json-input"
+                :data="parsedData"
+                :virtual="true"
+                :height="350"
+                :showLineNumber="true"
+                :showDoubleQuotes="false"
+              />
+            </div>
+          </section>
+
+          <!-- Dev Picker -->
+          <section class="pick-area">
+            <label>Or choose a sample from below:</label>
+            <div class="pick-options">
+              <button
+                v-for="d in dummySamples"
+                :key="d.name"
+                @click="loadSample(d.name)"
+              >
+                {{ d.name }}
+              </button>
+            </div>
           </section>
     
           <!-- Error Display -->
@@ -42,7 +66,7 @@
             Parse JSON
           </button>
           <button @click="selectSample" class="select-button" :disabled="!jsonText.trim()">
-            Select Sample
+            Select
           </button>
         </footer>
       </div>
@@ -51,7 +75,16 @@
 
 <script setup>
   import { ref } from 'vue'
+  import VueJsonPretty from 'vue-json-pretty'
   import FileSelector from './FileSelector.vue'
+  import movieJson from '../data/movie.json'
+  import xapiJson from '../data/xapi.json'
+  import 'vue-json-pretty/lib/styles.css'
+
+  const dummySamples = [
+    { name: 'Movie', sample: movieJson },
+    { name: 'xAPI Statement', sample: xapiJson },
+  ]
 
   const dialog = ref(null)
   const jsonText = ref('')
@@ -59,6 +92,12 @@
   const parsedData = ref(null)
 
   const showModal = async () => dialog.value?.showModal()
+
+  const loadSample = async (name) => {
+    const sample = dummySamples.find((s) => s.name === name)
+    jsonText.value = JSON.stringify(sample, null, 2)
+    parseJSON()
+  }
 
   const handleFileUpload = async (file, progressCallback) => {
     const reader = new FileReader()
@@ -78,6 +117,7 @@
 
   const handleTextInput = () => {
     if (error) error.set = null
+    parseJSON()
   }
 
   const parseJSON = () => {
@@ -96,10 +136,11 @@
 
   const clearAll = () => {
     jsonText.value = ''
+    parsedData.value = null
     error.value = ''
   }
 
-  defineProps({ modelValue: Object })
+  const props = defineProps({ modelValue: Object, title: String })
   defineExpose({ show: showModal })
 
   const emit = defineEmits(['update:modelValue'])
@@ -130,9 +171,26 @@
   
   .paste-area {
     display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .paste-json {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .pick-area {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .pick-options {
+    display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 2rem;
+    justify-content: center;
+    gap: .5rem;
   }
   
   h3 {

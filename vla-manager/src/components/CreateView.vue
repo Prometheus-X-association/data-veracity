@@ -1,12 +1,14 @@
 <template>
   <SampleModal v-model="sampleData" ref="sampleModal" />
-  <ElementReqModal
-    :element="lastPath"
-    ref="elementReqModal"
-    @req-added="handleReqAdded"
+  <SampleModal
+    title="Upload test data"
+    v-model="testData"
+    ref="testModal"
+    @update:modelValue="handleTestDataSelected"
   />
-  <GenericReqModal
-    ref="genericReqModal"
+  <ReqModal
+    :element="lastPath"
+    ref="reqModal"
     @req-added="handleReqAdded"
   />
   <div class="content">
@@ -39,7 +41,7 @@
         <section class="column toolbox">
           <h3>Toolbox</h3>
 
-          <div class="element-req-box">
+          <div class="req-box">
             <p
               v-if="lastPath === null"
               class="json-selection"
@@ -54,7 +56,7 @@
               {{ lastPath }}
             </p>
             <button
-              @click="showElementReqModal"
+              @click="showReqModal"
             >
               Add requirement
             </button>
@@ -64,7 +66,35 @@
         <section class="column fragments">
           <h3>List of Fragments</h3>
           <div v-for="frag in fragments" class="fragment">
-            <vue-json-pretty :data="frag" />
+            <div class="fragment-display">
+              <table>
+                <tr>
+                  <th>Fragment Name</th>
+                  <td>{{ frag.requirement.name }}</td>
+                </tr>
+                <tr>
+                  <th>Quality Engine</th>
+                  <td><code>{{ frag.requirement.evaluationMethod.engine }}</code></td>
+                </tr>
+                <tr>
+                  <th>Template String</th>
+                  <td><code>{{ frag.requirement.evaluationMethod.implementationTemplate }}</code></td>
+                </tr>
+              </table>
+              <vue-json-pretty :data="frag.data" />
+              <button
+                class="btn-test"
+                @click="showTestModal(frag)"
+              >
+                Test
+              </button>
+              <div v-if="testedFragment === frag && testResult !== null">
+                <h4>Evaluation results:</h4>
+                <vue-json-pretty
+                  :data="testResult"
+                />
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -90,25 +120,53 @@
   import axios from 'axios'
 
   import SampleModal from './SampleModal.vue'
-  import ElementReqModal from './ElementReqModal.vue'
-  import GenericReqModal from './GenericReqModal.vue'
+  import ReqModal from './ReqModal.vue'
 
   const sampleModal = ref(null)
-  const elementReqModal = ref(null)
+  const testModal = ref(null)
+  const reqModal = ref(null)
   const genericReqModal = ref(null)
 
   const sampleData = ref(null)
+  const testData = ref(null)
   const lastPath = ref(null)
   const fragments = ref([])
 
+  const testedFragment = ref(null)
+  const testResult = ref(null)
+
   const showSampleModal = () => sampleModal.value?.show()
-  const showElementReqModal = () => elementReqModal.value?.show()
-  const showGenericReqModal = () => genericReqModal.value?.show()
+  const showTestModal = (frag) => {
+    testModal.value?.show()
+    testedFragment.value = frag
+  }
+  const showReqModal = () => reqModal.value?.show()
 
   const onNodeClick = (node) => lastPath.value = node.path
 
   const handleReqAdded = (req) => {
     fragments.value.push(req)
+  }
+
+  const handleTestDataSelected = async () => {
+    console.log(testedFragment.value)
+    const body = {
+      templateID: testedFragment.value.data.id,
+      templateModel: testedFragment.value.data.model,
+      data: testData.value
+    }
+    console.log('Sending evaluate request to backend with body:')
+    console.log(body)
+    let resp = null
+    try {
+      resp = await axios.post('/api/evaluate/from-template', body)
+    } catch (err) {
+      console.error('Error while evaluating on backend:')
+      console.error(err)
+      return
+    }
+
+    testResult.value = resp.data
   }
 
   const router = useRouter()
@@ -127,7 +185,7 @@
           }
         }
       },
-      qualityTemplates: [...toRaw(fragments.value)]
+      qualityTemplates: [...toRaw(fragments.value.map((f) => f.data))]
     }
 
     console.log(JSON.stringify(body))
@@ -206,10 +264,31 @@
     border-radius: 12px;
   }
 
+  .fragment-display {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
   footer {
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  table {
+    border: 1px solid black;
+    border-collapse: collapse;
+  }
+  th, td {
+    padding: .5rem;
+  }
+  th {
+    border-right: 1px solid #444;
+  }
+
+  .btn-test {
+    align-self: end;
   }
 
   .final-button {
@@ -218,7 +297,7 @@
     font-size: 1.5rem;
   }
 
-  .element-req-box {
+  .req-box {
     align-self: stretch;
     text-align: center;
     display: flex;

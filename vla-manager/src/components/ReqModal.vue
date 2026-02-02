@@ -6,14 +6,14 @@
     >
       <div class="modal-content">
         <header>
-          <h3>Add Element-Level Requirement</h3>
+          <h3>Add Requirement</h3>
         </header>
 
         <section class="modal-body">
           <label for="fragment">Choose a fragment:</label>
           <select v-model="chosenFragment" id="fragment">
             <option v-for="item in fragmentOptions" :key="item" :value="item">
-              {{ item.name }} {{ item.description !== "" ? `- ${item.description}` : "" }}
+              {{ item.name }}
             </option>
           </select>
 
@@ -21,6 +21,12 @@
             v-if="chosenFragment !== null"
             class="req-form"
           >
+            <label
+              class="fragment-desc"
+              v-if="chosenFragment.description !== ''"
+            >
+              {{ chosenFragment.description }}
+            </label>
             <template v-if="chosenFragment.evaluationMethod.variableSchema.properties.property">
               <label for="element">Element:</label>
             <input id="element" type="text" :disabled="true" :value="element" />
@@ -57,38 +63,6 @@
               </template>
             </template>
           </form>
-
-          <!--
-          <form
-            v-if="chosenFragment === 'ge-value-between'"
-            class="req-form"
-          >
-            <label for="element">Element:</label>
-            <input id="element" type="text" :disabled="true" :value="element" />
-            <label for="minValue">Minimum value:</label>
-            <input id="minValue" v-model="minValue" type="text" />
-            <label for="maxValue">Maximum value:</label>
-            <input id="maxValue" v-model="maxValue" type="text" />
-          </form>
-
-          <form
-            v-else-if="chosenFragment === 'jq-simple-relation'"
-            class="req-form"
-          >
-            <label for="element">Element:</label>
-            <input id="element" type="text" :disabled="true" :value="element" />
-            <label for="relOp">Relational operator</label>
-            <select id="relOp" v-model="relOp">
-              <option value="==">==</option>
-              <option value="&lt;">&lt;</option>
-              <option value="&lt;=">&lt;=</option>
-              <option value="&gt;">&gt;</option>
-              <option value="&gt;=">&gt;=</option>
-            </select>
-            <label for="otherOperand">Other operand:</label>
-            <input id="otherOperand" v-model="otherOperand" type="text" />
-          </form>
-          -->
         </section>
         
         <footer>
@@ -191,50 +165,19 @@
       model[key] = rawValues[key]
     }
 
-    template["id"] = chosenFragment.value.id
-    template["model"] = model    
+    const req = {
+      data: {
+        id: chosenFragment.value.id,
+        model
+      },
+      requirement: chosenFragment.value
+    }
 
-    emit('req-added', template)
+    emit('req-added', req)
 
     for(const key in values) {
         delete values[key]
     }
-    /*try {
-      const res = await axios.get(`/api/template/${chosenFragment.value.id}/render`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(toRaw(values))
-      })
-
-      const data = await res.data
-      console.log(data)
-
-      const emitData = {
-        data_quality_type: 'hu.bme.mit.ftsrg.odcs.model.quality.DataQualityCustom',
-        engine: data.engine,
-        implementation: data.implementation
-      }
-
-      emit('req-added', emitData)
-    } catch (err) {}
-    if (chosenFragment.value === 'ge-value-between') {
-      emit('req-added', {
-        data_quality_type: 'hu.bme.mit.ftsrg.odcs.model.quality.DataQualityCustom',
-        engine: 'greatExpectations',
-        implementation: `type: ExpectColumnValuesToBeBetween\nkwargs:\n  column: ${props.element.substring(1)}\n  min_value: '${minValue.value}'\n  max_value: '${maxValue.value}'`,
-      })
-    } else if (chosenFragment.value === 'jq-simple-relation') {
-      emit('req-added', {
-        data_quality_type: 'hu.bme.mit.ftsrg.odcs.model.quality.DataQualityCustom',
-        engine: 'jq',
-        implementation: `${props.element} ${relOp.value} ${otherOperand.value}`,
-      })
-    } else {
-      console.log('unknown fragment')
-    }*/
-
     chosenFragment.value = null
     dialog.value?.close()
   }
@@ -297,6 +240,10 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
+  }
+
+  .fragment-desc {
+    font-style: italic;
   }
   
   footer {
