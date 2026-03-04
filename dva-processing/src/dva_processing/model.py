@@ -31,8 +31,8 @@ class EvaluationResult(BaseModel):
     engine: Optional[QualityEngine]
     timestamp: datetime
     success: bool
-    details: str = None
-    error: str = None
+    details: Optional[str] = None
+    error: Optional[str] = None
 
 
 class AoVRequest(BaseModel):

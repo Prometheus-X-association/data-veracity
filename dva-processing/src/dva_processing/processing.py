@@ -25,11 +25,11 @@ def handle_eval_request(request: EvaluationRequest) -> EvaluationResult:
         return eval_requirement(request.data, request.requirement)
     except Exception as e:
         return EvaluationResult(
-            engine=request.engine,
+            engine=request.requirement.engine,
             timestamp=now(),
             success=False,
             details=None,
-            error=e,
+            error=str(e),
         )
 
 
