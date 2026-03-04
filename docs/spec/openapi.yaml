@@ -110,11 +110,11 @@ paths:
                       if {{ property }} != ''
                       then {
                         success: true,
-                        details: 'Response is a valid nonempty string'
+                        details: '{{ property }} is a valid nonempty string'
                       }
                       else {
                         success: false,
-                        details: 'Response is blank'
+                        details: '{{ property }} is blank'
                       }
                       end
               JsonShema:
