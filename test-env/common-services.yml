@@ -16,15 +16,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
-  mongo:
-    image: mongo:8.0.9
-    healthcheck:
-      test: >
-        echo 'db.runCommand("ping").ok'
-        | mongosh localhost:27017/test --quiet
-      interval: 5s
-      timeout: 10s
-      retries: 5
   postgres:
     image: postgres:17-alpine
     environment:
