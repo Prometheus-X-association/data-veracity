@@ -10,8 +10,8 @@ PEER_CONTROLLER_PORT_IN = env.get("PEER_CONTROLLER_PORT_IN")
 PEER_CONTROLLER_PORT_OUT = env.get("PEER_CONTROLLER_PORT_OUT")
 PEER_LABEL = env.get("PEER_LABEL")
 
-MONGO_URL = env.get("DVA_MONGODB_URL", default="mongodb://localhost:27017")
-MONGO_DB = env.get("DVA_MONGODB_DB", default="dva")
-MONGO_COLLECTION = env.get("DVA_MONGODB_COLLECTION_REQUESTS", default="requests")
+POSTGRES_URL = env.get("DVA_POSTGRES_URL", default="postgresql://localhost:5432/dva")
+POSTGRES_USER = env.get("DVA_POSTGRES_USER", default="postgres")
+POSTGRES_PASSWORD = env.get("DVA_POSTGRES_PASSWORD", default="postgres")
 
 LOG_FILE = "log.json"

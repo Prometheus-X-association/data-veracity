@@ -1,6 +1,7 @@
 import requests
 import json
 
+from psycopg_pool import AsyncConnectionPool
 from asyncio import Queue, CancelledError
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -9,8 +10,6 @@ from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from pydantic import BaseModel
-from pymongo import MongoClient
-from pymongo.errors import PyMongoError
 from time import sleep
 from typing import Dict, Any
 from uuid import uuid4
@@ -19,10 +18,10 @@ from .config import (
     ADMIN_LABEL,
     ADMIN_URL,
     LOG_FILE,
-    MONGO_COLLECTION,
-    MONGO_DB,
-    MONGO_URL,
     PEER_LABEL,
+    POSTGRES_URL,
+    POSTGRES_USER,
+    POSTGRES_PASSWORD,
 )
 
 
@@ -60,14 +59,25 @@ async def lifespan(app):
     print("Starting self initialization...")
     await init_all_self()
     print("Self init done!")
+    global pool
+    pool = AsyncConnectionPool(
+        conninfo=POSTGRES_URL,
+        kwargs=dict(user=POSTGRES_USER, password=POSTGRES_PASSWORD),
+        min_size=2,
+        max_size=10,
+    )
+    pool.open()
 
     yield
 
     print(f"{ADMIN_LABEL} Controller is shutting down...")
+    pool.close()
     if webhook_logs:
         with open("log_human_readable.json", "w") as f:
             json.dump(webhook_logs, f, indent=2)
 
+
+pool: AsyncConnectionPool
 
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
@@ -316,20 +326,26 @@ async def generate_aov(payload: AOVRequest):
     if issue_resp.status_code != 200:
         return {"error": "Credential issue failed", "details": issue_resp.text}
 
-    req_coll = MongoClient(MONGO_URL)[MONGO_DB][MONGO_COLLECTION]
-    try:
-        req_coll.update_one(
-            {"requestID": payload.request_id},
-            {
-                "$set": {
-                    "vcIssuedDate": datetime.utcnow(),
-                    "vcID": record.vc_id,
-                }
-            },
+    async with pool.connection() as conn:
+        cur = await conn.execute(
+            """
+            UPDATE request_logs
+            SET vc_issued_date = %s, vc_id = %s
+            WHERE request_id = %s
+            """,
+            (datetime.utcnow(), record.vc_id, payload.request_id),
         )
-        print(f"Successfully updated MongoDB entry for request {payload.request_id}")
-    except PyMongoError as e:
-        print(f"Failed to update MongoDB entry due to {e}")
+        match cur.rowcount:
+            case 0:
+                print("Did not update any PostgreSQL table rows; this is likely a bug")
+            case 1:
+                print(
+                    f"Successfully updated PostgreSQL table row for {payload.request_id}"
+                )
+            case _:
+                print(
+                    f"Updated more than one PostgreSQL table rows for {payload.request_id}; this is likely a bug"
+                )
 
     return {"message": f"AOV issued to {target}", "credential_data": cred_attrs}
 

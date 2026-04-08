@@ -3,7 +3,7 @@ name = "dva-acapy-controller"
 version = "0.1.0"
 description = "Data Veracity Assurance ACA-Py Integration"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     { name = "FTSRG", email = "bpeter@edu.bme.hu" },
     { name = "Rajmund Szilveszter Hubai", email = "hubai.rajmund@edu.bme.hu" }
@@ -12,7 +12,8 @@ license = "Apache-2.0"
 dependencies = [
     "fastapi~=0.115.12",
     "httpx~=0.28.1",
-    "pymongo>=4.13.1",
+    "psycopg-pool>=3.2.8",
+    "psycopg[binary]>=3.2.13",
     "requests~=2.32.4",
     "uvicorn~=0.34.3",
 ]
