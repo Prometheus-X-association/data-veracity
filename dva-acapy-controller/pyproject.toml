@@ -5,17 +5,17 @@ description = "Data Veracity Assurance ACA-Py Integration"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-    { name = "FTSRG", email = "bpeter@edu.bme.hu" },
-    { name = "Rajmund Szilveszter Hubai", email = "hubai.rajmund@edu.bme.hu" }
+	{ name = "FTSRG", email = "bpeter@edu.bme.hu" },
+	{ name = "Rajmund Szilveszter Hubai", email = "hubai.rajmund@edu.bme.hu" },
 ]
 license = "Apache-2.0"
 dependencies = [
-    "fastapi~=0.115.12",
-    "httpx~=0.28.1",
-    "psycopg-pool>=3.2.8",
-    "psycopg[binary]>=3.2.13",
-    "requests~=2.32.4",
-    "uvicorn~=0.34.3",
+	"fastapi~=0.120.0",
+	"httpx~=0.28.1",
+	"psycopg-pool>=3.2.8",
+	"psycopg[binary]>=3.2.13",
+	"requests~=2.33.0",
+	"uvicorn~=0.34.3",
 ]
 
 [project.scripts]
@@ -29,6 +29,4 @@ build-backend = "hatchling.build"
 packages = ["src/dva_acapy_controller"]
 
 [dependency-groups]
-dev = [
-    "pytest>=8.4.1",
-]
+dev = ["pytest>=8.4.1"]
