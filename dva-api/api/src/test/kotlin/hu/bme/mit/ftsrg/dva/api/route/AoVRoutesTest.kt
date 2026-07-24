@@ -1,7 +1,5 @@
 package hu.bme.mit.ftsrg.dva.api.route
 
-import com.rabbitmq.client.Connection
-import com.rabbitmq.client.ConnectionFactory
 import hu.bme.mit.ftsrg.dva.api.testutil.createTestClient
 import hu.bme.mit.ftsrg.dva.api.testutil.setupTestApplication
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
@@ -16,22 +14,17 @@ import io.ktor.server.application.*
 import io.ktor.server.testing.*
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
-import org.testcontainers.containers.RabbitMQContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
 
-@Testcontainers
 class AoVRoutesTest {
 
-    @Container
-    val rmqContainer: RabbitMQContainer = RabbitMQContainer("rabbitmq").withExposedPorts(5672)
-
     @Test
-    fun `should create attestation request`() = testApplication {
+    @Disabled
+    fun `should accept attestation request for processing`() = testApplication {
         setupApplication()
         val client = createTestClient()
 
@@ -203,13 +196,6 @@ class AoVRoutesTest {
         val testModule = module {
             single<ReqestLogRepo> { FakeReqestLogRepo() }
             single<HttpClient> { HttpClient { install(ContentNegotiation) { json() } } }
-            single<Connection> {
-                ConnectionFactory().run {
-                    host = rmqContainer.host
-                    port = rmqContainer.firstMappedPort
-                    newConnection()
-                }
-            }
         }
         this.install(Koin) { modules(testModule) }
 

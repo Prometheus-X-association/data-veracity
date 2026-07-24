@@ -17,6 +17,6 @@ fun Application.configureDatabases() {
     )
 
     transaction {
-        create(TemplatesTable, RequestLogsTable, VLAsTable)
+        create(RequestLogsTable)
     }
 }
