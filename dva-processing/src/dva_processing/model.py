@@ -27,6 +27,11 @@ class EvaluationRequest(BaseModel):
     data: Any
 
 
+class EvaluateBatchRequest(BaseModel):
+    vla: dict[str, Any]
+    data: Any
+
+
 class EvaluationResult(BaseModel):
     engine: Optional[QualityEngine]
     timestamp: datetime

@@ -10,6 +10,7 @@ from .model import (
     AoVGenerationRequest,
     AoVGenerationRequestPayload,
     AoVRequest,
+    EvaluateBatchRequest,
     EvaluationRequest,
     EvaluationResult,
     Requirement,
@@ -31,6 +32,44 @@ def handle_eval_request(request: EvaluationRequest) -> EvaluationResult:
             details=None,
             error=str(e),
         )
+
+
+def _eval_one(data: Any, requirement_dict: dict[str, Any]) -> EvaluationResult:
+    try:
+        requirement = Requirement(**requirement_dict)
+        return eval_requirement(data, requirement)
+    except Exception as e:
+        logger.warning(
+            "An error was thrown during evaluation of a requirement; tolerating",
+            error=e,
+        )
+        return EvaluationResult(
+            engine=None, timestamp=now(), success=False, error=str(e)
+        )
+
+
+def handle_eval_batch_request(request: EvaluateBatchRequest) -> list[EvaluationResult]:
+    vla: dict[str, Any] = request.vla or {}
+
+    results: list[EvaluationResult] = []
+    any_evaluations = False
+
+    schema = vla.get("schema")
+    if isinstance(schema, list):
+        for schema_item in schema:
+            if not isinstance(schema_item, dict):
+                continue
+            quality = schema_item.get("quality") or []
+            if not isinstance(quality, list):
+                continue
+            for requirement_dict in quality:
+                any_evaluations = True
+                results.append(_eval_one(request.data, requirement_dict))
+
+    if not any_evaluations:
+        logger.warning("Nothing was evaluated from this VLA")
+
+    return results
 
 
 def handle_aov_request(request: AoVRequest) -> AoVGenerationRequest:
