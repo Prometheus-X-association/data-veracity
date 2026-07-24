@@ -1,4 +1,4 @@
-package hu.bme.mit.ftsrg.dva.dto
+package hu.bme.mit.ftsrg.dva.dto.api
 
 import kotlinx.serialization.Serializable
 

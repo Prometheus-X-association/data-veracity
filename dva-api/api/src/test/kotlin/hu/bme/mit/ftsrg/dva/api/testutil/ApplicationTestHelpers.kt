@@ -2,6 +2,8 @@ package hu.bme.mit.ftsrg.dva.api.testutil
 
 import hu.bme.mit.ftsrg.dva.api.err.addHandlers
 import io.ktor.client.*
+import io.ktor.client.plugins.*
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.calllogging.*
@@ -20,6 +22,7 @@ fun ApplicationTestBuilder.setupTestApplication(block: Application.() -> Unit = 
 }
 
 fun ApplicationTestBuilder.createTestClient(block: HttpClientConfig<*>.() -> Unit = {}): HttpClient = createClient {
+    defaultRequest { contentType(ContentType.Application.Json) }
     install(ClientContentNegotiation) { json() }
     block()
 }
