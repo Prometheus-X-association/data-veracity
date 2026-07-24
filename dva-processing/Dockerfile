@@ -20,6 +20,10 @@ RUN \
 # Copy app files
 COPY ./dva-processing/ /app/
 
+# Hand-written OpenAPI spec served at /swagger/openapi.yaml
+COPY ./docs/spec/dva-processing.yaml /app/openapi.yaml
+ENV DVA_PROCESSING_OPENAPI_FILE=/app/openapi.yaml
+
 # Sync project
 RUN \
     --mount=type=cache,target=/root/.cache/uv \
