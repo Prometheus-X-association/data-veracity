@@ -13,11 +13,8 @@ kover = "0.9.1"
 ktor = "3.3.1"
 logevents = "0.5.6"
 postgresql = "42.7.3"
-rabbitmq-amqp-client = "5.24.0"
-rabbitmq-kotlin = "0.7.0"
 shadow = "9.0.2"
 slf4j = "2.0.14"
-testcontainers = "1.20.4"
 
 [libraries]
 dependency-license-report-gradle-plugin = { module = "com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin", version.ref = "dependency-license-report" }
@@ -52,13 +49,8 @@ ktor-server-swagger = { module = "io.ktor:ktor-server-swagger", version.ref = "k
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 logevents = { module = "org.logevents:logevents", version.ref = "logevents" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
-rabbitmq-amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "rabbitmq-amqp-client" }
-rabbitmq-kotlin = { module = "com.github.viartemev:rabbitmq-kotlin", version.ref = "rabbitmq-kotlin" }
 shadow-gradle-plugin = { module = "com.gradleup.shadow:com.gradleup.shadow.gradle.plugin", version.ref = "shadow" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
-testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
-testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
-testcontainers-rabbitmq = { module = "org.testcontainers:rabbitmq", version.ref = "testcontainers" }
 
 [bundles]
 ktor-client = [
@@ -83,11 +75,6 @@ ktor-server = [
 ]
 ktor-koin = ["koin-core", "koin-ktor"]
 logging = ["kotlin-logging", "slf4j-api"]
-testcontainers-rabbitmq = [
-    "testcontainers",
-    "testcontainers-junit-jupiter",
-    "testcontainers-rabbitmq",
-]
 postgres = [
     "exposed-core",
     "exposed-dao",

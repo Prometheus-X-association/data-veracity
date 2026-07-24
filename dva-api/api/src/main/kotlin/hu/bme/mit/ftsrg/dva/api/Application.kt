@@ -1,14 +1,9 @@
 package hu.bme.mit.ftsrg.dva.api
 
-import com.rabbitmq.client.Connection
-import com.rabbitmq.client.ConnectionFactory
 import hu.bme.mit.ftsrg.dva.api.db.*
 import hu.bme.mit.ftsrg.dva.api.err.addHandlers
-import hu.bme.mit.ftsrg.dva.api.rabbit.connectWithRetry
 import hu.bme.mit.ftsrg.dva.api.route.*
 import hu.bme.mit.ftsrg.dva.log.ReqestLogRepo
-import hu.bme.mit.ftsrg.dva.vla.TemplateRepo
-import hu.bme.mit.ftsrg.dva.vla.VLARepo
 import io.ktor.client.*
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.*
@@ -60,15 +55,7 @@ fun Application.installPlugins() {
 }
 
 fun Application.configureKoin() {
-    val rabbitHost = environment.config.property("rabbitmq.host").getString()
-
     val appModule = module {
-        single<Connection> {
-            ConnectionFactory().run {
-                host = rabbitHost
-                connectWithRetry(logger = log)
-            }
-        }
         single<HttpClient> {
             HttpClient(CIO) {
                 install(ClientContentNegotiation) {
@@ -79,9 +66,7 @@ fun Application.configureKoin() {
                 }
             }
         }
-        single<TemplateRepo> { PgTemplateRepo() }
         single<ReqestLogRepo> { PgRequestLogRepo() }
-        single<VLARepo> { PgVLARepo() }
     }
 
     serverInstall(Koin) { modules(appModule) }
@@ -89,9 +74,6 @@ fun Application.configureKoin() {
 
 fun Application.addRoutes() {
     docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
-    templateRoutes()
     aovRoutes()
-    vlaRoutes()
-    evaluationRoutes()
     infoRoutes()
 }
