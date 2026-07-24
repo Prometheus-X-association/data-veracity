@@ -1,5 +1,5 @@
 package hu.bme.mit.ftsrg.dva.api.err
 
-object UnimplementedErr : Exception("This feature has not been implemented yet") {
-    private fun readResolve(): Any = UnimplementedErr
-}
+import io.ktor.http.*
+
+class UnimplementedErr : APIErr(ErrType.UNIMPLEMENTED, HttpStatusCode.NotImplemented, "This feature is not implemented")

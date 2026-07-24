@@ -1,204 +1,406 @@
+@file:OptIn(ExperimentalTime::class, ExperimentalUuidApi::class)
+
 package hu.bme.mit.ftsrg.dva.api.route
 
-import hu.bme.mit.ftsrg.dva.api.testutil.createTestClient
-import hu.bme.mit.ftsrg.dva.api.testutil.setupTestApplication
-import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
-import hu.bme.mit.ftsrg.dva.log.FakeReqestLogRepo
-import hu.bme.mit.ftsrg.dva.log.ReqestLogRepo
+import hu.bme.mit.ftsrg.dva.api.err.ErrType
+import hu.bme.mit.ftsrg.dva.api.testutil.*
+import hu.bme.mit.ftsrg.dva.api.upstream.Endpoint
+import hu.bme.mit.ftsrg.dva.api.upstream.Upstream
+import hu.bme.mit.ftsrg.dva.api.upstream.UpstreamClient
+import hu.bme.mit.ftsrg.dva.api.upstream.configureForUpstreams
+import hu.bme.mit.ftsrg.dva.api.util.hash
+import hu.bme.mit.ftsrg.dva.dto.api.*
+import hu.bme.mit.ftsrg.dva.dto.processing.EvaluateBatchRequest
+import hu.bme.mit.ftsrg.dva.dto.processing.EvaluationResult
+import hu.bme.mit.ftsrg.dva.dto.vcmanager.AoVIssueRequest
+import hu.bme.mit.ftsrg.dva.dto.vcmanager.AoVIssueResponse
+import hu.bme.mit.ftsrg.dva.dto.vcmanager.AoVVerificationRequest
+import hu.bme.mit.ftsrg.dva.dto.vcmanager.AoVVerificationResponse
+import hu.bme.mit.ftsrg.dva.log.RequestLog
+import hu.bme.mit.ftsrg.dva.log.RequestLogRepo
+import hu.bme.mit.ftsrg.dva.log.RequestType
 import io.ktor.client.*
-import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.call.*
+import io.ktor.client.engine.mock.*
 import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.client.statement.*
+import io.ktor.content.*
+import io.ktor.http.HttpStatusCode.Companion.BadGateway
+import io.ktor.http.HttpStatusCode.Companion.NotFound
+import io.ktor.http.HttpStatusCode.Companion.OK
 import io.ktor.server.application.*
 import io.ktor.server.testing.*
-import kotlinx.serialization.json.*
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Disabled
+import io.ktor.util.network.*
+import io.mockk.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
-import java.util.*
+import java.net.ConnectException
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
+
+// --- Fixtures ---------------------------------------------------------------
+
+private val xchgUUID = Uuid.random()
+private val contractUUID = Uuid.random()
+private val vlaUUID = Uuid.random()
+
+private val emptyVLA = buildJsonObject {}
+
+private val passingData = buildJsonObject { putJsonObject("result") { put("success", true) } }
+
+private val attestationRequest = AttestationRequest(
+    exchangeID = xchgUUID,
+    contractID = contractUUID,
+    vlaID = vlaUUID,
+    data = passingData,
+)
+
+private val passingEvalResult = EvaluationResult(
+    engine = "TEST_ENGINE", timestamp = FixedClock.now(), success = true
+)
+
+private val failingEvalResult = EvaluationResult(
+    engine = "TEST_ENGINE",
+    timestamp = FixedClock.now(),
+    success = false,
+    error = "test engine failed due to foo bar baz"
+)
+
+private val testJWS = "jws_placeholder"
+private val successfullyIssuedAoV = AoVIssueResponse(jws = testJWS, vcID = Uuid.random())
+
+private val successfullyVerifiedAoV = AoVVerificationResponse(verified = true)
+
+private val expectedLog = RequestLog(
+    type = RequestType.ATTESTATION_REQUEST,
+    exchangeID = xchgUUID,
+    contractID = contractUUID,
+    vlaID = vlaUUID,
+    data = passingData,
+    evaluationPassing = true,
+    evaluationResults = listOf(passingEvalResult),
+    receivedDate = FixedClock.now(),
+    vcID = successfullyIssuedAoV.vcID,
+)
+
+private val verificationRequest = AttestationVerificationRequest(jws = testJWS)
+
+/** The upstreams the attestation route calls, in the order it calls them. */
+private val callOrder = listOf(Endpoint.vla(vlaUUID), Endpoint.EVALUATE_BATCH, Endpoint.AOV_ISSUE)
+
+// --- Arrangement ------------------------------------------------------------
+
+private val HttpRequestData.endpointPath: String
+    get() = url.encodedPath.removePrefix("/")
+
+private suspend fun HttpClient.postAttestation(request: AttestationRequest = attestationRequest): HttpResponse =
+    post("/attestation") { setBody(request) }
+
+private suspend fun HttpClient.postVerification(request: AttestationVerificationRequest = verificationRequest): HttpResponse =
+    post("/attestation/verify") { setBody(request) }
+
+private fun upstreams(
+    vla: MockResponder = { jsonResponse(emptyVLA) },
+    evaluate: MockResponder = { jsonResponse(listOf(passingEvalResult)) },
+    issue: MockResponder = { jsonResponse(successfullyIssuedAoV) },
+    verify: MockResponder = { jsonResponse(successfullyVerifiedAoV) },
+): MockResponder = { req ->
+    when (req.endpointPath) {
+        Endpoint.vla(vlaUUID).path -> vla(req)
+        Endpoint.EVALUATE_BATCH.path -> evaluate(req)
+        Endpoint.AOV_ISSUE.path -> issue(req)
+        Endpoint.AOV_VERIFY.path -> verify(req)
+        else -> respondError(NotFound)
+    }
+}
+
+private fun failingAt(endpoint: Endpoint, error: () -> Throwable): MockResponder {
+    val croak: MockResponder = { throw error() }
+    return when (endpoint) {
+        Endpoint.EVALUATE_BATCH -> upstreams(evaluate = croak)
+        Endpoint.AOV_ISSUE -> upstreams(issue = croak)
+        else -> upstreams(vla = croak)
+    }
+}
 
 class AoVRoutesTest {
+    private val reqsRepo: RequestLogRepo = mockk()
+    private val sentRequests = mutableListOf<HttpRequestData>()
+
+    @BeforeEach
+    fun setupReqsRepoMocking() {
+        coEvery { reqsRepo.add(any()) } answers { firstArg() }
+    }
 
     @Test
-    @Disabled
-    fun `should accept attestation request for processing`() = testApplication {
-        setupApplication()
+    fun `attestation returns 200 when everything checks out`() = testApplication {
+        // Arrange
+        setupApplication(upstreams())
         val client = createTestClient()
 
-        val request = AttestationRequestDTO(
-            id = "request-test-0000",
-            exchangeID = "xchg-0000",
-            attesterID = "attester-0000",
-            contract = buildJsonObject {
-                put("id", "contract-0001")
-                put("dataProvider", "/catalog/participants/provider-test-id")
-                put("dataConsumer", "/catalog/participants/consumer-test-did")
-                put("serviceOffering", "/catalog/serviceofferings/serviceoffering-test-did")
-
-                putJsonArray("purpose") {
-                    addJsonObject {
-                        put("purpose", "/catalog/serviceofferings")
-                        put("piiCategory", buildJsonArray {})
-                    }
-                }
-
-                putJsonArray("negotiators") {
-                    addJsonObject {
-                        put("did", "/catalog/participants/provider-test-id")
-                    }
-                    addJsonObject {
-                        put("did", "/catalog/participants/consumer-test-id")
-                    }
-                }
-
-                put("status", "pending")
-
-                putJsonArray("policy") {
-                    addJsonObject {
-                        put("uid", "/policy/policy-0-uid")
-                        putJsonArray("permission") {
-                            addJsonObject {
-                                put("target", "/target/3f8d1b0e-8e2e-4b69-9b1f-089fe2f3e9d7")
-                                put("action", "use")
-                            }
-                        }
-                    }
-                }
-
-                putJsonObject("vla") {
-                    put("version", "1.0.0")
-                    put("kind", "DataContract")
-                    put("id", UUID.randomUUID().toString())
-                    put("status", "active")
-                    put("name", "test")
-                    put("dataProduct", "test")
-                    put("apiVersion", "v3.0.1")
-
-                    putJsonArray("schema") {
-                        addJsonObject {
-                            put("schemaElement", "xapi_statement")
-                            put("logicalType", "object")
-                            putJsonArray("properties") {
-                                addJsonObject {
-                                    put("schemaElement", "id")
-                                    put("logicalType", "string")
-                                }
-                                addJsonObject {
-                                    put("schemaElement", "actor")
-                                    put("logicalType", "object")
-                                    put("required", true)
-                                }
-                                addJsonObject {
-                                    put("schemaElement", "verb")
-                                    put("logicalType", "object")
-                                    put("required", true)
-                                }
-                                addJsonObject {
-                                    put("schemaElement", "object")
-                                    put("logicalType", "object")
-                                    put("required", true)
-                                }
-                                addJsonObject {
-                                    put("schemaElement", "result")
-                                    put("logicalType", "object")
-                                }
-                                addJsonObject {
-                                    put("schemaElement", "context")
-                                    put("logicalType", "object")
-                                }
-                                addJsonObject {
-                                    put("schemaElement", "timestamp")
-                                    put("logicalType", "string")
-                                }
-                                addJsonObject {
-                                    put("schemaElement", "stored")
-                                    put("logicalType", "string")
-                                }
-                                addJsonObject {
-                                    put("schemaElement", "version")
-                                    put("logicalType", "string")
-                                }
-                            }
-                            putJsonArray("quality") {
-                                addJsonObject {
-                                    put("dataQuality", "custom")
-                                    put("engine", "greatExpectations")
-                                    put(
-                                        "implementation",
-                                        """
-                        type: ExpectColumnValuesToBeBetween
-                        kwargs:
-                          column: timestamp
-                          min_value: '2025-01-01T00:00:00Z'
-                          max_value: '2026-01-01T00:00:00Z'
-                      """.trimIndent()
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            data = Json.parseToJsonElement(
-                """
-        {
-          "actor": {
-            "name": "Jean Dupont",
-            "mbox": "mailto:jeandupont@example.com"
-          },
-          "verb": {
-            "id": "http://adlnet.gov/expapi/verbs/interacted",
-            "display": {
-              "en-US": "interacted"
-            }
-          },
-          "object": {
-            "id": "https://navy.mil/netc/xapi/activities/simulations/b9e16535-4fc9-4c66-ac87-3ad7ce515f5c/events/0221144",
-            "definition": {
-              "name": {
-                "en-US": "Event in Simulator"
-              },
-              "description": {
-                "en-US": "You're wearing all your PPE"
-              },
-              "type": "http://adlnet.gov/expapi/activities/interaction"
-            }
-          },
-          "context": {
-            "registration": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-            "extensions": {
-              "https://w3id.org/xapi/cmi5/context/extensions/sessionid": "moodle-session-12345"
-            }
-          },
-          "result": {
-              "success":true,
-              "extensions": {
-              "http://id.tincanapi.com/extension/severity": "info"
-            }
-          },
-          "timestamp": "2024-03-16T30:25:00Z"
+        // Act
+        // Assert response payload
+        client.postAttestation().apply {
+            assertEquals(OK, status)
+            val body: AttestationResponse = body()
+            assertEquals(testJWS, body.jws)
+            assertTrue(body.evaluationPassing)
+            assertEquals(listOf(passingEvalResult), body.evaluationResults)
         }
-      """
+
+        // Assert upstream requests
+        assertUpstreamEndpoints(Endpoint.vla(vlaUUID), Endpoint.EVALUATE_BATCH, Endpoint.AOV_ISSUE)
+
+        // Assert upstream request bodies
+        // (VLA request is just a GET to /vla/{id} so there is nothing else to assert)
+        val evalRequestSent: EvaluateBatchRequest = sentBody(Endpoint.EVALUATE_BATCH)
+        assertEquals(EvaluateBatchRequest(vla = emptyVLA, data = passingData), evalRequestSent)
+        val vcRequestSent: AoVIssueRequest = sentBody(Endpoint.AOV_ISSUE)
+        assertEquals(
+            AoVIssueRequest(
+                subject = hash(passingData),
+                contractId = contractUUID,
+                dataExchangeId = xchgUUID,
+                evaluationResults = listOf(passingEvalResult)
+            ), vcRequestSent
+        )
+
+        // Assert db logging
+        assertLogged(expectedLog)
+    }
+
+    @Test
+    fun `attestation returns 200 with null JWS when evaluations do not pass`() = testApplication {
+        // Arrange
+        setupApplication(upstreams(evaluate = { jsonResponse(listOf(failingEvalResult)) }))
+        val client = createTestClient()
+
+        // Act
+        // Assert response payload
+        client.postAttestation().apply {
+            assertEquals(OK, status)
+            val body: AttestationResponse = body()
+            assertNull(body.jws)
+            assertFalse(body.evaluationPassing)
+            assertEquals(listOf(failingEvalResult), body.evaluationResults)
+        }
+
+        // Assert upstream requests
+        assertUpstreamEndpoints(Endpoint.vla(vlaUUID), Endpoint.EVALUATE_BATCH)
+
+        // Assert db logging
+        assertLogged(
+            expectedLog.copy(
+                evaluationPassing = false, evaluationResults = listOf(failingEvalResult), vcID = null
             )
         )
-        client.post("/attestation") {
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }.apply {
-            Assertions.assertEquals(HttpStatusCode.Accepted, status)
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("attestationUpstreamTransportFailures")
+    fun `attestation upstream transport failure handled`(case: String, failing: Endpoint, error: () -> Throwable) =
+        testApplication {
+            // Arrange
+            setupApplication(failingAt(failing, error))
+            val client = createTestClient()
+
+            // Act
+            // Assert response payload
+            client.postAttestation().apply {
+                assertEquals(BadGateway, status)
+                val body: ErrDTO = body()
+                assertEquals(ErrType.BAD_GATEWAY.uri.toString(), body.type)
+                assertEquals(ErrType.BAD_GATEWAY.title, body.title)
+            }
+
+            // Assert upstream requests
+            assertUpstreamEndpoints(*callOrder.take(callOrder.indexOf(failing) + 1).toTypedArray())
+
+            // Assert db logging
+            assertErrorLogged()
+        }
+
+    @Test
+    fun `attestation handles when VLA is not found`() = testApplication {
+        // Arrange
+        setupApplication(upstreams(vla = { respondError(NotFound) }))
+        val client = createTestClient()
+
+        // Act
+        // Assert response payload
+        client.postAttestation().apply {
+            assertEquals(NotFound, status)
+            val body: ErrDTO = body()
+            assertEquals(ErrType.NOT_FOUND.uri.toString(), body.type)
+            assertEquals(ErrType.NOT_FOUND.title, body.title)
+        }
+
+        // Assert upstream paths
+        assertUpstreamEndpoints(Endpoint.vla(vlaUUID))
+
+        // Assert db logging
+        assertErrorLogged()
+    }
+
+    @Test
+    fun `attestation handles when processing results are empty`() = testApplication {
+        // Arrange
+        setupApplication(upstreams(evaluate = { jsonResponse<List<EvaluationResult>>(emptyList()) }))
+        val client = createTestClient()
+
+        // Act
+        // Assert response payload
+        client.postAttestation().apply {
+            assertEquals(BadGateway, status)
+            val body: ErrDTO = body()
+            assertEquals(ErrType.BAD_GATEWAY.uri.toString(), body.type)
+            assertEquals(ErrType.BAD_GATEWAY.title, body.title)
+        }
+
+        // Assert upstream paths
+        assertUpstreamEndpoints(Endpoint.vla(vlaUUID), Endpoint.EVALUATE_BATCH)
+
+        // Assert db logging
+        assertErrorLogged()
+    }
+
+    @Test
+    fun `attestation verification returns 200 when everything checks out`() = testApplication {
+        // Arrange
+        setupApplication(upstreams())
+        val client = createTestClient()
+
+        // Act
+        // Assert response payload
+        client.postVerification().apply {
+            assertEquals(OK, status)
+            val body: AttestationVerificationResponse = body()
+            assertTrue(body.verified)
+            assertNull(body.reason)
+        }
+
+        // Assert upstream requests
+        assertUpstreamEndpoints(Endpoint.AOV_VERIFY)
+
+        // Assert upstream request bodies
+        val vcRequestSent: AoVVerificationRequest = sentBody(Endpoint.AOV_VERIFY)
+        assertEquals(AoVVerificationRequest(jws = testJWS), vcRequestSent)
+
+        // TODO: assert logged
+    }
+
+    @Test
+    fun `attestation verification handles VC manager unreachable`() = testApplication {
+        // Arrange
+        setupApplication(upstreams(verify = { throw ConnectException() }))
+        val client = createTestClient()
+
+        // Act
+        // Assert response payload
+        client.postVerification().apply {
+            assertEquals(BadGateway, status)
+            val body: ErrDTO = body()
+            assertEquals(ErrType.BAD_GATEWAY.uri.toString(), body.type)
+            assertEquals(ErrType.BAD_GATEWAY.title, body.title)
+        }
+
+        // Assert upstream requests
+        assertUpstreamEndpoints(Endpoint.AOV_VERIFY)
+
+        // TODO: assert logged
+    }
+
+    @Test
+    fun `attestation verification handles VC manager unresolvable`() = testApplication {
+        // Arrange
+        setupApplication(upstreams(verify = { throw UnresolvedAddressException() }))
+        val client = createTestClient()
+
+        // Act
+        // Assert response payload
+        client.postVerification().apply {
+            assertEquals(BadGateway, status)
+            val body: ErrDTO = body()
+            assertEquals(ErrType.BAD_GATEWAY.uri.toString(), body.type)
+            assertEquals(ErrType.BAD_GATEWAY.title, body.title)
+        }
+
+        // Assert upstream requests
+        assertUpstreamEndpoints(Endpoint.AOV_VERIFY)
+
+        // TODO: assert logged
+    }
+
+    // TODO: handle potential invalid results from VC manager
+    // TODO: handle potential other errors from processing
+
+    private fun assertLogged(expected: RequestLog) {
+        assertEquals(expected, capturedLog().copy(id = expected.id))
+    }
+
+    private fun assertErrorLogged() {
+        assertNotNull(capturedLog().error)
+    }
+
+    private fun capturedLog(): RequestLog {
+        val logged: CapturingSlot<RequestLog> = slot()
+        coVerify(exactly = 1) { reqsRepo.add(capture(logged)) }
+        confirmVerified(reqsRepo)
+        return logged.captured
+    }
+
+    private fun assertUpstreamEndpoints(vararg expected: Endpoint) =
+        assertEquals(expected.map { it.path }, sentRequests.map { it.endpointPath })
+
+    private fun requestTo(endpoint: Endpoint): HttpRequestData =
+        sentRequests.singleOrNull { it.endpointPath == endpoint.path }
+            ?: fail("expected exactly one request to ${endpoint.path}, but sent ${sentRequests.map { it.endpointPath }}")
+
+    private inline fun <reified T> sentBody(endpoint: Endpoint): T =
+        Json.decodeFromString<T>((requestTo(endpoint).body as TextContent).text)
+
+    private fun ApplicationTestBuilder.setupApplication(handle: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData) {
+        setupTestApplication {
+            val testModule = module {
+                single<RequestLogRepo> { reqsRepo }
+                single<Clock> { FixedClock }
+                single<HttpClient> {
+                    HttpClient(
+                        MockEngine { req -> sentRequests += req; handle(req) }) { configureForUpstreams() }
+                }
+                single {
+                    UpstreamClient(
+                        http = get<HttpClient>(), Upstream.entries.associateWith { "http://${it.name.lowercase()}" })
+                }
+            }
+            this.install(Koin) { modules(testModule) }
+
+            aovRoutes()
         }
     }
 
-    private fun ApplicationTestBuilder.setupApplication() = setupTestApplication {
-        val testModule = module {
-            single<ReqestLogRepo> { FakeReqestLogRepo() }
-            single<HttpClient> { HttpClient { install(ContentNegotiation) { json() } } }
-        }
-        this.install(Koin) { modules(testModule) }
-
-        aovRoutes()
+    companion object {
+        @JvmStatic
+        fun attestationUpstreamTransportFailures() = listOf(
+            Arguments.of("VLA manager unreachable", Endpoint.vla(vlaUUID), { ConnectException() }),
+            Arguments.of("VLA manager unresolvable", Endpoint.vla(vlaUUID), { UnresolvedAddressException() }),
+            Arguments.of("processing module unreachable", Endpoint.EVALUATE_BATCH, { ConnectException() }),
+            Arguments.of("processing module unresolvable", Endpoint.EVALUATE_BATCH, { UnresolvedAddressException() }),
+            Arguments.of("VC manager unreachable", Endpoint.AOV_ISSUE, { ConnectException() }),
+            Arguments.of("VC manager unresolvable", Endpoint.AOV_ISSUE, { UnresolvedAddressException() }),
+        )
     }
 }

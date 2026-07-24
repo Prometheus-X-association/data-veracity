@@ -15,3 +15,9 @@ postgres:
 
 processing:
   url: "$DVA_PROCESSING_URL:http://localhost:5000"
+
+vlaManager:
+  url: "$DVA_VLA_MANAGER_URL:http://localhost:8000"
+
+vcManager:
+  url: "$DVA_VC_MANAGER_URL:http://localhost:8000"
