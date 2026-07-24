@@ -1,7 +1,9 @@
 import json
+from os import environ
 from typing import Any
 
 import psycopg as pg
+import requests
 
 from .config import PG_PASS, PG_URL, PG_USER
 from .eval import eval_requirement
@@ -11,8 +13,10 @@ from .model import (
     AoVGenerationRequestPayload,
     AoVRequest,
     EvaluateBatchRequest,
+    EvaluationFromTemplateRequest,
     EvaluationRequest,
     EvaluationResult,
+    QualityEngine,
     Requirement,
 )
 from .util import now
@@ -70,6 +74,55 @@ def handle_eval_batch_request(request: EvaluateBatchRequest) -> list[EvaluationR
         logger.warning("Nothing was evaluated from this VLA")
 
     return results
+
+
+class TemplateNotFoundError(Exception):
+    def __init__(self, template_id: str) -> None:
+        self.template_id = template_id
+        super().__init__(f"Template {template_id} not found at the VLA Manager API")
+
+
+def handle_eval_from_template_request(
+    request: EvaluationFromTemplateRequest,
+) -> EvaluationResult:
+    vla_manager_url = environ.get("DVA_VLA_MANAGER_URL", "http://localhost:8000")
+    try:
+        template_id = request.template_id
+        resp = requests.get(f"{vla_manager_url}/template/{template_id}", timeout=10)
+        if resp.status_code == 404:
+            raise TemplateNotFoundError(template_id)
+        resp.raise_for_status()
+        template = resp.json()
+    except TemplateNotFoundError:
+        raise
+    except Exception as e:
+        return EvaluationResult(
+            engine=None, timestamp=now(), success=False, error=str(e)
+        )
+
+    em = template["evaluationMethod"]
+    try:
+        import chevron
+
+        rendered = chevron.render(
+            em["implementationTemplate"], request.template_model
+        )
+    except Exception as e:
+        return EvaluationResult(
+            engine=None, timestamp=now(), success=False,
+            error=f"Failed to render template: {e}",
+        )
+
+    try:
+        engine = QualityEngine(em["engine"].upper())
+    except ValueError:
+        return EvaluationResult(
+            engine=None, timestamp=now(), success=False,
+            error=f"Unknown engine '{em['engine']}' in template",
+        )
+
+    requirement = Requirement(implementation=rendered, engine=engine)
+    return eval_requirement(request.data, requirement)
 
 
 def handle_aov_request(request: AoVRequest) -> AoVGenerationRequest:
