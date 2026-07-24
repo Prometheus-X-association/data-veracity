@@ -1,6 +1,8 @@
+import os
+
 from fastapi import FastAPI, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 
 from .log import get_logger
 from .model import (
@@ -17,7 +19,61 @@ from .processing import (
 )
 
 logger = get_logger()
-app = FastAPI()
+
+_SWAGGER_UI_HTML = """\
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>DVA Processing Swagger UI</title>
+    <link href="https://unpkg.com/swagger-ui-dist@5.17.12/swagger-ui.css" rel="stylesheet">
+    <link href="https://unpkg.com/swagger-ui-dist@5.17.12/favicon-32x32.png" rel="icon" type="image/x-icon">
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5.17.12/swagger-ui-bundle.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.17.12/swagger-ui-standalone-preset.js" crossorigin="anonymous"></script>
+    <script>
+      window.onload = function() {
+        SwaggerUIBundle({
+          url: '/swagger/openapi.yaml',
+          dom_id: '#swagger-ui',
+          deepLinking: false,
+          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+          layout: 'StandaloneLayout'
+        });
+      };
+    </script>
+  </body>
+</html>
+"""
+
+app = FastAPI(
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
+
+
+@app.get("/swagger", response_class=HTMLResponse, include_in_schema=False)
+def swagger_ui() -> HTMLResponse:
+    return HTMLResponse(content=_SWAGGER_UI_HTML)
+
+
+@app.get(
+    "/swagger/openapi.yaml",
+    response_class=PlainTextResponse,
+    include_in_schema=False,
+)
+def swagger_spec() -> PlainTextResponse:
+    spec_path = os.environ.get("DVA_PROCESSING_OPENAPI_FILE", "/app/openapi.yaml")
+    try:
+        with open(spec_path, "r", encoding="utf-8") as fh:
+            content = fh.read()
+    except FileNotFoundError:
+        return PlainTextResponse(
+            content="# spec file not found", status_code=status.HTTP_404_NOT_FOUND
+        )
+    return PlainTextResponse(content=content, media_type="application/yaml")
 
 
 @app.post("/evaluate")
