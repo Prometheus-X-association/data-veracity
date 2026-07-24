@@ -55,20 +55,35 @@ def _eval_one(data: Any, requirement_dict: dict[str, Any]) -> EvaluationResult:
 def handle_eval_batch_request(request: EvaluateBatchRequest) -> list[EvaluationResult]:
     vla: dict[str, Any] = request.vla or {}
 
+    schema_items: list[Any] = []
+    raw_schema = vla.get("schema")
+    if isinstance(raw_schema, list):
+        schema_items = raw_schema
+    elif isinstance(raw_schema, dict):
+        schema_items = [raw_schema]
+
     results: list[EvaluationResult] = []
     any_evaluations = False
 
-    schema = vla.get("schema")
-    if isinstance(schema, list):
-        for schema_item in schema:
-            if not isinstance(schema_item, dict):
-                continue
-            quality = schema_item.get("quality") or []
-            if not isinstance(quality, list):
-                continue
-            for requirement_dict in quality:
+    for schema_item in schema_items:
+        if not isinstance(schema_item, dict):
+            continue
+        quality = schema_item.get("quality") or []
+        if not isinstance(quality, list):
+            continue
+        for requirement_dict in quality:
+            any_evaluations = True
+            results.append(_eval_one(request.data, requirement_dict))
+
+    if not any_evaluations:
+        top_quality = vla.get("quality")
+        if isinstance(top_quality, list):
+            for requirement_dict in top_quality:
                 any_evaluations = True
                 results.append(_eval_one(request.data, requirement_dict))
+        elif isinstance(top_quality, dict):
+            any_evaluations = True
+            results.append(_eval_one(request.data, top_quality))
 
     if not any_evaluations:
         logger.warning("Nothing was evaluated from this VLA")
