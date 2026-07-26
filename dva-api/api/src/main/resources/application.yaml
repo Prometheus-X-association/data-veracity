@@ -18,9 +18,3 @@ rabbitmq:
 
 processing:
   url: "$DVA_PROCESSING_URL:http://localhost:5000"
-
-acaPy:
-  agent:
-    url: "$DVA_ACA_PY_AGENT_URL:http://localhost:8030"
-  controller:
-    url: "$DVA_ACA_PY_CONTROLLER_URL:http://localhost:8050"
