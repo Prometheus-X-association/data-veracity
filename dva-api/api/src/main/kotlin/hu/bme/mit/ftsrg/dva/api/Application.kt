@@ -7,7 +7,6 @@ import hu.bme.mit.ftsrg.dva.api.err.addHandlers
 import hu.bme.mit.ftsrg.dva.api.rabbit.connectWithRetry
 import hu.bme.mit.ftsrg.dva.api.route.*
 import hu.bme.mit.ftsrg.dva.log.ReqestLogRepo
-import hu.bme.mit.ftsrg.dva.log.VerifRequestLogRepo
 import hu.bme.mit.ftsrg.dva.vla.TemplateRepo
 import hu.bme.mit.ftsrg.dva.vla.VLARepo
 import io.ktor.client.*
@@ -82,7 +81,6 @@ fun Application.configureKoin() {
         }
         single<TemplateRepo> { PgTemplateRepo() }
         single<ReqestLogRepo> { PgRequestLogRepo() }
-        single<VerifRequestLogRepo> { PgVerifRequestLogRepo() }
         single<VLARepo> { PgVLARepo() }
     }
 

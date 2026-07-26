@@ -4,20 +4,13 @@ import com.rabbitmq.client.Connection
 import com.rabbitmq.client.MessageProperties
 import hu.bme.mit.ftsrg.dva.api.resource.Attestations
 import hu.bme.mit.ftsrg.dva.dto.IDDTO
-import hu.bme.mit.ftsrg.dva.dto.aov.ACAPyPresentationRequestDTO
-import hu.bme.mit.ftsrg.dva.dto.aov.ACAPyPresentationResponseDTO
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
-import hu.bme.mit.ftsrg.dva.dto.aov.AttestationVerificationRequestDTO
 import hu.bme.mit.ftsrg.dva.log.*
 import io.github.viartemev.rabbitmq.channel.confirmChannel
 import io.github.viartemev.rabbitmq.channel.publish
 import io.github.viartemev.rabbitmq.publisher.OutboundMessage
 import io.github.viartemev.rabbitmq.queue.QueueSpecification
 import io.github.viartemev.rabbitmq.queue.declareQueue
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.http.HttpStatusCode.Companion.Accepted
 import io.ktor.server.application.*
@@ -39,8 +32,6 @@ import kotlin.uuid.Uuid
 fun Application.aovRoutes() {
     val rmqConnection by inject<Connection>()
     val reqsRepo by inject<ReqestLogRepo>()
-    val verifsRepo by inject<VerifRequestLogRepo>()
-    val httpClient by inject<HttpClient>()
 
     routing {
         post<Attestations> {
@@ -63,7 +54,7 @@ fun Application.aovRoutes() {
             )
 
             rmqConnection.confirmChannel {
-                declareQueue(QueueSpecification("ATTESTATION_REQUESTS"))
+                declareQueue(QueueSpecification("ATTESTATION_REQUESTS", durable = true))
                 publish {
                     publishWithConfirm(createMessage(Json.encodeToString(requestWithID)))
                 }
@@ -73,48 +64,8 @@ fun Application.aovRoutes() {
         }
 
         post<Attestations.Verify> {
-            val request: AttestationVerificationRequestDTO = call.receive()
-
-            val id = UUID.randomUUID().toString()
-            val requestWithID: AttestationVerificationRequestDTO = request.copy(id = id)
-
-            val verifLogEntity = verifsRepo.add(
-                VerifRequestLogNew(
-                    exchangeID = requestWithID.exchangeID,
-                    contractID = requestWithID.contractID,
-                    attesterAgentURL = requestWithID.attesterAgentURL,
-                    attesterAgentLabel = requestWithID.attesterAgentLabel,
-                    receivedDate = Clock.System.now(),
-                )
-            )
-
-            val resp: HttpResponse =
-                httpClient.post(
-                    "${
-                        environment.config.property("acaPy.controller.url").getString()
-                    }/request_presentation_from_peer"
-                ) {
-                    contentType(ContentType.Application.Json)
-                    setBody(
-                        ACAPyPresentationRequestDTO(
-                            dataExchangeId = requestWithID.exchangeID,
-                            attesterAgentURL = requestWithID.attesterAgentURL,
-                            attesterLabel = requestWithID.attesterAgentLabel
-                        )
-                    )
-                }
-            val acaPyResp: ACAPyPresentationResponseDTO = resp.body()
-
-            if (verifLogEntity != null) {
-                verifsRepo.update(
-                    VerifRequestLogPatch(
-                        id = verifLogEntity.id,
-                        presentationRequestData = acaPyResp.aov,
-                    )
-                )
-            }
-
-            call.respond(status = resp.status, message = acaPyResp)
+            // TODO: Needs reimplementation since removal of ACA-Py
+            call.response.status(HttpStatusCode.NotAcceptable)
         }
     }
 }

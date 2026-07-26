@@ -9,9 +9,5 @@ class Info {
     @Resource("requests")
     class Requests(val parent: Info = Info())
 
-    @Resource("presentations")
-    class Presentations(val parent: Info = Info())
-
-    @Resource("credentials")
-    class Credentials(val parent: Info = Info())
+    // TODO: Info endpoints for credential-related queries
 }

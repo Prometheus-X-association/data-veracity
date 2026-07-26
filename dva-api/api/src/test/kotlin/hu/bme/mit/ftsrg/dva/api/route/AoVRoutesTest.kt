@@ -6,9 +6,7 @@ import hu.bme.mit.ftsrg.dva.api.testutil.createTestClient
 import hu.bme.mit.ftsrg.dva.api.testutil.setupTestApplication
 import hu.bme.mit.ftsrg.dva.dto.aov.AttestationRequestDTO
 import hu.bme.mit.ftsrg.dva.log.FakeReqestLogRepo
-import hu.bme.mit.ftsrg.dva.log.FakeVerifRequestLogRepo
 import hu.bme.mit.ftsrg.dva.log.ReqestLogRepo
-import hu.bme.mit.ftsrg.dva.log.VerifRequestLogRepo
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -204,7 +202,6 @@ class AoVRoutesTest {
     private fun ApplicationTestBuilder.setupApplication() = setupTestApplication {
         val testModule = module {
             single<ReqestLogRepo> { FakeReqestLogRepo() }
-            single<VerifRequestLogRepo> { FakeVerifRequestLogRepo() }
             single<HttpClient> { HttpClient { install(ContentNegotiation) { json() } } }
             single<Connection> {
                 ConnectionFactory().run {
