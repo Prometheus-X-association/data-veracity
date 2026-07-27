@@ -94,20 +94,17 @@ async def aov_verify(
     """Verify an AoV JWS. The issuer did:key is extracted from the JWS
     payload and looked up in the whitelist. Fail-closed."""
 
-    # 1. Decode the JWS payload to extract the issuer did:key.
-    try:
-        payload = decode_payload(req.jws)
-    except Exception as e:
+    # 1. Structural check: must be a 3-part compact JWS.
+    parts = req.jws.split(".")
+    if len(parts) != 3:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            detail=f"malformed JWS: {e}",
+            detail="Compact JWS must have 3 dot-separated parts",
         )
 
-    issuer_did_key = payload.get("issuer")
-    if not issuer_did_key:
-        return AovVerifyResponse(verified=False, reason="JWS payload missing issuer")
-
-    # 2. Whitelist must be non-empty.
+    # 2. Whitelist must be non-empty. Checked early so an operator who
+    # has not configured any trusted issuers gets a clear reason rather
+    # than a payload-decode error.
     entries = await whitelist.all()
     if not entries:
         return AovVerifyResponse(
@@ -115,12 +112,24 @@ async def aov_verify(
             reason="whitelist is not configured; verification is disabled",
         )
 
-    # 3. Issuer must be whitelisted — fail-closed when not found.
+    # 3. Decode the JWS payload to extract the issuer did:key. A payload
+    # that is structurally a JWS but cannot be decoded (e.g. tampered)
+    # is reported as a verification failure, not a 400.
+    try:
+        payload = decode_payload(req.jws)
+    except Exception as e:
+        return AovVerifyResponse(verified=False, reason=f"malformed JWS payload: {e}")
+
+    issuer_did_key = payload.get("issuer")
+    if not isinstance(issuer_did_key, str) or not issuer_did_key:
+        return AovVerifyResponse(verified=False, reason="JWS payload missing issuer")
+
+    # 4. Issuer must be whitelisted — fail-closed when not found.
     entry = await whitelist.find(issuer_did_key)
     if entry is None:
         return AovVerifyResponse(verified=False, reason="issuer not whitelisted")
 
-    # 4. Derive the public key from the whitelist record's did:key.
+    # 5. Derive the public key from the whitelist record's did:key.
     try:
         public_key = did_key_to_public_key(entry.did_key)
     except Exception as e:
@@ -129,16 +138,14 @@ async def aov_verify(
             reason=f"whitelist entry contains invalid did:key: {e}",
         )
 
-    # 5. Verify the Ed25519 signature.
+    # 6. Verify the Ed25519 signature. A structurally-valid JWS whose
+    # signature does not verify returns verified=false.
     from nacl.signing import VerifyKey
 
     try:
         ok = verify_jws(req.jws, VerifyKey(bytes(public_key)))
     except Exception as e:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            detail=f"malformed JWS: {e}",
-        )
+        return AovVerifyResponse(verified=False, reason=f"signature check failed: {e}")
 
     if not ok:
         return AovVerifyResponse(verified=False, reason="signature mismatch")
