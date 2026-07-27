@@ -29,6 +29,7 @@ dependencies {
 
     testImplementation(libs.bundles.testcontainers.rabbitmq)
     testImplementation(libs.ktor.client.content.negotiation)
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.ktor.server.test.host)
 }
 
