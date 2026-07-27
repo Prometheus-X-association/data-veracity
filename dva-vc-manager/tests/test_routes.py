@@ -103,9 +103,9 @@ async def test_aov_verify_rejects_tampered_jws(client: TestClient, whitelist: Fa
     await whitelist.add(issuer_did_key)
 
     parts = jws.split(".")
-    first_char = parts[1][0]
+    first_char = parts[2][0]
     flipped = "B" if first_char == "A" else "A"
-    parts[1] = flipped + parts[1][1:]
+    parts[2] = flipped + parts[2][1:]
     tampered = f"{parts[0]}.{parts[1]}.{parts[2]}"
 
     r2 = client.post("/aov/verify", json={"jws": tampered})
@@ -140,7 +140,7 @@ def test_aov_verify_rejects_malformed_jws_with_400(
     client: TestClient, whitelist: FakeWhitelist
 ) -> None:
     import asyncio
-    asyncio.get_event_loop().run_until_complete(whitelist.add(_KNOWN_DID_KEY))
+    asyncio.run(whitelist.add(_KNOWN_DID_KEY))
     r = client.post("/aov/verify", json={"jws": "not.a.jws.at.all"})
     assert r.status_code == 400
 
