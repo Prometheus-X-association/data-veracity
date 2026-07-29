@@ -52,6 +52,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: vla-manager/pnpm-lock.yaml
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
       - name: Build project
         run: pnpm run build
