@@ -9,6 +9,10 @@ on:
     paths: [dva-processing/**]
 
 
+permissions:
+  contents: read
+
+
 defaults:
   run:
     working-directory: ./dva-processing

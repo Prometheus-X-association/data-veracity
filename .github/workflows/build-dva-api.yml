@@ -9,6 +9,10 @@ on:
     paths: [dva-api/**]
 
 
+permissions:
+  contents: read
+
+
 defaults:
   run:
     working-directory: ./dva-api
