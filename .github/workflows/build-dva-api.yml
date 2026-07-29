@@ -4,9 +4,23 @@ name: Build and Test DVA API
 
 on:
   push:
-    paths: [dva-api/**]
+    paths:
+      - dva-api/api/**
+      - dva-api/model/**
+      - dva-api/buildSrc/**
+      - dva-api/**/*.gradle.kts
+      - dva-api/gradle/**
+      - dva-api/gradlew*
+      - .github/workflows/build-dva-api.yml
   pull_request:
-    paths: [dva-api/**]
+    paths:
+      - dva-api/api/**
+      - dva-api/model/**
+      - dva-api/buildSrc/**
+      - dva-api/**/*.gradle.kts
+      - dva-api/gradle/**
+      - dva-api/gradlew*
+      - .github/workflows/build-dva-api.yml
 
 
 permissions:

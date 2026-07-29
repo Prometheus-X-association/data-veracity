@@ -4,9 +4,23 @@ name: Build DVA Dashboard
 
 on:
   push:
-    paths: [dva-dashboard/**]
+    paths:
+      - dva-dashboard/**/*.js
+      - dva-dashboard/**/*.html
+      - dva-dashboard/src/**
+      - dva-dashboard/package.json
+      - dva-dashboard/pnpm-lock.yaml
+      - dva-dashboard/public/**
+      - .github/workflows/build-dva-dashboard.yml
   pull_request:
-    paths: [dva-dashboard/**]
+    paths:
+      - dva-dashboard/**/*.js
+      - dva-dashboard/**/*.html
+      - dva-dashboard/src/**
+      - dva-dashboard/package.json
+      - dva-dashboard/pnpm-lock.yaml
+      - dva-dashboard/public/**
+      - .github/workflows/build-dva-dashboard.yml
 
 
 permissions:

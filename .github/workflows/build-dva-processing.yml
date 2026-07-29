@@ -4,9 +4,19 @@ name: Build and Test DVA Processing
 
 on:
   push:
-    paths: [dva-processing/**]
+    paths:
+      - dva-processing/src/**
+      - dva-processing/tests/**
+      - dva-processing/pyproject.toml
+      - dva-processing/uv.lock
+      - .github/workflows/build-dva-processing.yml
   pull_request:
-    paths: [dva-processing/**]
+    paths:
+      - dva-processing/src/**
+      - dva-processing/tests/**
+      - dva-processing/pyproject.toml
+      - dva-processing/uv.lock
+      - .github/workflows/build-dva-processing.yml
 
 
 permissions:

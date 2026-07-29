@@ -4,9 +4,23 @@ name: Build VLA Manager
 
 on:
   push:
-    paths: [vla-manager/**]
+    paths:
+      - vla-manager/**/*.js
+      - vla-manager/**/*.html
+      - vla-manager/src/**
+      - vla-manager/package.json
+      - vla-manager/pnpm-lock.yaml
+      - vla-manager/public/**
+      - .github/workflows/build-vla-manager.yml
   pull_request:
-    paths: [vla-manager/**]
+    paths:
+      - vla-manager/**/*.js
+      - vla-manager/**/*.html
+      - vla-manager/src/**
+      - vla-manager/package.json
+      - vla-manager/pnpm-lock.yaml
+      - vla-manager/public/**
+      - .github/workflows/build-vla-manager.yml
 
 
 permissions:
