@@ -7,7 +7,7 @@ from pika import BasicProperties, BlockingConnection, ConnectionParameters
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.spec import Basic
 
-from .config import ACA_PY_CONTROLLER_URL, QUEUE_NAME, RABBITMQ_HOST
+from .config import QUEUE_NAME, RABBITMQ_HOST
 from .log import get_logger
 from .model import AoVGenerationRequest, AoVRequest
 from .processing import handle_aov_request
@@ -35,16 +35,11 @@ def run() -> None:
 
         aov_gen_request: AoVGenerationRequest = handle_aov_request(aov_request)
         if aov_gen_request is None or not aov_gen_request.payload.success:
-            logger.warning("Not all checks were successful; not sending to ACA-Py")
+            logger.warning("Not all checks were successful; doing nothing")
             return
 
-        logger.info(
-            "Sending AoV VC generation request to ACA-Py", request=aov_gen_request
-        )
-        requests.post(
-            f"{ACA_PY_CONTROLLER_URL}/generate_aov",
-            json=aov_gen_request.model_dump(mode="json"),
-        )
+        logger.info("Sending AoV VC generation request", request=aov_gen_request)
+        # TODO:  Send a VC generation request here to ACA-Py's successor
 
     chan.basic_consume(queue=QUEUE_NAME, auto_ack=True, on_message_callback=callback)
 
