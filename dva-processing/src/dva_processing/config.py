@@ -16,9 +16,6 @@ PG_PASS = env.get("DVA_POSTGRES_PASSWORD", default="postgres")
 # Log level (must be supported by structlog)
 LOG_LEVEL = env.get("DVA_LOG_LEVEL", default="warn")
 
-# ACA-Py Controller URL
-ACA_PY_CONTROLLER_URL = env.get("DVA_ACA_PY_CONTROLLER_URL", default="localhost:8050")
-
 
 class Configuration(BaseModel):
     log_level: str = LOG_LEVEL
