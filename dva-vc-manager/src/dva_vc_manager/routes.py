@@ -29,7 +29,9 @@ import urllib.parse
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from nacl.signing import VerifyKey
 
+from .config import cfg
 from .dependencies import get_whitelist
 from .did_key import did_key_to_public_key
 from .keys import SigningKeyStore
@@ -56,8 +58,6 @@ def _get_key_store() -> SigningKeyStore:
     ``app.dependency_overrides`` so the test suite can swap in a
     key store at a temp-file path.
     """
-    from .config import cfg
-
     return SigningKeyStore(cfg.signing_key_path)
 
 
@@ -143,8 +143,6 @@ async def aov_verify(
 
     # 6. Verify the Ed25519 signature.  A structurally-valid JWS whose
     # signature does not verify returns verified=false.
-    from nacl.signing import VerifyKey
-
     try:
         ok = verify_jws(req.jws, VerifyKey(bytes(public_key)))
     except Exception as e:
@@ -202,8 +200,6 @@ async def whitelist_remove(
 
 @admin_router.get("/admin/keys", response_model=OwnKeyDTO)
 async def keys_view() -> OwnKeyDTO:
-    from .config import cfg
-
     key_store = SigningKeyStore(cfg.signing_key_path)
     key_store.load_or_generate()
     return OwnKeyDTO(

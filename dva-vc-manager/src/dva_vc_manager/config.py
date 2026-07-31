@@ -7,6 +7,12 @@ import os
 from dataclasses import dataclass
 from sys import stderr
 
+import structlog
+from structlog import make_filtering_bound_logger
+from structlog.dev import ConsoleRenderer
+from structlog.processors import JSONRenderer, StackInfoRenderer, TimeStamper
+from structlog.stdlib import add_log_level
+
 
 def _log_level(value: str | None) -> int:
     return getattr(logging, (value or "INFO").upper(), logging.INFO)
@@ -37,12 +43,6 @@ cfg = Config()
 
 
 def setup_logging() -> None:
-    import structlog
-    from structlog import make_filtering_bound_logger
-    from structlog.dev import ConsoleRenderer
-    from structlog.processors import JSONRenderer, StackInfoRenderer, TimeStamper
-    from structlog.stdlib import add_log_level
-
     shared = [add_log_level, StackInfoRenderer(), TimeStamper(fmt="iso")]
     processors = shared + ([ConsoleRenderer()] if stderr.isatty() else [JSONRenderer()])
     structlog.configure(

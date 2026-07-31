@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any, Optional, Protocol
 from uuid import UUID, uuid4
 
+from asyncpg.exceptions import UniqueViolationError
 from pydantic import BaseModel
 
 __all__ = ["WhitelistEntry", "WhitelistRepo", "FakeWhitelist", "PgWhitelist"]
@@ -85,8 +86,6 @@ class PgWhitelist:
         return [WhitelistEntry.from_row(r) for r in rows]
 
     async def add(self, did_key: str, label: Optional[str] = None) -> WhitelistEntry:
-        import asyncpg.exceptions
-
         entry_id = uuid4()
         async with self._pool.acquire() as conn:
             try:
@@ -96,7 +95,7 @@ class PgWhitelist:
                     did_key,
                     label,
                 )
-            except asyncpg.exceptions.UniqueViolationError:
+            except UniqueViolationError:
                 existing = await conn.fetchrow(
                     "SELECT id, did_key, label FROM did_key_whitelist WHERE did_key = $1",
                     did_key,

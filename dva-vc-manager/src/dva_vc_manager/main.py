@@ -5,12 +5,15 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable
 
+import asyncpg
+import uvicorn
 import yaml
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from .config import cfg, setup_logging
 from .routes import admin_router, router
+from .whitelist import PgWhitelist
 
 logger = logging.getLogger(__name__)
 
@@ -48,10 +51,6 @@ def _spec_loader(app: FastAPI) -> Callable[[], dict[str, Any]]:
 
 async def _build_production_whitelist():
     """Construct the async-backed whitelist repository."""
-    import asyncpg
-
-    from .whitelist import PgWhitelist
-
     if not cfg.postgres_dsn:
         raise RuntimeError(
             "DVA_VC_MANAGER_DB_URL is not set — cannot boot PgWhitelist. "
@@ -99,8 +98,6 @@ def _level_to_str(level: int) -> str:
 
 
 def cli() -> None:
-    import uvicorn
-
     uvicorn.run(
         "dva_vc_manager.main:app",
         host=cfg.host,

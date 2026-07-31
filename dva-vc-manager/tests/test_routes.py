@@ -11,9 +11,12 @@ Covers:
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 from fastapi.testclient import TestClient
 
+from dva_vc_manager import config as cfg_module
 from dva_vc_manager.dependencies import get_whitelist
 from dva_vc_manager.main import create_app
 from dva_vc_manager.signing import decode_payload
@@ -37,8 +40,6 @@ def client(
     whitelist: FakeWhitelist, monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> TestClient:
     monkeypatch.setenv("DVA_VC_MANAGER_SIGNING_KEY_PATH", str(tmp_path / "key.pem"))
-    from dva_vc_manager import config as cfg_module
-
     cfg_module.cfg.signing_key_path = str(tmp_path / "key.pem")
     cfg_module.cfg.postgres_dsn = ""
 
@@ -140,8 +141,6 @@ async def test_aov_verify_rejects_when_issuer_not_whitelisted(
 def test_aov_verify_rejects_malformed_jws_with_400(
     client: TestClient, whitelist: FakeWhitelist
 ) -> None:
-    import asyncio
-
     asyncio.run(whitelist.add(_KNOWN_DID_KEY))
     r = client.post("/aov/verify", json={"jws": "not.a.jws.at.all"})
     assert r.status_code == 400
