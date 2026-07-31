@@ -24,8 +24,6 @@ libsodium — no hand-rolled cryptography anywhere).
 | ``DELETE /admin/whitelist/{did_key}`` | Operator | Remove a trusted attester |
 | ``GET /admin/keys`` | Operator | View this service's own issuer ``did:key`` (read-only) |
 
-All ``/admin/*`` endpoints require ``Authorization: Bearer ${DVA_VC_MANAGER_API_KEY}`` and
-fail-closed with ``401`` when the key is empty.
 
 ## Cryptography libraries
 

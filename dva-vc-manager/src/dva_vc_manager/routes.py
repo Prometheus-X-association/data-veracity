@@ -14,7 +14,7 @@ attestation flow:
   payload and looked up in the whitelist. Fail-closed: rejects if the
   whitelist is empty or the issuer is not registered.
 
-Plus four admin endpoints (all bearer-auth-guarded):
+Plus four admin endpoints:
 
 * ``GET /admin/whitelist`` — list trusted attesters.
 * ``POST /admin/whitelist`` — register a trusted attester's did:key.
@@ -30,7 +30,6 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from .auth import require_api_key
 from .dependencies import get_whitelist
 from .did_key import did_key_to_public_key
 from .keys import SigningKeyStore
@@ -165,7 +164,6 @@ admin_router = APIRouter()
 
 @admin_router.get("/admin/whitelist", response_model=list[WhitelistEntryDTO])
 async def whitelist_list(
-    _: None = Depends(require_api_key),
     whitelist: WhitelistRepo = Depends(get_whitelist),
 ) -> list[WhitelistEntryDTO]:
     entries = await whitelist.all()
@@ -181,7 +179,6 @@ async def whitelist_list(
 )
 async def whitelist_add(
     req: WhitelistAddRequest,
-    _: None = Depends(require_api_key),
     whitelist: WhitelistRepo = Depends(get_whitelist),
 ) -> WhitelistEntryDTO:
     entry = await whitelist.add(req.did_key, req.label)
@@ -193,7 +190,6 @@ async def whitelist_add(
 )
 async def whitelist_remove(
     did_key: str,
-    _: None = Depends(require_api_key),
     whitelist: WhitelistRepo = Depends(get_whitelist),
 ) -> None:
     # URL-decode in case the path contains special chars (did:key contains ':').
@@ -205,7 +201,7 @@ async def whitelist_remove(
 
 
 @admin_router.get("/admin/keys", response_model=OwnKeyDTO)
-async def keys_view(_: None = Depends(require_api_key)) -> OwnKeyDTO:
+async def keys_view() -> OwnKeyDTO:
     from .config import cfg
 
     key_store = SigningKeyStore(cfg.signing_key_path)
@@ -213,4 +209,3 @@ async def keys_view(_: None = Depends(require_api_key)) -> OwnKeyDTO:
     return OwnKeyDTO(
         issuer_did_key=key_store.issuer_did_key(), key_path=cfg.signing_key_path
     )
-
