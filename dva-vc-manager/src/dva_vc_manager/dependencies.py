@@ -6,10 +6,28 @@ import asyncpg
 from fastapi import Request
 
 from .config import cfg
+from .keys import SigningKeyStore
 from .log import get_logger
 from .whitelist import FakeWhitelist, PgWhitelist, WhitelistRepo
 
 logger = get_logger()
+
+
+def build_key_store() -> SigningKeyStore:
+    """
+    Load the signing key, generating and persisting one if absent.
+
+    Called once, at startup, so a missing directory or bad key file fails
+    the boot rather than the first request to reach ``/aov/issue``.
+    """
+    store = SigningKeyStore(cfg.signing_key_path)
+    store.load_or_generate()
+    return store
+
+
+def get_key_store(request: Request) -> SigningKeyStore:
+    """Return the signing key store loaded during startup."""
+    return request.app.state.key_store
 
 
 async def build_whitelist() -> WhitelistRepo:

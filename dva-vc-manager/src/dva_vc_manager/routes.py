@@ -31,8 +31,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, status
 from nacl.signing import VerifyKey
 
-from .config import cfg
-from .dependencies import get_whitelist
+from .dependencies import get_key_store, get_whitelist
 from .did_key import did_key_to_public_key
 from .keys import SigningKeyStore
 from .models import (
@@ -50,21 +49,12 @@ from .whitelist import WhitelistRepo
 router = APIRouter()
 
 
-def _get_key_store() -> SigningKeyStore:
-    """
-    Lazily construct the app-wide signing key store.
-
-    Resolved via FastAPI's dependency system in tests via
-    ``app.dependency_overrides`` so the test suite can swap in a
-    key store at a temp-file path.
-    """
-    return SigningKeyStore(cfg.signing_key_path)
-
-
 @router.post("/aov/issue", response_model=AovIssueResponse)
-async def aov_issue(req: AovIssueRequest) -> AovIssueResponse:
+async def aov_issue(
+    req: AovIssueRequest,
+    key_store: SigningKeyStore = Depends(get_key_store),
+) -> AovIssueResponse:
     """Issue an AoV JWS credential from the veracity-check results."""
-    key_store = _get_key_store()
     keypair = key_store.load_or_generate()
     issuer_did_key = key_store.issuer_did_key()
 
@@ -199,9 +189,9 @@ async def whitelist_remove(
 
 
 @admin_router.get("/admin/keys", response_model=OwnKeyDTO)
-async def keys_view() -> OwnKeyDTO:
-    key_store = SigningKeyStore(cfg.signing_key_path)
-    key_store.load_or_generate()
+async def keys_view(
+    key_store: SigningKeyStore = Depends(get_key_store),
+) -> OwnKeyDTO:
     return OwnKeyDTO(
-        issuer_did_key=key_store.issuer_did_key(), key_path=cfg.signing_key_path
+        issuer_did_key=key_store.issuer_did_key(), key_path=str(key_store.path)
     )

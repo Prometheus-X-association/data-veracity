@@ -12,6 +12,7 @@ Covers:
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -36,16 +37,16 @@ def whitelist() -> FakeWhitelist:
 
 
 @pytest.fixture
-def client(
-    whitelist: FakeWhitelist, monkeypatch: pytest.MonkeyPatch, tmp_path
-) -> TestClient:
-    monkeypatch.setenv("DVA_VC_MANAGER_SIGNING_KEY_PATH", str(tmp_path / "key.pem"))
+def client(whitelist: FakeWhitelist, tmp_path) -> Iterator[TestClient]:
     cfg_module.cfg.signing_key_path = str(tmp_path / "key.pem")
     cfg_module.cfg.postgres_dsn = ""
 
     app = create_app()
     app.dependency_overrides[get_whitelist] = lambda: whitelist
-    return TestClient(app)
+    # As a context manager TestClient runs the lifespan, which is what
+    # loads the signing key and puts it on app.state.
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 def _issue_request():
