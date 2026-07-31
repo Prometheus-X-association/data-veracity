@@ -13,6 +13,7 @@ from typing import Any
 
 from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey, VerifyKey
+from pydantic import BaseModel
 
 # JWS header constants
 JWS_HEADER_ALG = "EdDSA"
@@ -20,6 +21,21 @@ JWS_HEADER_TYPE = "VC+LD-JSON+JWS"
 VC_CONTEXT = "https://www.w3.org/2018/credentials/v1"
 VC_TYPE = "VerifiableCredential"
 AOV_TYPE = "AttestationOfVeracity"
+
+
+class AovClaims(BaseModel):
+    """The eight AoV credentialSubject claims."""
+
+    vc_id: str
+    valid_since: str
+    subject: str
+    issuer_id: str
+    record_id: str
+    contract_id: str
+    data_exchange_id: str
+    payload: str
+
+    model_config = {"populate_by_name": True}
 
 
 def _b64url(data: bytes) -> str:
@@ -38,7 +54,7 @@ def _json_compact(obj: dict[str, Any]) -> bytes:
     return json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
-def build_aov_payload(claims: "AovClaims", issuer_did_key: str) -> dict[str, Any]:
+def build_aov_payload(claims: AovClaims, issuer_did_key: str) -> dict[str, Any]:
     """Build the W3C VC 2.0 JSON-LD payload."""
     return {
         "@context": [VC_CONTEXT],
@@ -62,7 +78,7 @@ def _jws_header() -> dict[str, str]:
     return {"alg": JWS_HEADER_ALG, "typ": JWS_HEADER_TYPE}
 
 
-def sign_jws(claims: "AovClaims", signing_key: SigningKey, issuer_did_key: str) -> str:
+def sign_jws(claims: AovClaims, signing_key: SigningKey, issuer_did_key: str) -> str:
     """Sign and produce a compact JWS string."""
     header_b64 = _b64url(_json_compact(_jws_header()))
     payload_b64 = _b64url(_json_compact(build_aov_payload(claims, issuer_did_key)))
@@ -95,25 +111,3 @@ def decode_payload(jws: str) -> dict[str, Any]:
     if len(parts) != 3:
         raise ValueError("Compact JWS must have 3 dot-separated parts")
     return json.loads(_b64url_decode(parts[1]))
-
-
-# AoV claims model – defined at the bottom of the module so older
-# pydantic-style annotations above ("AovClaims") resolve via forward
-# reference. Importing this class is the canonical way callers construct
-# the claims payload.
-from pydantic import BaseModel  # noqa: E402
-
-
-class AovClaims(BaseModel):
-    """The eight AoV credentialSubject claims."""
-
-    vc_id: str
-    valid_since: str
-    subject: str
-    issuer_id: str
-    record_id: str
-    contract_id: str
-    data_exchange_id: str
-    payload: str
-
-    model_config = {"populate_by_name": True}

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from nacl.signing import SigningKey, VerifyKey
 
-from dva_vc_manager.signing import AovClaims, sign_jws, verify_jws
+from dva_vc_manager.signing import AovClaims, decode_payload, sign_jws, verify_jws
 
 
 def _sample_claims() -> AovClaims:
@@ -64,8 +64,6 @@ def test_rejection_of_a_clearly_malformed_jws() -> None:
 def test_payload_shape_includes_context_type_issuer_validfrom_subject() -> None:
     """Validate the W3C VC JSON-LD structure — byte-identical to the
     Kotlin ``buildAovPayload`` at ``JwsSigner.kt:39-57``."""
-    from dva_vc_manager.signing import decode_payload
-
     signing_key = SigningKey.generate()
     jws = sign_jws(_sample_claims(), signing_key, _KNOWN_DID_KEY)
     payload = decode_payload(jws)

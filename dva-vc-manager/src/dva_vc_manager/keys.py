@@ -19,6 +19,8 @@ from pathlib import Path
 from nacl.public import PublicKey
 from nacl.signing import SigningKey, VerifyKey
 
+from .did_key import public_key_to_did_key
+
 __all__ = ["SigningKeyStore", "KeyPair"]
 
 
@@ -97,8 +99,6 @@ class SigningKeyStore:
 
     def issuer_did_key(self) -> str:
         """Return the ``did:key`` identifier of the loaded public key."""
-        from .did_key import public_key_to_did_key
-
         if self._cached is None:
             raise RuntimeError(
                 "SigningKeyStore.load_or_generate() must be called before issuer_did_key()"
