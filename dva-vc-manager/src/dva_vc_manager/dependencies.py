@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import logging
-
 from .config import cfg
+from .log import get_logger
 from .whitelist import FakeWhitelist, WhitelistRepo
 
-logger = logging.getLogger(__name__)
+logger = get_logger()
 
 _whitelist_singleton: WhitelistRepo | None = None
 
@@ -24,7 +23,8 @@ async def get_whitelist() -> WhitelistRepo:
             _whitelist_singleton = await _build_production_whitelist()
         else:
             logger.warning(
-                "DVA_VC_MANAGER_DB_URL is not set – falling back to in-memory FakeWhitelist"
+                "DVA_VC_MANAGER_DB_URL is not set, falling back to in-memory "
+                "FakeWhitelist; the whitelist will not survive a restart"
             )
             _whitelist_singleton = FakeWhitelist()
     return _whitelist_singleton
