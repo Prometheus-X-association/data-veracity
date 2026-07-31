@@ -14,8 +14,6 @@ from typing import Any
 from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey, VerifyKey
 
-from .did_key import did_key_to_public_key
-
 # JWS header constants
 JWS_HEADER_ALG = "EdDSA"
 JWS_HEADER_TYPE = "VC+LD-JSON+JWS"
@@ -91,14 +89,6 @@ def verify_jws(jws: str, public_key: VerifyKey) -> bool:
         return False
 
 
-def verify_jws_with_did_key(jws: str, did_key: str) -> bool:
-    """Convenience: derive the Ed25519 public key from a did:key and verify."""
-    public_key = did_key_to_public_key(did_key)
-    # VerifyKey accepts the raw 32-byte encoding – same bytes that did_key
-    # just decoded for us.
-    return verify_jws(jws, VerifyKey(bytes(public_key)))
-
-
 def decode_payload(jws: str) -> dict[str, Any]:
     """Decode (without verifying) the payload middle segment of a JWS."""
     parts = jws.split(".")
@@ -127,7 +117,3 @@ class AovClaims(BaseModel):
     payload: str
 
     model_config = {"populate_by_name": True}
-
-    @property
-    def vcId(self) -> str:  # noqa: N802 — parity with Kotlin property name.
-        return self.vc_id

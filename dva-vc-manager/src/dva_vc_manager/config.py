@@ -8,10 +8,6 @@ from dataclasses import dataclass
 from sys import stderr
 
 
-def _truthy(value: str | None) -> bool:
-    return value is not None and value.lower() in {"1", "true", "yes", "on"}
-
-
 def _log_level(value: str | None) -> int:
     return getattr(logging, (value or "INFO").upper(), logging.INFO)
 

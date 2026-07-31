@@ -7,7 +7,6 @@ Covers:
 * ``POST /aov/verify`` fails-closed when whitelist is empty.
 * ``POST /aov/verify`` rejects when issuer not whitelisted.
 * ``POST /aov/verify`` rejects a clearly malformed JWS with 400.
-* Admin endpoints fail-closed 401 when no API key is configured.
 """
 
 from __future__ import annotations
@@ -41,7 +40,6 @@ def client(
     from dva_vc_manager import config as cfg_module
 
     cfg_module.cfg.signing_key_path = str(tmp_path / "key.pem")
-    cfg_module.cfg.api_key = ""
     cfg_module.cfg.postgres_dsn = ""
 
     app = create_app()
