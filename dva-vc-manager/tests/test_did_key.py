@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from nacl.signing import SigningKey
 from nacl.public import PublicKey
+from nacl.signing import SigningKey
 
 from dva_vc_manager.did_key import (
     did_key_to_public_key,

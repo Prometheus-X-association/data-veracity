@@ -1,11 +1,7 @@
-"""Ed25519 signing-key store.
+"""
+Ed25519 signing-key store.
 
-Mirrors the Kotlin ``SigningKeyStore.kt:34`` semantics **without**
-implementing any custom cryptography — keys are generated and loaded via
-PyNaCl's :class:`nacl.signing.SigningKey`, which is the canonical
-libsodium binding (audited, used widely in production).
-
-Persistence format: ``base64(private key seed)|base64(public key)`` —
+Persistence format: ``base64(private key seed)|base64(public key)`` –
 PyNaCl exposes the private key as a 32-byte seed, the public key as 32
 bytes. The seed is the canonical "private key" representation for
 Ed25519 in libsodium.
@@ -19,11 +15,9 @@ from __future__ import annotations
 import base64
 import os
 from pathlib import Path
-from typing import Tuple
 
-from nacl.signing import SigningKey, VerifyKey
 from nacl.public import PublicKey
-
+from nacl.signing import SigningKey, VerifyKey
 
 __all__ = ["SigningKeyStore", "KeyPair"]
 
@@ -106,5 +100,7 @@ class SigningKeyStore:
         from .did_key import public_key_to_did_key
 
         if self._cached is None:
-            raise RuntimeError("SigningKeyStore.load_or_generate() must be called before issuer_did_key()")
+            raise RuntimeError(
+                "SigningKeyStore.load_or_generate() must be called before issuer_did_key()"
+            )
         return public_key_to_did_key(self._cached.public_key())

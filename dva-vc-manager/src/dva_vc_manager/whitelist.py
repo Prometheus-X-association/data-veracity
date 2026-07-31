@@ -1,13 +1,9 @@
-"""Whitelist of trusted attester ``did:key`` identifiers.
-
-The verify side is **fail-closed**: ``/aov/verify`` rejects any
-verification when the whitelist is empty (mirrors
-``aovRoutes.kt:231-242``). The whitelist is populated via admin
-endpoints (``POST /admin/whitelist``) in the new DVA VC MANAGER service.
+"""
+Whitelist of trusted attester ``did:key`` identifiers.
 
 Two implementations:
-* :class:`FakeWhitelist` — in-memory list for tests.
-* :class:`PgWhitelist` — async-backed PostgreSQL repository via
+* :class:`FakeWhitelist` – in-memory list for tests.
+* :class:`PgWhitelist` – async-backed PostgreSQL repository via
   asyncpg; mirrors ``whitelistMapping.kt:17-20``.
 """
 
@@ -85,20 +81,20 @@ class PgWhitelist:
 
     async def all(self) -> list[WhitelistEntry]:
         async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                "SELECT id, did_key, label FROM did_key_whitelist"
-            )
+            rows = await conn.fetch("SELECT id, did_key, label FROM did_key_whitelist")
         return [WhitelistEntry.from_row(r) for r in rows]
 
     async def add(self, did_key: str, label: Optional[str] = None) -> WhitelistEntry:
-        import json
         import asyncpg.exceptions
-        id = uuid4()
+
+        entry_id = uuid4()
         async with self._pool.acquire() as conn:
             try:
                 await conn.execute(
                     "INSERT INTO did_key_whitelist (id, did_key, label) VALUES ($1, $2, $3)",
-                    id, did_key, label,
+                    entry_id,
+                    did_key,
+                    label,
                 )
             except asyncpg.exceptions.UniqueViolationError:
                 existing = await conn.fetchrow(
@@ -106,7 +102,7 @@ class PgWhitelist:
                     did_key,
                 )
                 return WhitelistEntry.from_row(existing)
-        return WhitelistEntry(id=id, did_key=did_key, label=label)
+        return WhitelistEntry(id=entry_id, did_key=did_key, label=label)
 
     async def remove(self, did_key: str) -> bool:
         async with self._pool.acquire() as conn:

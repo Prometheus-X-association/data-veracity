@@ -1,4 +1,5 @@
-"""Minimal Bearer-token auth for the admin endpoints.
+"""
+Minimal Bearer-token auth for the admin endpoints.
 
 Mirrors the inline guard the Kotlin ``route/adminRoutes.kt`` uses: when
 ``DVA_VC_MANAGER_API_KEY`` is empty, admin endpoints are disabled
@@ -18,3 +19,4 @@ def require_api_key(authorization: str | None = Header(default=None)) -> None:
     header = (authorization or "").removeprefix("Bearer ").strip()
     if header != cfg.api_key:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid API key")
+

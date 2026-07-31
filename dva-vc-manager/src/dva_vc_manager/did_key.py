@@ -1,16 +1,13 @@
-"""``did:key`` codec for Ed25519 keys.
-
-Mirrors the Kotlin implementation in ``dva-api/api/.../jws/DidKey.kt``:
+"""
+``did:key`` codec for Ed25519 keys.
 
 * The Ed25519 public key is encoded as 32 raw bytes (RFC 8032).
 * Prefixed with the Ed25519 multicodec prefix ``0xed 0x01``.
-* Then ``multibase(base58btc(...))`` — prefixed with the ``z`` character
+* Then ``multibase(base58btc(...))`` – prefixed with the ``z`` character
   for base58btc.
 * Finally wrapped in ``did:key:``.
 
-This is exactly the W3C did:key specification — no custom cryptography.
-``base58`` is a tiny, audited Python package; ``nacl`` is the canonical
-libsodium binding (PyNaCl).
+This is exactly the W3C did:key specification – no custom cryptography.
 
 Reference:
 - https://w3c-ccg.github.io/did-method-key/
@@ -34,7 +31,11 @@ def public_key_to_did_key(public_key: PublicKey) -> str:
     if len(raw) != ED25519_RAW_SIZE:
         raise ValueError(f"Ed25519 public key must be exactly 32 bytes, got {len(raw)}")
     multicodec = ED25519_MULTICODEC_PREFIX + raw
-    return DID_KEY_SCHEME + MULTIBASE_BASE58BTC_PREFIX + base58.b58encode(multicodec).decode("ascii")
+    return (
+        DID_KEY_SCHEME
+        + MULTIBASE_BASE58BTC_PREFIX
+        + base58.b58encode(multicodec).decode("ascii")
+    )
 
 
 def did_key_to_public_key(did_key: str) -> PublicKey:
@@ -43,7 +44,9 @@ def did_key_to_public_key(did_key: str) -> PublicKey:
         raise ValueError(f"not a did:key identifier: {did_key}")
     multibase = did_key.removeprefix(DID_KEY_SCHEME)
     if not multibase.startswith(MULTIBASE_BASE58BTC_PREFIX):
-        raise ValueError(f"only base58btc multibase ('z') is supported, got: {multibase}")
+        raise ValueError(
+            f"only base58btc multibase ('z') is supported, got: {multibase}"
+        )
     decoded = base58.b58decode(multibase[1:])
     if len(decoded) != len(ED25519_MULTICODEC_PREFIX) + ED25519_RAW_SIZE:
         raise ValueError(
