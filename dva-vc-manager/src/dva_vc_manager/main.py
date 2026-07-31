@@ -40,19 +40,23 @@ _SWAGGER_UI_HTML = """\
 
 
 def _build_production_whitelist():
-    """Construct the async-backed whitelist repository.
+    """
+    Construct the async-backed whitelist repository.
 
-    DEPRECATED sync stub — kept only for test-override compatibility.
+    DEPRECATED sync stub – kept only for test-override compatibility.
     Production callers must use the async version below.
     """
-    raise RuntimeError("Call _build_production_whitelist_async() from within an async context.")
+    raise RuntimeError(
+        "Call _build_production_whitelist_async() from within an async context."
+    )
 
 
 async def _build_production_whitelist_async():
-    """Construct the async-backed whitelist repository.
+    """
+    Construct the async-backed whitelist repository.
 
     Uses await (not asyncio.run) so it is safe to call from within the
-    uvicorn event loop — mirrors _build_production_repo() in vla-manager-api.
+    uvicorn event loop.
     """
     import asyncpg
 
@@ -76,12 +80,12 @@ def create_app() -> FastAPI:
         title="DVA VC Manager",
         description=(
             "Issues and verifies Attestation of Veracity (AoV) credentials as "
-            "W3C VC 2.0 JSON-LD JWS (Ed25519/EdDSA) using PyNaCl. Hosted at "
+            "W3C VC 2.0 JSON-LD JWS (Ed25519) using PyNaCl. Hosted at "
             "each Participant. Called by the DVA API during credential "
             "issuance in the synchronous attestation flow."
         ),
         version="0.1.0",
-        # Disable auto-generated docs — hand-written spec is served at /swagger
+        # Disable auto-generated docs – hand-written spec is served at /swagger
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
@@ -94,7 +98,11 @@ def create_app() -> FastAPI:
         """Serve the Swagger UI loaded from the hand-written OpenAPI spec."""
         return HTMLResponse(content=_SWAGGER_UI_HTML)
 
-    @app.get("/swagger/openapi.yaml", response_class=PlainTextResponse, include_in_schema=False)
+    @app.get(
+        "/swagger/openapi.yaml",
+        response_class=PlainTextResponse,
+        include_in_schema=False,
+    )
     async def swagger_spec() -> PlainTextResponse:
         """Serve the hand-written OpenAPI spec YAML from disk."""
         spec_path = os.environ.get("DVA_VC_MANAGER_OPENAPI_FILE", "/app/openapi.yaml")
@@ -127,3 +135,4 @@ def cli() -> None:
         port=cfg.port,
         log_level=_level_to_str(cfg.log_level),
     )
+

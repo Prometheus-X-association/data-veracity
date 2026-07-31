@@ -5,9 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from dva_vc_manager.did_key import public_key_to_did_key
 from dva_vc_manager.keys import SigningKeyStore
-from nacl.public import PublicKey
 
 
 def test_generates_key_on_first_run_when_file_missing(tmp_path: Path) -> None:

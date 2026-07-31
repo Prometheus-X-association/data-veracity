@@ -1,4 +1,5 @@
-"""HTTP request/response models for /aov/issue and /aov/verify.
+"""
+HTTP request/response models for /aov/issue and /aov/verify.
 
 The JSON shape is kept byte-compatible with the Kotlin ``dva-api``
 ``/attestation`` response so the PDC client
@@ -10,18 +11,17 @@ of the inlined Kotlin signer.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # JSON keys for these request/response models are byte-identical with the
 # Kotlin ``dva-api`` DTOs (``route/aovRoutes.kt:39-57`` and
-# ``AoVDTOs.kt``). Kotlin property names are ``camelCase`` (e.g. ``vcId``,
+# ``AoVDTOs.kt``).  Kotlin property names are ``camelCase`` (e.g. ``vcId``,
 # ``issuerDidKey``); pydantic's Python-native attribute names stay
 # ``snake_case`` but the wire format MUST be ``camelCase`` so the Kotlin
-# client/server round-trip works without contract drift. We add aliases
+# client/server round-trip works without contract drift.  We add aliases
 # to each advanced-name field and let ``populate_by_name=True`` keep
 # snake_case accepted on the Python side (for unit tests and direct
 # curl).
@@ -29,11 +29,7 @@ _CAMEL = ConfigDict(populate_by_name=True)
 
 
 class EvaluationResultDTO(BaseModel):
-    """One row of the veracity-check results array.
-
-    Field names are single words so no aliasing is needed — they are
-    already byte-identical with the Kotlin ``EvaluationResultDTO``.
-    """
+    """One row of the veracity-check results array."""
 
     engine: Optional[str] = None
     timestamp: datetime
@@ -43,12 +39,12 @@ class EvaluationResultDTO(BaseModel):
 
 
 class AovIssueRequest(BaseModel):
-    """Body of ``POST /aov/issue``.
+    """
+    Body of ``POST /aov/issue``.
 
-    The DVA API posts the eight claims fields and the veracity-check
-    results array. The VC Manager decides whether to issue based on
-    ``all_success`` (computed here) and generates a fresh UUID for
-    the credential.
+    The DVA API posts the seven AoV claims fields plus the veracity-check
+    results array.  The VC Manager generates a fresh UUID for the credential and
+    signs the AoV payload as a compact JWS.
     """
 
     model_config = _CAMEL
@@ -66,9 +62,11 @@ class AovIssueRequest(BaseModel):
 
 
 class AovIssueResponse(BaseModel):
-    """Returned by ``POST /aov/issue``. The JWS contains the issuer
-    ``did:key``, the VC UUID, and the issuance timestamp, so they are
-    not duplicated in the response body.
+    """
+    Returned by ``POST /aov/issue``.
+
+    The JWS contains the issuer ``did:key``, the VC UUID, and the issuance
+    timestamp, so they are not duplicated in the response body.
     """
 
     model_config = _CAMEL
@@ -77,8 +75,11 @@ class AovIssueResponse(BaseModel):
 
 
 class AovVerifyRequest(BaseModel):
-    """Body of ``POST /aov/verify``. Only the compact JWS string is
-    supplied; the issuer ``did:key`` is extracted from the JWS payload.
+    """
+    Body of ``POST /aov/verify``.
+
+    Only the compact JWS string is supplied; the issuer ``did:key`` is
+    extracted from the JWS payload.
     """
 
     model_config = _CAMEL
@@ -109,8 +110,9 @@ class WhitelistEntryDTO(BaseModel):
 
 
 class OwnKeyDTO(BaseModel):
-    """Returned by ``GET /admin/keys`` — read-only view of this
-    service's signing ``did:key`` (no private bytes).
+    """Returned by ``GET /admin/keys``.
+
+    Read-only view of this service's signing ``did:key``.
     """
 
     issuer_did_key: str

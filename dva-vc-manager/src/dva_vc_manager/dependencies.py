@@ -21,9 +21,7 @@ async def get_whitelist() -> WhitelistRepo:
             _whitelist_singleton = await _build_production_whitelist_async()
         else:
             logger.warning(
-                "DVA_VC_MANAGER_DB_URL is not set — falling back to "
-                "FakeWhitelist (in-memory). Verifications will fail-closed "
-                "until admin populates the whitelist via POST /admin/whitelist."
+                "DVA_VC_MANAGER_DB_URL is not set – falling back to in-memory FakeWhitelist"
             )
             _whitelist_singleton = FakeWhitelist()
     return _whitelist_singleton
@@ -32,3 +30,4 @@ async def get_whitelist() -> WhitelistRepo:
 def install_whitelist_for_tests(repo: WhitelistRepo) -> None:
     global _whitelist_singleton
     _whitelist_singleton = repo
+

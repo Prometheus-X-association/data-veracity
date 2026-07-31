@@ -12,12 +12,8 @@ Covers:
 
 from __future__ import annotations
 
-import os
-from uuid import uuid4
-
 import pytest
 from fastapi.testclient import TestClient
-from nacl.signing import SigningKey
 
 from dva_vc_manager.dependencies import get_whitelist
 from dva_vc_manager.main import create_app
@@ -38,9 +34,12 @@ def whitelist() -> FakeWhitelist:
 
 
 @pytest.fixture
-def client(whitelist: FakeWhitelist, monkeypatch: pytest.MonkeyPatch, tmp_path) -> TestClient:
+def client(
+    whitelist: FakeWhitelist, monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> TestClient:
     monkeypatch.setenv("DVA_VC_MANAGER_SIGNING_KEY_PATH", str(tmp_path / "key.pem"))
     from dva_vc_manager import config as cfg_module
+
     cfg_module.cfg.signing_key_path = str(tmp_path / "key.pem")
     cfg_module.cfg.api_key = ""
     cfg_module.cfg.postgres_dsn = ""
@@ -81,7 +80,9 @@ def test_aov_issue_returns_jws(client: TestClient) -> None:
     assert issuer.startswith("did:key:z6Mk")
 
 
-async def test_aov_issue_then_verify_round_trip(client: TestClient, whitelist: FakeWhitelist) -> None:
+async def test_aov_issue_then_verify_round_trip(
+    client: TestClient, whitelist: FakeWhitelist
+) -> None:
     r = client.post("/aov/issue", json=_issue_request())
     assert r.status_code == 200
     body = r.json()
@@ -96,7 +97,9 @@ async def test_aov_issue_then_verify_round_trip(client: TestClient, whitelist: F
     assert body2["verified"] is True
 
 
-async def test_aov_verify_rejects_tampered_jws(client: TestClient, whitelist: FakeWhitelist) -> None:
+async def test_aov_verify_rejects_tampered_jws(
+    client: TestClient, whitelist: FakeWhitelist
+) -> None:
     r = client.post("/aov/issue", json=_issue_request())
     jws = r.json()["jws"]
     issuer_did_key = _extract_issuer_did_key(jws)
@@ -140,6 +143,7 @@ def test_aov_verify_rejects_malformed_jws_with_400(
     client: TestClient, whitelist: FakeWhitelist
 ) -> None:
     import asyncio
+
     asyncio.run(whitelist.add(_KNOWN_DID_KEY))
     r = client.post("/aov/verify", json={"jws": "not.a.jws.at.all"})
     assert r.status_code == 400

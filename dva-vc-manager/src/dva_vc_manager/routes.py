@@ -1,4 +1,5 @@
-"""FastAPI routes for the DVA VC Manager.
+"""
+FastAPI routes for the DVA VC Manager.
 
 Two AoV endpoints called by the DVA API during the synchronous
 attestation flow:
@@ -25,7 +26,6 @@ Plus four admin endpoints (all bearer-auth-guarded):
 from __future__ import annotations
 
 import urllib.parse
-from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -50,7 +50,8 @@ router = APIRouter()
 
 
 def _get_key_store() -> SigningKeyStore:
-    """Lazily construct the app-wide signing key store.
+    """
+    Lazily construct the app-wide signing key store.
 
     Resolved via FastAPI's dependency system in tests via
     ``app.dependency_overrides`` so the test suite can swap in a
@@ -68,10 +69,9 @@ async def aov_issue(req: AovIssueRequest) -> AovIssueResponse:
     keypair = key_store.load_or_generate()
     issuer_did_key = key_store.issuer_did_key()
 
-    # Mapped to the camelCase AovClaims fields — AovClaims VC-subject
-    # JSON keys must stay byte-identical with the Kotlin issuer, so
-    # we hand the model the snake_case values and rely on the field
-    # aliases in build_aov_payload.
+    # AoVClaims is passed in snake_case and build_aov_payload embeds these
+    # values into the VC JSON-LD payload (credentialSubject keys are snake_case
+    # to match the existing Kotlin implementation)
     claims = AovClaims(
         vc_id=str(uuid4()),
         valid_since=req.valid_since,
@@ -91,8 +91,12 @@ async def aov_verify(
     req: AovVerifyRequest,
     whitelist: WhitelistRepo = Depends(get_whitelist),
 ) -> AovVerifyResponse:
-    """Verify an AoV JWS. The issuer did:key is extracted from the JWS
-    payload and looked up in the whitelist. Fail-closed."""
+    """
+    Verify an AoV JWS.
+
+    The issuer did:key is extracted from the JWS
+    payload and looked up in the whitelist.
+    """
 
     # 1. Structural check: must be a 3-part compact JWS.
     parts = req.jws.split(".")
@@ -124,7 +128,7 @@ async def aov_verify(
     if not isinstance(issuer_did_key, str) or not issuer_did_key:
         return AovVerifyResponse(verified=False, reason="JWS payload missing issuer")
 
-    # 4. Issuer must be whitelisted — fail-closed when not found.
+    # 4. Issuer must be whitelisted
     entry = await whitelist.find(issuer_did_key)
     if entry is None:
         return AovVerifyResponse(verified=False, reason="issuer not whitelisted")
@@ -138,7 +142,7 @@ async def aov_verify(
             reason=f"whitelist entry contains invalid did:key: {e}",
         )
 
-    # 6. Verify the Ed25519 signature. A structurally-valid JWS whose
+    # 6. Verify the Ed25519 signature.  A structurally-valid JWS whose
     # signature does not verify returns verified=false.
     from nacl.signing import VerifyKey
 
@@ -165,7 +169,9 @@ async def whitelist_list(
     whitelist: WhitelistRepo = Depends(get_whitelist),
 ) -> list[WhitelistEntryDTO]:
     entries = await whitelist.all()
-    return [WhitelistEntryDTO(id=e.id, did_key=e.did_key, label=e.label) for e in entries]
+    return [
+        WhitelistEntryDTO(id=e.id, did_key=e.did_key, label=e.label) for e in entries
+    ]
 
 
 @admin_router.post(
@@ -182,7 +188,9 @@ async def whitelist_add(
     return WhitelistEntryDTO(id=entry.id, did_key=entry.did_key, label=entry.label)
 
 
-@admin_router.delete("/admin/whitelist/{did_key}", status_code=status.HTTP_204_NO_CONTENT)
+@admin_router.delete(
+    "/admin/whitelist/{did_key}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def whitelist_remove(
     did_key: str,
     _: None = Depends(require_api_key),
@@ -202,4 +210,7 @@ async def keys_view(_: None = Depends(require_api_key)) -> OwnKeyDTO:
 
     key_store = SigningKeyStore(cfg.signing_key_path)
     key_store.load_or_generate()
-    return OwnKeyDTO(issuer_did_key=key_store.issuer_did_key(), key_path=cfg.signing_key_path)
+    return OwnKeyDTO(
+        issuer_did_key=key_store.issuer_did_key(), key_path=cfg.signing_key_path
+    )
+

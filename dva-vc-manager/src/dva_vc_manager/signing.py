@@ -1,20 +1,8 @@
-"""JWS issuance and verification.
+"""
+JWS issuance and verification.
 
-Muliberates the production of a compact JWS (``header.payload.signature``)
-over a W3C VC 2.0 JSON-LD payload. The signed JSON shape is
-**byte-for-byte identical** to the Kotlin ``JwsSigner.kt:39-57`` so any
-existing consumer of an AoV JWS (PDC, other DVAs, downstream wallets)
-can verify a Python-issued credential with the Kotlin verifier and
-vice-versa.
-
-The cryptography itself is delegated entirely to PyNaCl (libsodium):
-
-* :func:`nacl.signing.SigningKey.sign` for EdDSA signatures.
-* :func:`nacl.signing.VerifyKey.verify` for EdDSA verification.
-
-No hand-rolled cryptography anywhere. Only the JSON shape construction,
-base64url encoding, and the standard JWS compact serialization
-concatenation happen here.
+Facilitates the production of a compact JWS (``header.payload.signature``)
+over a W3C VC 2.0 JSON-LD payload.
 """
 
 from __future__ import annotations
@@ -28,7 +16,7 @@ from nacl.signing import SigningKey, VerifyKey
 
 from .did_key import did_key_to_public_key
 
-# JWS header constants — must match Kotlin ``JwsSigner.kt:30-34`` exactly.
+# JWS header constants
 JWS_HEADER_ALG = "EdDSA"
 JWS_HEADER_TYPE = "VC+LD-JSON+JWS"
 VC_CONTEXT = "https://www.w3.org/2018/credentials/v1"
@@ -42,30 +30,18 @@ def _b64url(data: bytes) -> str:
 
 
 def _b64url_decode(segment: str) -> bytes:
-    """Inverse of :func:`_b64url` — re-adds padding before decoding."""
+    """Inverse of :func:`_b64url` – re-adds padding before decoding."""
     pad = (-len(segment)) % 4
     return base64.urlsafe_b64decode(segment + "=" * pad)
 
 
 def _json_compact(obj: dict[str, Any]) -> bytes:
-    """Compact JSON encoding — must match Kotlin's
-    ``Json.encodeToString(JsonObject.serializer(), this)`` byte-for-byte.
-    Kotlin's default ``kotlinx.serialization.json.Json`` uses no extra
-    whitespace, separators are ``","`` and ``":"``, keys preserve insertion
-    order. We use ``json.dumps(..., separators=(",", ":"), ensure_ascii=False)``
-    for an exact match.
-    """
+    """Compact JSON encoding."""
     return json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
 def build_aov_payload(claims: "AovClaims", issuer_did_key: str) -> dict[str, Any]:
-    """Build the W3C VC 2.0 JSON-LD payload.
-
-    Identical to Kotlin ``buildAovPayload`` (``JwsSigner.kt:39-57``):
-    ``@context``, ``type`` (a two-element array), ``issuer``,
-    ``validFrom``, and ``credentialSubject`` carrying the eight AoV
-    claims.
-    """
+    """Build the W3C VC 2.0 JSON-LD payload."""
     return {
         "@context": [VC_CONTEXT],
         "type": [VC_TYPE, AOV_TYPE],
@@ -89,13 +65,7 @@ def _jws_header() -> dict[str, str]:
 
 
 def sign_jws(claims: "AovClaims", signing_key: SigningKey, issuer_did_key: str) -> str:
-    """Sign and produce a compact JWS string.
-
-    ``signing_key`` is a :class:`nacl.signing.SigningKey` (Ed25519).
-    The signature is produced by libsodium via
-    ``signing_key.sign(signing_input).signature`` — which is the
-    canonical EdDSA primitive, not a hand-rolled signing function.
-    """
+    """Sign and produce a compact JWS string."""
     header_b64 = _b64url(_json_compact(_jws_header()))
     payload_b64 = _b64url(_json_compact(build_aov_payload(claims, issuer_did_key)))
     signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
@@ -108,14 +78,7 @@ def sign_jws(claims: "AovClaims", signing_key: SigningKey, issuer_did_key: str) 
 
 
 def verify_jws(jws: str, public_key: VerifyKey) -> bool:
-    """Verify a compact JWS.
-
-    Returns ``True`` if the signature is valid; ``False`` on signature
-    mismatch (mirrors ``JwsSigner.kt:100-113`` semantics — bad
-    signature returns false rather than throwing). Malformed JWS raises
-    an exception (also matches the Kotlin test at
-    ``JwsSignerTest.kt:69-77``).
-    """
+    """Verify a compact JWS."""
     parts = jws.split(".")
     if len(parts) != 3:
         raise ValueError("Compact JWS must have 3 dot-separated parts")
@@ -131,7 +94,7 @@ def verify_jws(jws: str, public_key: VerifyKey) -> bool:
 def verify_jws_with_did_key(jws: str, did_key: str) -> bool:
     """Convenience: derive the Ed25519 public key from a did:key and verify."""
     public_key = did_key_to_public_key(did_key)
-    # VerifyKey accepts the raw 32-byte encoding — same bytes that did_key
+    # VerifyKey accepts the raw 32-byte encoding – same bytes that did_key
     # just decoded for us.
     return verify_jws(jws, VerifyKey(bytes(public_key)))
 
@@ -144,7 +107,7 @@ def decode_payload(jws: str) -> dict[str, Any]:
     return json.loads(_b64url_decode(parts[1]))
 
 
-# AoV claims model — defined at the bottom of the module so older
+# AoV claims model – defined at the bottom of the module so older
 # pydantic-style annotations above ("AovClaims") resolve via forward
 # reference. Importing this class is the canonical way callers construct
 # the claims payload.
@@ -152,13 +115,7 @@ from pydantic import BaseModel  # noqa: E402
 
 
 class AovClaims(BaseModel):
-    """The eight AoV credentialSubject claims.
-
-    Fields are byte-identical to ``hu.bme.mit.ftsrg.dva.api.jws.AovClaims``
-    (``JwsSigner.kt:19-28``): ``vcId, validSince, subject, issuerId,
-    recordId, contractId, dataExchangeId, payload``. Python field names
-    are snake_case but Pydantic aliases make the JSON keys camelCase.
-    """
+    """The eight AoV credentialSubject claims."""
 
     vc_id: str
     valid_since: str
