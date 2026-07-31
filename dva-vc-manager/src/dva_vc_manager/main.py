@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from .config import cfg
-from .dependencies import build_whitelist
+from .dependencies import build_key_store, build_whitelist
 from .log import get_logger, setup_logging
 from .routes import admin_router, router
 
@@ -52,6 +52,7 @@ def _spec_loader(app: FastAPI) -> Callable[[], dict[str, Any]]:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Build the whitelist repo (and its connection pool) up front."""
+    app.state.key_store = build_key_store()
     app.state.whitelist = await build_whitelist()
     try:
         yield

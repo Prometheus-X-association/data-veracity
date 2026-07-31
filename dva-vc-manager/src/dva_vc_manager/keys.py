@@ -51,6 +51,11 @@ class SigningKeyStore:
         self._path = Path(path)
         self._cached: KeyPair | None = None
 
+    @property
+    def path(self) -> Path:
+        """The key file backing this store."""
+        return self._path
+
     def load_or_generate(self) -> KeyPair:
         """Return the cached keypair, load from disk, or generate+persist."""
         if self._cached is not None:
