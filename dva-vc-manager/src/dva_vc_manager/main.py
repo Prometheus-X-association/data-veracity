@@ -3,40 +3,49 @@
 from __future__ import annotations
 
 import logging
-import os
+
+from typing import Any, Callable
+
+import yaml
 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.openapi.utils import get_openapi
 
 from .config import cfg, setup_logging
 from .routes import admin_router, router
 
-_SWAGGER_UI_HTML = """\
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>DVA VC Manager — Swagger UI</title>
-    <link href="https://unpkg.com/swagger-ui-dist@5.17.12/swagger-ui.css" rel="stylesheet">
-    <link href="https://unpkg.com/swagger-ui-dist@5.17.12/favicon-32x32.png" rel="icon" type="image/x-icon">
-  </head>
-  <body>
-    <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.17.12/swagger-ui-bundle.js" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.17.12/swagger-ui-standalone-preset.js" crossorigin="anonymous"></script>
-    <script>
-      window.onload = function() {
-        SwaggerUIBundle({
-          url: '/swagger/openapi.yaml',
-          dom_id: '#swagger-ui',
-          deepLinking: false,
-          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-          layout: 'StandaloneLayout'
-        });
-      };
-    </script>
-  </body>
-</html>
-"""
+logger = logging.getLogger(__name__)
+
+
+def _spec_loader(app: FastAPI) -> Callable[[], dict[str, Any]]:
+    """
+    Build the ``app.openapi`` callable serving the hand-written spec.
+
+    FastAPI caches the result in ``app.openapi_schema`` and renders both the
+    Swagger UI and ReDoc pages from it, so the spec is read from disk once.
+    """
+
+    def openapi() -> dict[str, Any]:
+        if app.openapi_schema:
+            return app.openapi_schema
+        try:
+            with open(cfg.openapi_file, "r", encoding="utf-8") as fh:
+                app.openapi_schema = yaml.safe_load(fh)
+        except FileNotFoundError:
+            logger.warning(
+                "OpenAPI spec %s not found – falling back to the auto-generated "
+                "schema.  Set DVA_VC_MANAGER_OPENAPI_FILE to the hand-written spec.",
+                cfg.openapi_file,
+            )
+            app.openapi_schema = get_openapi(
+                title=app.title,
+                version=app.version,
+                description=app.description,
+                routes=app.routes,
+            )
+        return app.openapi_schema
+
+    return openapi
 
 
 def _build_production_whitelist():
@@ -85,33 +94,15 @@ def create_app() -> FastAPI:
             "issuance in the synchronous attestation flow."
         ),
         version="0.1.0",
-        # Disable auto-generated docs – hand-written spec is served at /swagger
-        docs_url=None,
-        redoc_url=None,
-        openapi_url=None,
+        # Docs pages are FastAPI's own; the schema behind them is the
+        # hand-written spec installed as app.openapi below.
+        docs_url="/swagger",
+        redoc_url="/redoc",
+        openapi_url="/swagger/openapi.json",
     )
     app.include_router(router)
     app.include_router(admin_router)
-
-    @app.get("/swagger", response_class=HTMLResponse, include_in_schema=False)
-    async def swagger_ui() -> HTMLResponse:
-        """Serve the Swagger UI loaded from the hand-written OpenAPI spec."""
-        return HTMLResponse(content=_SWAGGER_UI_HTML)
-
-    @app.get(
-        "/swagger/openapi.yaml",
-        response_class=PlainTextResponse,
-        include_in_schema=False,
-    )
-    async def swagger_spec() -> PlainTextResponse:
-        """Serve the hand-written OpenAPI spec YAML from disk."""
-        spec_path = os.environ.get("DVA_VC_MANAGER_OPENAPI_FILE", "/app/openapi.yaml")
-        try:
-            with open(spec_path, "r", encoding="utf-8") as fh:
-                content = fh.read()
-        except FileNotFoundError:
-            return PlainTextResponse(content="# spec file not found", status_code=404)
-        return PlainTextResponse(content=content, media_type="application/yaml")
+    app.openapi = _spec_loader(app)
 
     return app
 
@@ -135,4 +126,3 @@ def cli() -> None:
         port=cfg.port,
         log_level=_level_to_str(cfg.log_level),
     )
-

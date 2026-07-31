@@ -16,6 +16,7 @@ RUN \
         "pydantic>=2.10.6" \
         "pydantic-settings>=2.5.0" \
         "pynacl>=1.5.0" \
+        "pyyaml>=6.0" \
         "structlog>=25.1.0" \
         "uvicorn>=0.34.3"
 
