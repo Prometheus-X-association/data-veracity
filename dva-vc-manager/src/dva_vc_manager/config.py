@@ -2,27 +2,18 @@
 
 from __future__ import annotations
 
-import logging
 import os
 from dataclasses import dataclass
-from sys import stderr
-
-import structlog
-from structlog import make_filtering_bound_logger
-from structlog.dev import ConsoleRenderer
-from structlog.processors import JSONRenderer, StackInfoRenderer, TimeStamper
-from structlog.stdlib import add_log_level
-
-
-def _log_level(value: str | None) -> int:
-    return getattr(logging, (value or "INFO").upper(), logging.INFO)
 
 
 @dataclass
 class Config:
     host: str = os.getenv("DVA_VC_MANAGER_HOST", "0.0.0.0")
     port: int = int(os.getenv("DVA_VC_MANAGER_PORT", "8000"))
-    log_level: int = _log_level(os.getenv("DVA_VC_MANAGER_LOG_LEVEL", "INFO"))
+
+    # Level name, lowercased: structlog and uvicorn both take one of
+    # "critical", "error", "warning", "info", "debug".
+    log_level: str = os.getenv("DVA_VC_MANAGER_LOG_LEVEL", "info").lower()
 
     # Ed25519 signing key file path.
     # Loaded on first use; created and persisted (0600) if missing.
@@ -40,13 +31,3 @@ class Config:
 
 
 cfg = Config()
-
-
-def setup_logging() -> None:
-    shared = [add_log_level, StackInfoRenderer(), TimeStamper(fmt="iso")]
-    processors = shared + ([ConsoleRenderer()] if stderr.isatty() else [JSONRenderer()])
-    structlog.configure(
-        processors=processors,
-        context_class=dict,
-        wrapper_class=make_filtering_bound_logger(cfg.log_level),
-    )

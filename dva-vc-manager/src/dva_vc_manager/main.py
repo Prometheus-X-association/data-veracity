@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any, Callable
 
 import asyncpg
@@ -11,11 +10,12 @@ import yaml
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
-from .config import cfg, setup_logging
+from .config import cfg
+from .log import get_logger, setup_logging
 from .routes import admin_router, router
 from .whitelist import PgWhitelist
 
-logger = logging.getLogger(__name__)
+logger = get_logger()
 
 
 def _spec_loader(app: FastAPI) -> Callable[[], dict[str, Any]]:
@@ -34,9 +34,9 @@ def _spec_loader(app: FastAPI) -> Callable[[], dict[str, Any]]:
                 app.openapi_schema = yaml.safe_load(fh)
         except FileNotFoundError:
             logger.warning(
-                "OpenAPI spec %s not found – falling back to the auto-generated "
-                "schema.  Set DVA_VC_MANAGER_OPENAPI_FILE to the hand-written spec.",
-                cfg.openapi_file,
+                "OpenAPI spec not found, falling back to the auto-generated schema; "
+                "set DVA_VC_MANAGER_OPENAPI_FILE to the hand-written spec",
+                openapi_file=cfg.openapi_file,
             )
             app.openapi_schema = get_openapi(
                 title=app.title,
@@ -90,17 +90,10 @@ def create_app() -> FastAPI:
 app = create_app()
 
 
-def _level_to_str(level: int) -> str:
-    for name, val in logging._levelToName.items():
-        if val == level:
-            return name.lower()
-    return "info"
-
-
 def cli() -> None:
     uvicorn.run(
         "dva_vc_manager.main:app",
         host=cfg.host,
         port=cfg.port,
-        log_level=_level_to_str(cfg.log_level),
+        log_level=cfg.log_level,
     )
