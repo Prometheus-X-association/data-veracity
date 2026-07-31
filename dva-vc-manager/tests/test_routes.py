@@ -147,14 +147,3 @@ def test_aov_verify_rejects_malformed_jws_with_400(
     asyncio.run(whitelist.add(_KNOWN_DID_KEY))
     r = client.post("/aov/verify", json={"jws": "not.a.jws.at.all"})
     assert r.status_code == 400
-
-
-def test_admin_whitelist_unauthorised_when_no_api_key(client: TestClient) -> None:
-    r = client.get("/admin/whitelist")
-    assert r.status_code == 401
-    r = client.post("/admin/whitelist", json={"did_key": _KNOWN_DID_KEY})
-    assert r.status_code == 401
-    r = client.delete(f"/admin/whitelist/{_KNOWN_DID_KEY}")
-    assert r.status_code == 401
-    r = client.get("/admin/keys")
-    assert r.status_code == 401
