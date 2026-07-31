@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import logging
-
 from typing import Any, Callable
 
 import yaml
-
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
@@ -48,25 +46,8 @@ def _spec_loader(app: FastAPI) -> Callable[[], dict[str, Any]]:
     return openapi
 
 
-def _build_production_whitelist():
-    """
-    Construct the async-backed whitelist repository.
-
-    DEPRECATED sync stub – kept only for test-override compatibility.
-    Production callers must use the async version below.
-    """
-    raise RuntimeError(
-        "Call _build_production_whitelist_async() from within an async context."
-    )
-
-
-async def _build_production_whitelist_async():
-    """
-    Construct the async-backed whitelist repository.
-
-    Uses await (not asyncio.run) so it is safe to call from within the
-    uvicorn event loop.
-    """
+async def _build_production_whitelist():
+    """Construct the async-backed whitelist repository."""
     import asyncpg
 
     from .whitelist import PgWhitelist
