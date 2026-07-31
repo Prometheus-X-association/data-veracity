@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator, Callable
 
-import asyncpg
 import uvicorn
 import yaml
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from .config import cfg
+from .dependencies import build_whitelist
 from .log import get_logger, setup_logging
 from .routes import admin_router, router
-from .whitelist import PgWhitelist
 
 logger = get_logger()
 
@@ -49,23 +49,20 @@ def _spec_loader(app: FastAPI) -> Callable[[], dict[str, Any]]:
     return openapi
 
 
-async def _build_production_whitelist():
-    """Construct the async-backed whitelist repository."""
-    if not cfg.postgres_dsn:
-        raise RuntimeError(
-            "DVA_VC_MANAGER_DB_URL is not set — cannot boot PgWhitelist. "
-            "Either set it or override get_whitelist dependency for tests."
-        )
-
-    pool = await asyncpg.create_pool(dsn=cfg.postgres_dsn, min_size=1, max_size=4)
-    repo = PgWhitelist(pool)
-    await repo._ensure_schema()
-    return repo
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Build the whitelist repo (and its connection pool) up front."""
+    app.state.whitelist = await build_whitelist()
+    try:
+        yield
+    finally:
+        await app.state.whitelist.close()
 
 
 def create_app() -> FastAPI:
     setup_logging()
     app = FastAPI(
+        lifespan=lifespan,
         title="DVA VC Manager",
         description=(
             "Issues and verifies Attestation of Veracity (AoV) credentials as "

@@ -144,3 +144,19 @@ def test_aov_verify_rejects_malformed_jws_with_400(
     asyncio.run(whitelist.add(_KNOWN_DID_KEY))
     r = client.post("/aov/verify", json={"jws": "not.a.jws.at.all"})
     assert r.status_code == 400
+
+
+def test_lifespan_builds_the_whitelist_repo_at_startup(tmp_path) -> None:
+    """
+    The repo is built once during startup rather than lazily per request.
+
+    The ``client`` fixture overrides ``get_whitelist``, so this is the only
+    test that exercises the lifespan.
+    """
+    cfg_module.cfg.signing_key_path = str(tmp_path / "key.pem")
+    cfg_module.cfg.postgres_dsn = ""
+    app = create_app()
+
+    assert not hasattr(app.state, "whitelist"), "repo must not exist before startup"
+    with TestClient(app):
+        assert isinstance(app.state.whitelist, FakeWhitelist)

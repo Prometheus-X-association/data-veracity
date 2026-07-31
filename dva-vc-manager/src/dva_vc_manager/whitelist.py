@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any, Optional, Protocol
 from uuid import UUID, uuid4
 
+import asyncpg
 from asyncpg.exceptions import UniqueViolationError
 from pydantic import BaseModel
 
@@ -34,6 +35,7 @@ class WhitelistRepo(Protocol):
     async def remove(self, did_key: str) -> bool: ...
     async def find(self, did_key: str) -> Optional[WhitelistEntry]: ...
     async def contains(self, did_key: str) -> bool: ...
+    async def close(self) -> None: ...
 
 
 class FakeWhitelist:
@@ -61,14 +63,21 @@ class FakeWhitelist:
     async def contains(self, did_key: str) -> bool:
         return did_key in self._entries
 
+    async def close(self) -> None:
+        """No-op; nothing to release."""
+
 
 class PgWhitelist:
-    """PostgreSQL whitelist (asyncpg)."""
+    """
+    PostgreSQL whitelist (asyncpg).
 
-    def __init__(self, pool):  # type: ignore[no-untyped-def]
+    Owns the connection pool.
+    """
+
+    def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
 
-    async def _ensure_schema(self) -> None:
+    async def ensure_schema(self) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(
                 """
@@ -105,10 +114,11 @@ class PgWhitelist:
 
     async def remove(self, did_key: str) -> bool:
         async with self._pool.acquire() as conn:
-            result = await conn.execute(
+            status = await conn.execute(
                 "DELETE FROM did_key_whitelist WHERE did_key = $1", did_key
             )
-        return result.endswith("1")  # "DELETE 1" → true
+        # asyncpg returns the command tag, e.g. "DELETE 1".
+        return int(status.rpartition(" ")[2]) > 0
 
     async def find(self, did_key: str) -> Optional[WhitelistEntry]:
         async with self._pool.acquire() as conn:
@@ -124,3 +134,6 @@ class PgWhitelist:
                 "SELECT 1 FROM did_key_whitelist WHERE did_key = $1", did_key
             )
         return row is not None
+
+    async def close(self) -> None:
+        await self._pool.close()
