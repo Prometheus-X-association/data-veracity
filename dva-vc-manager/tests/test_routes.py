@@ -12,6 +12,7 @@ Covers:
 from __future__ import annotations
 
 import asyncio
+import base64
 from collections.abc import Iterator
 
 import pytest
@@ -149,6 +150,21 @@ def test_aov_verify_rejects_malformed_jws_with_400(
     asyncio.run(whitelist.add(_KNOWN_DID_KEY))
     r = client.post("/aov/verify", json={"jws": "not.a.jws.at.all"})
     assert r.status_code == 400
+
+
+def test_aov_verify_rejects_non_object_payload(
+    client: TestClient, whitelist: FakeWhitelist
+) -> None:
+    """A JWS whose payload is valid JSON but not an object must not 500."""
+    asyncio.run(whitelist.add(_KNOWN_DID_KEY))
+    header = base64.urlsafe_b64encode(b'{"alg":"EdDSA"}').rstrip(b"=").decode("ascii")
+    body = base64.urlsafe_b64encode(b"[1,2,3]").rstrip(b"=").decode("ascii")
+
+    r = client.post("/aov/verify", json={"jws": f"{header}.{body}.c2ln"})
+
+    assert r.status_code == 200, r.text
+    assert r.json()["verified"] is False
+    assert "JSON object" in r.json()["reason"]
 
 
 def test_lifespan_builds_the_whitelist_repo_at_startup(

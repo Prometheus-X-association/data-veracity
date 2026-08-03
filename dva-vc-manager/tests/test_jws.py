@@ -5,7 +5,13 @@ from __future__ import annotations
 import pytest
 from nacl.signing import SigningKey, VerifyKey
 
-from dva_vc_manager.signing import AovClaims, decode_payload, sign_jws, verify_jws
+from dva_vc_manager.signing import (
+    AovClaims,
+    MalformedJws,
+    decode_payload,
+    sign_jws,
+    verify_jws,
+)
 
 
 def _sample_claims() -> AovClaims:
@@ -57,7 +63,7 @@ def test_rejection_of_a_clearly_malformed_jws() -> None:
     signing_key = SigningKey.generate()
     public_key = VerifyKey(bytes(signing_key.verify_key))
 
-    with pytest.raises(Exception):
+    with pytest.raises(MalformedJws):
         verify_jws("not.a.jws.at.all", public_key)
 
 
