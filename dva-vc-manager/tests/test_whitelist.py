@@ -1,5 +1,4 @@
-"""Whitelist repository tests — mirror the behaviour Kotlin
-``AdminRoutesTest.kt`` covers (add, list, delete)."""
+"""Whitelist repository tests — add, list, delete."""
 
 from __future__ import annotations
 

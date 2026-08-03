@@ -1,4 +1,4 @@
-"""JWS sign+verify tests — mirror ``JwsSignerTest.kt`` behaviour exactly."""
+"""JWS sign+verify tests."""
 
 from __future__ import annotations
 
@@ -62,8 +62,7 @@ def test_rejection_of_a_clearly_malformed_jws() -> None:
 
 
 def test_payload_shape_includes_context_type_issuer_validfrom_subject() -> None:
-    """Validate the W3C VC JSON-LD structure — byte-identical to the
-    Kotlin ``buildAovPayload`` at ``JwsSigner.kt:39-57``."""
+    """Validate the W3C VC JSON-LD structure."""
     signing_key = SigningKey.generate()
     jws = sign_jws(_sample_claims(), signing_key, _KNOWN_DID_KEY)
     payload = decode_payload(jws)
