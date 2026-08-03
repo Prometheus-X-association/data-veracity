@@ -16,7 +16,6 @@ import base64
 import os
 from pathlib import Path
 
-from nacl.public import PublicKey
 from nacl.signing import SigningKey, VerifyKey
 
 from .did_key import public_key_to_did_key
@@ -38,10 +37,6 @@ class KeyPair:
     @property
     def public(self) -> VerifyKey:
         return self._public
-
-    def public_key(self) -> PublicKey:
-        """Return the PyNaCl PublicKey (needed by did_key codec)."""
-        return PublicKey(bytes(self._public))
 
 
 class SigningKeyStore:
@@ -108,4 +103,4 @@ class SigningKeyStore:
             raise RuntimeError(
                 "SigningKeyStore.load_or_generate() must be called before issuer_did_key()"
             )
-        return public_key_to_did_key(self._cached.public_key())
+        return public_key_to_did_key(self._cached.public)

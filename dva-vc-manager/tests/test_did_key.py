@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from nacl.public import PublicKey
 from nacl.signing import SigningKey
 
 from dva_vc_manager.did_key import (
@@ -13,7 +12,7 @@ from dva_vc_manager.did_key import (
 
 def test_ed25519_key_round_trips_through_did_key() -> None:
     signing_key = SigningKey.generate()
-    pub = PublicKey(bytes(signing_key.verify_key))
+    pub = signing_key.verify_key
 
     did_key = public_key_to_did_key(pub)
     round_tripped_pub = did_key_to_public_key(did_key)
@@ -33,7 +32,7 @@ def test_known_spec_vector() -> None:
 
 def test_starts_with_did_key_z6mk() -> None:
     signing_key = SigningKey.generate()
-    pub = PublicKey(bytes(signing_key.verify_key))
+    pub = signing_key.verify_key
     did_key = public_key_to_did_key(pub)
     assert did_key.startswith("did:key:z6Mk"), (
         "did:key identifier must start with 'did:key:z6Mk'"
