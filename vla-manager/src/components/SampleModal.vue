@@ -1,126 +1,169 @@
 <template>
-    <dialog 
-      ref="dialog"
-      class="modern-modal"
-      @click="handleBackdropClick"
-    >
-      <div class="modal-content">
-        <header>
-          <h3>{{ props.title ?? 'Insert sample JSON' }}</h3>
-        </header>
+  <n-modal
+    v-model:show="showModalFlag"
+    preset="card"
+    :title="props.title ?? 'Insert Sample JSON'"
+    class="sample-modal"
+    size="huge"
+    :style="{ width: '1100px', maxWidth: '95vw' }"
+  >
+    <div class="modal-body">
+      <!-- File Upload -->
+      <n-upload
+        :custom-request="handleUploadRequest"
+        :show-file-list="false"
+        accept=".json"
+      >
+        <n-upload-dragger>
+          <div style="margin-bottom: 12px">
+            <n-icon size="48" :depth="3">
+              <UploadIcon />
+            </n-icon>
+          </div>
+          <n-text style="font-size: 16px">
+            Click or drag a JSON file to this area to upload
+          </n-text>
+        </n-upload-dragger>
+      </n-upload>
 
-        <section class="modal-body">
-          <!-- File Upload -->
-          <section>
-            <FileSelector @upload="handleFileUpload" />
-          </section>
-    
-          <!-- Text Input -->
-          <section class="paste-area">
-            <label for="json-input">Or paste JSON here:</label>
-            <div class="paste-json">
-              <textarea
-                id="json-textarea"
-                v-model="jsonText"
-                @input="handleTextInput"
-                placeholder="Paste your JSON here..."
-                rows="20"
-                ></textarea>
-              <vue-json-pretty
-                id="json-input"
-                :data="parsedData"
-                :virtual="true"
-                :height="350"
-                :showLineNumber="true"
-                :showDoubleQuotes="false"
-              />
-            </div>
-          </section>
+      <n-divider>OR</n-divider>
 
-          <!-- Dev Picker -->
-          <section class="pick-area">
-            <label>Or choose a sample from below:</label>
-            <div class="pick-options">
-              <button
-                v-for="d in dummySamples"
-                :key="d.name"
-                @click="loadSample(d.name)"
-              >
-                {{ d.name }}
-              </button>
-            </div>
-          </section>
-    
-          <!-- Error Display -->
-          <section v-if="error" class="error-message">
-            <strong>Error:</strong> {{ error }}
-          </section>
-        </section>
-        
-        <footer>
-          <!-- Control Buttons -->
-          <button @click="clearAll" class="clear-button">
-            Clear All
-          </button>
-          <button @click="parseJSON" class="parse-button" :disabled="!jsonText.trim()">
-            Parse JSON
-          </button>
-          <button @click="selectSample" class="select-button" :disabled="!jsonText.trim()">
-            Select
-          </button>
-        </footer>
+      <!-- Dev Picker -->
+      <div>
+        <n-text strong class="block mb-2">Choose a sample:</n-text>
+        <n-space>
+          <n-button
+            v-for="d in dummySamples"
+            :key="d.name"
+            secondary
+            type="info"
+            @click="loadSample(d.name)"
+          >
+            {{ d.name }}
+          </n-button>
+        </n-space>
       </div>
-    </dialog>
+
+      <n-divider>OR</n-divider>
+
+      <!-- Text Input -->
+      <div class="paste-area">
+        <n-text strong class="block mb-2">Paste JSON here:</n-text>
+        <div class="split-view">
+          <n-input
+            v-model:value="jsonText"
+            type="textarea"
+            placeholder="Paste your JSON here..."
+            :autosize="{ minRows: 10, maxRows: 15 }"
+            @input="handleTextInput"
+            class="json-textarea"
+          />
+          <div class="json-preview">
+            <vue-json-pretty
+              v-if="parsedData"
+              :data="parsedData"
+              :virtual="true"
+              :height="474"
+              :showLineNumber="true"
+              :showDoubleQuotes="false"
+            />
+            <div v-else class="empty-preview">
+              <n-text depth="3">Preview will appear here</n-text>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Display -->
+      <n-alert v-if="error" type="error" class="mt-4">
+        {{ error }}
+      </n-alert>
+    </div>
+    
+    <template #footer>
+      <n-space justify="end">
+        <n-button @click="clearAll">
+          Clear
+        </n-button>
+        <n-button type="primary" @click="selectSample" :disabled="!parsedData">
+          Select JSON
+        </n-button>
+      </n-space>
+    </template>
+  </n-modal>
 </template>
 
 <script setup>
-  import { ref } from 'vue'
+  import { ref, watch, h, defineComponent } from 'vue'
   import VueJsonPretty from 'vue-json-pretty'
-  import FileSelector from './FileSelector.vue'
+  import 'vue-json-pretty/lib/styles.css'
+  import { 
+    NModal, NUpload, NUploadDragger, NIcon, NText, NDivider, 
+    NSpace, NButton, NInput, NAlert 
+  } from 'naive-ui'
   import movieJson from '../data/movie.json'
   import xapiJson from '../data/xapi.json'
-  import 'vue-json-pretty/lib/styles.css'
+
+  const UploadIcon = defineComponent({
+    render() {
+      return h('svg', { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 512 512" }, [
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "32", d: "M320 367.79h76c55 0 100-29.21 100-83.6s-53-81.47-96-83.6c-8.89-85.06-71-136.8-144-136.8c-69 0-113.44 45.79-128 91.2c-60 5.7-112 43.88-112 106.4s54 106.4 120 106.4h56" }),
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "32", d: "M320 255.79l-64-64l-64 64" }),
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "32", d: "M256 448.21V207.79" })
+      ])
+    }
+  })
 
   const dummySamples = [
     { name: 'Movie', sample: movieJson },
     { name: 'xAPI Statement', sample: xapiJson },
   ]
 
-  const dialog = ref(null)
+  const showModalFlag = ref(false)
   const jsonText = ref('')
   const error = ref(null)
   const parsedData = ref(null)
 
-  const showModal = async () => dialog.value?.showModal()
+  const showModal = () => {
+    showModalFlag.value = true
+  }
 
-  const loadSample = async (name) => {
+  const loadSample = (name) => {
     const sample = dummySamples.find((s) => s.name === name)
-    jsonText.value = JSON.stringify(sample, null, 2)
+    jsonText.value = JSON.stringify(sample.sample, null, 2)
     parseJSON()
   }
 
-  const handleFileUpload = async (file, progressCallback) => {
+  const handleUploadRequest = ({ file, onFinish, onError }) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
         jsonText.value = e.target.result
         parseJSON()
+        onFinish()
       } catch (err) {
         error.value = `Failed to read file: ${err.message}`
+        onError()
       }
     }
     reader.onerror = () => {
       error.value = 'Failed to read file'
+      onError()
     }
-    reader.readAsText(file)
+    reader.readAsText(file.file)
   }
 
   const handleTextInput = () => {
-    if (error) error.set = null
+    if (error.value) error.value = null
     parseJSON()
   }
 
   const parseJSON = () => {
+    if (!jsonText.value.trim()) {
+      parsedData.value = null
+      error.value = null
+      return
+    }
     try {
       parsedData.value = JSON.parse(jsonText.value)
       error.value = null
@@ -130,14 +173,10 @@
     }
   }
 
-  const handleBackdropClick = (e) => {
-    if (e.target === dialog.value) dialog.value?.close()
-  }
-
   const clearAll = () => {
     jsonText.value = ''
     parsedData.value = null
-    error.value = ''
+    error.value = null
   }
 
   const props = defineProps({ modelValue: Object, title: String })
@@ -147,158 +186,85 @@
 
   const selectSample = () => {
     emit('update:modelValue', parsedData.value)
-    dialog.value?.close()
+    showModalFlag.value = false
   }
+
+  // Watch for external clearing
+  watch(() => props.modelValue, (newVal) => {
+    if (!newVal) {
+      clearAll()
+    }
+  })
 </script>
 
 <style scoped>
-  .modern-modal::backdrop {
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(8px);
-    animation: backdropFadeIn 0.3s ease-out;
-  }
-  
-  dialog {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    max-width: 50vw;
-    max-height: 90vh;
-    border: none;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    animation: dialogSlideIn 0.3s ease-out;
-  }
-  
-  .paste-area {
+  .modal-body {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-  }
-
-  .paste-json {
-    display: flex;
-    gap: 1rem;
+    gap: 16px;
+    max-height: calc(90vh - 160px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
   }
   
-  .pick-area {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  .split-view {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: stretch;
   }
 
-  .pick-options {
+  .json-textarea {
+    height: 500px;
+  }
+  
+  /* Fix textarea internal element for Naive UI */
+  ::v-deep(.n-input__textarea-el) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    letter-spacing: normal !important;
+    padding: 12px !important;
+    white-space: pre !important;
+    overflow-wrap: normal !important;
+    overflow-x: auto !important;
+  }
+  
+  .json-preview {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 500px;
+    box-sizing: border-box;
+  }
+
+  /* Prevent vue-json-pretty from aggressively breaking words in narrow containers */
+  ::v-deep(.vjs-tree) {
+    word-break: normal !important;
+    white-space: nowrap !important;
+  }
+  ::v-deep(.vjs-value) {
+    word-break: normal !important;
+  }
+
+  .empty-preview {
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: .5rem;
-  }
-  
-  h3 {
-    margin: 0;
-  }
-  
-  .modal-content {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 24px 24px 0;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 16px;
-    margin-bottom: 20px;
-  }
-  
-  .modal-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #111827;
-    margin: 0;
-  }
-  
-  .modal-body {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  footer {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    justify-content: flex-end;
-    padding-top: 1rem;
-    border-top: 1px solid #e5e7eb;
   }
 
-  .error-message {
-    color: red;
+  .mb-2 {
+    margin-bottom: 8px;
   }
-
-  /* Button styles */
-  .parse-button {
-    background: #3b82f6;
-    color: white;
+  .mt-4 {
+    margin-top: 16px;
   }
-  
-  .select-button {
-    background: #08c41e;
-    font-weight: bold;
-  }
-  
-  .clear-button {
-    background: transparent;
-    color: #374151;
-    border: 1px solid #d1d5db;
-  }
-  
-  /* Animations */
-  @keyframes dialogSlideIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95) translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-  
-  @keyframes backdropFadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 640px) {
-    .modern-modal {
-      width: 95vw;
-    }
-    
-    .modal-header,
-    .modal-body,
-    .modal-footer {
-      padding-left: 16px;
-      padding-right: 16px;
-    }
-    
-    .modal-footer {
-      flex-direction: column-reverse;
-    }
-    
-    .btn-primary,
-    .btn-secondary {
-      width: 100%;
-    }
+  .block {
+    display: block;
   }
 </style>

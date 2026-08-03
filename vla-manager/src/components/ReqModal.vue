@@ -1,98 +1,119 @@
 <template>
-    <dialog 
-      ref="dialog"
-      class="modern-modal"
-      @click="handleBackdropClick"
-    >
-      <div class="modal-content">
-        <header>
-          <h3>Add Requirement</h3>
-        </header>
+  <n-modal
+    v-model:show="showModalFlag"
+    preset="card"
+    title="Add Requirement"
+    class="req-modal"
+    size="huge"
+    :style="{ width: '600px', maxWidth: '95vw' }"
+  >
+    <div class="modal-body">
+      <n-form :model="values" label-placement="top" size="large">
+        <n-form-item label="Choose a fragment:" path="chosenFragment">
+          <n-select 
+            v-model:value="selectedFragmentId" 
+            :options="fragmentOptions.map(f => ({ label: f.name, value: f.id }))" 
+            placeholder="Select a requirement template..."
+            @update:value="handleFragmentSelect"
+          />
+        </n-form-item>
 
-        <section class="modal-body">
-          <label for="fragment">Choose a fragment:</label>
-          <select v-model="chosenFragment" id="fragment">
-            <option v-for="item in fragmentOptions" :key="item" :value="item">
-              {{ item.name }}
-            </option>
-          </select>
+        <template v-if="chosenFragment">
+          <n-alert v-if="chosenFragment.description" type="info" :show-icon="false" class="mb-4">
+            {{ chosenFragment.description }}
+          </n-alert>
 
-          <form 
-            v-if="chosenFragment !== null"
-            class="req-form"
-          >
-            <label
-              class="fragment-desc"
-              v-if="chosenFragment.description !== ''"
-            >
-              {{ chosenFragment.description }}
-            </label>
-            <template v-if="chosenFragment.evaluationMethod.variableSchema.properties.property">
-              <label for="element">Element:</label>
-            <input id="element" type="text" :disabled="true" :value="element" />
-            </template>
-            
+          <template v-if="chosenFragment.evaluationMethod?.variableSchema?.properties?.property">
+            <n-form-item label="Element:">
+              <n-input disabled :value="element" />
+            </n-form-item>
+          </template>
+          
+          <template v-if="chosenFragment.evaluationMethod?.variableSchema?.properties">
             <template v-for="(value, key) in chosenFragment.evaluationMethod.variableSchema.properties" :key="key">
-              <template v-if="key !== 'property'">
-                <label :for="key">{{ capitalize(key) }}</label>
+              <n-form-item v-if="key !== 'property'" :label="capitalize(key)" :path="key">
+                
                 <template v-if="key === 'schema'">
-                  <textarea 
-                    :id="key" 
-                    v-model="values[key]" 
-                    rows="6"
-                    @input="updateSchemaJSON(key)">
-                  </textarea>
-                  <vue-json-pretty
-                    :data="schemaJSON"
-                    :show-double-quotes="false"
-                    :show-length="false"
-                    root-path=""
-                    :virtual="true"
-                   />
+                  <div class="w-full">
+                    <n-input
+                      v-model:value="values[key]"
+                      type="textarea"
+                      placeholder="Enter JSON schema..."
+                      :autosize="{ minRows: 4, maxRows: 8 }"
+                      @input="updateSchemaJSON(key)"
+                    />
+                    <div class="json-preview mt-2" v-if="schemaJSON && Object.keys(schemaJSON).length > 0">
+                      <vue-json-pretty
+                        :data="schemaJSON"
+                        :show-double-quotes="false"
+                        :show-length="false"
+                        root-path=""
+                        :virtual="true"
+                      />
+                    </div>
+                  </div>
                 </template>
+
+                <template v-else-if="value.enum">
+                  <n-select 
+                    v-model:value="values[key]" 
+                    :options="value.enum.map(e => ({ label: e, value: e }))" 
+                    @update:value="convertType(value.type, key)"
+                  />
+                </template>
+                
+                <template v-else-if="value.type === 'boolean'">
+                  <n-switch v-model:value="values[key]" />
+                </template>
+
+                <template v-else-if="value.type === 'number' || value.type === 'integer'">
+                  <n-input-number v-model:value="values[key]" class="w-full" />
+                </template>
+                
                 <template v-else>
-                  <template v-if="value.enum">
-                    <select :id="key" v-model="values[key]" @input="convertType(value.type, key)">
-                      <option v-for="v in value.enum" :value="v">{{ v }}</option>
-                    </select>
-                  </template>
-                  <template v-else>
-                    <input :id="key" :type="value.type" v-model="values[key]" @input="convertType(value.type, key)" />
-                  </template>
+                  <n-input v-model:value="values[key]" @input="convertType(value.type, key)" />
                 </template>
-              </template>
+
+              </n-form-item>
             </template>
-          </form>
-        </section>
-        
-        <footer>
-          <button
-            @click="addRequirement"
-            class="add-button"
-            :disabled="chosenFragment === null"
-          >
-            Add Requirement
-          </button>
-        </footer>
-      </div>
-    </dialog>
+          </template>
+        </template>
+      </n-form>
+    </div>
+    
+    <template #footer>
+      <n-space justify="end">
+        <n-button @click="showModalFlag = false">Cancel</n-button>
+        <n-button type="primary" @click="addRequirement" :disabled="!chosenFragment">
+          Add Requirement
+        </n-button>
+      </n-space>
+    </template>
+  </n-modal>
 </template>
 
 <script setup>
   import axios from 'axios'
-  import { ref } from 'vue'
-  import { watch, reactive, toRaw } from 'vue'
+  import { ref, watch, reactive, toRaw } from 'vue'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
+  import { 
+    NModal, NForm, NFormItem, NSelect, NInput, NInputNumber, 
+    NSwitch, NSpace, NButton, NAlert
+  } from 'naive-ui'
 
-  const dialog = ref(null)
+  const showModalFlag = ref(false)
 
   const fragmentOptions = ref([])
   const values = reactive({})
 
   const schemaJSON = ref({})
-
   const chosenFragment = ref(null)
+  const selectedFragmentId = ref(null)
+
+  const handleFragmentSelect = (val) => {
+    chosenFragment.value = fragmentOptions.value.find(f => f.id === val)
+  }
 
   watch(chosenFragment, (newChosenFragment) => {
     if(newChosenFragment) {
@@ -100,9 +121,11 @@
       for(const key in values) {
         delete values[key]
       }
-      for(const key in newChosenFragment.evaluationMethod.variableSchema.properties) {
+      for(const key in newChosenFragment.evaluationMethod?.variableSchema?.properties || {}) {
         if(key === 'property') {
           values[key] = props.element
+        } else if (newChosenFragment.evaluationMethod.variableSchema.properties[key].type === 'boolean') {
+          values[key] = false
         } else {
           values[key] = ""
         }
@@ -115,10 +138,11 @@
   const convertType = (type, key) => {
     switch(type) {
       case "number":
+      case "integer":
         values[key] = Number(values[key])
         break
       case "boolean":
-        values[key] = values[key] === "true"
+        values[key] = values[key] === "true" || values[key] === true
         break
     }
   }
@@ -139,17 +163,17 @@
       if(Array.isArray(json)) {
         fragmentOptions.value = json
       }
-    } catch (err) {}
-
-
-    dialog.value?.showModal()
-  }
-
-  const handleBackdropClick = (e) => {
-    if (e.target === dialog.value) {
-      chosenFragment.value = null 
-      dialog.value?.close()
+    } catch (err) {
+      console.error(err)
     }
+    
+    // Reset state
+    chosenFragment.value = null
+    selectedFragmentId.value = null
+    for(const key in values) {
+      delete values[key]
+    }
+    showModalFlag.value = true
   }
 
   const emit = defineEmits(['req-added'])
@@ -158,11 +182,18 @@
 
   const addRequirement = async () => {
     const rawValues = toRaw(values)
-    const template = {}
     const model = {}
 
     for(const key in rawValues) {
       model[key] = rawValues[key]
+    }
+
+    if (props.element && chosenFragment.value?.evaluationMethod?.variableSchema?.properties?.property) {
+      let propPath = props.element.trim()
+      if (!propPath.startsWith('.')) {
+        propPath = '.' + propPath
+      }
+      model.property = propPath
     }
 
     const req = {
@@ -179,128 +210,37 @@
         delete values[key]
     }
     chosenFragment.value = null
-    dialog.value?.close()
+    selectedFragmentId.value = null
+    showModalFlag.value = false
   }
 </script>
 
 <style scoped>
-  .modern-modal::backdrop {
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(8px);
-    animation: backdropFadeIn 0.3s ease-out;
-  }
-  
-  dialog {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    max-width: 50vw;
-    max-height: 90vh;
-    border: none;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    animation: dialogSlideIn 0.3s ease-out;
-  }
-  
-  h3 {
-    margin: 0;
-  }
-
-  .req-form {
-    display: flex;
-    flex-direction: column;
-    gap: .2rem;
-  }
-  
-  .modal-content {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 24px 24px 0;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 16px;
-    margin-bottom: 20px;
-  }
-  
-  .modal-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #111827;
-    margin: 0;
-  }
-  
   .modal-body {
-    flex: 1;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 16px;
+    padding-top: 8px;
+  }
+  
+  .mb-4 {
+    margin-bottom: 16px;
+  }
+  
+  .mt-2 {
+    margin-top: 8px;
+  }
+  
+  .w-full {
+    width: 100%;
   }
 
-  .fragment-desc {
-    font-style: italic;
-  }
-  
-  footer {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    justify-content: flex-end;
-    padding-top: 1rem;
-    border-top: 1px solid #e5e7eb;
-  }
-
-  .add-button {
-    background: #08c41e;
-    font-weight: bold;
-  }
-  
-  /* Animations */
-  @keyframes dialogSlideIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95) translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-  
-  @keyframes backdropFadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 640px) {
-    .modern-modal {
-      width: 95vw;
-    }
-    
-    .modal-header,
-    .modal-body,
-    .modal-footer {
-      padding-left: 16px;
-      padding-right: 16px;
-    }
-    
-    .modal-footer {
-      flex-direction: column-reverse;
-    }
-    
-    .btn-primary,
-    .btn-secondary {
-      width: 100%;
-    }
+  .json-preview {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 8px;
+    max-height: 200px;
+    overflow-y: auto;
   }
 </style>
