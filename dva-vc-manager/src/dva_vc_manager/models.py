@@ -1,11 +1,9 @@
 """
 HTTP request/response models for /aov/issue and /aov/verify.
 
-The JSON shape is kept byte-compatible with the Kotlin ``dva-api``
-``/attestation`` response so the PDC client
-(``dataspace-connector-1.10.2/src/libs/third-party/dva.ts``) sees no
-contract change when the JWS is issued by this Python service instead
-of the inlined Kotlin signer.
+The AoV endpoints speak ``camelCase`` on the wire while the Python
+attribute names stay ``snake_case``.  ``populate_by_name`` keeps
+``snake_case`` accepted on input too, which is what the tests send.
 """
 
 from __future__ import annotations
@@ -14,18 +12,10 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
-# JSON keys for these request/response models are byte-identical with the
-# Kotlin ``dva-api`` DTOs (``route/aovRoutes.kt:39-57`` and
-# ``AoVDTOs.kt``).  Kotlin property names are ``camelCase`` (e.g. ``vcId``,
-# ``issuerDidKey``); pydantic's Python-native attribute names stay
-# ``snake_case`` but the wire format MUST be ``camelCase`` so the Kotlin
-# client/server round-trip works without contract drift.  We add aliases
-# to each advanced-name field and let ``populate_by_name=True`` keep
-# snake_case accepted on the Python side (for unit tests and direct
-# curl).
-_CAMEL = ConfigDict(populate_by_name=True)
+_CAMEL = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class EvaluationResultDTO(BaseModel):
@@ -49,16 +39,14 @@ class AovIssueRequest(BaseModel):
 
     model_config = _CAMEL
 
-    valid_since: str = Field(..., alias="validSince")
+    valid_since: str
     subject: str
-    issuer_id: str = Field(..., alias="issuerId")
-    record_id: str = Field(..., alias="recordId")
-    contract_id: str = Field(..., alias="contractId")
-    data_exchange_id: str = Field(..., alias="dataExchangeId")
+    issuer_id: str
+    record_id: str
+    contract_id: str
+    data_exchange_id: str
     payload: str
-    evaluation_results: list[EvaluationResultDTO] = Field(
-        ..., alias="evaluationResults"
-    )
+    evaluation_results: list[EvaluationResultDTO]
 
 
 class AovIssueResponse(BaseModel):
