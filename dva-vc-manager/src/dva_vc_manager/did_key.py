@@ -17,7 +17,7 @@ Reference:
 from __future__ import annotations
 
 import base58
-from nacl.public import PublicKey
+from nacl.signing import VerifyKey
 
 ED25519_RAW_SIZE = 32
 ED25519_MULTICODEC_PREFIX = b"\xed\x01"
@@ -25,8 +25,8 @@ MULTIBASE_BASE58BTC_PREFIX = "z"
 DID_KEY_SCHEME = "did:key:"
 
 
-def public_key_to_did_key(public_key: PublicKey) -> str:
-    """Encode a PyNaCl Ed25519 PublicKey into a ``did:key`` identifier."""
+def public_key_to_did_key(public_key: VerifyKey) -> str:
+    """Encode a PyNaCl Ed25519 VerifyKey into a ``did:key`` identifier."""
     raw = bytes(public_key)
     if len(raw) != ED25519_RAW_SIZE:
         raise ValueError(f"Ed25519 public key must be exactly 32 bytes, got {len(raw)}")
@@ -38,8 +38,8 @@ def public_key_to_did_key(public_key: PublicKey) -> str:
     )
 
 
-def did_key_to_public_key(did_key: str) -> PublicKey:
-    """Decode a ``did:key`` Ed25519 identifier back into a PyNaCl PublicKey."""
+def did_key_to_public_key(did_key: str) -> VerifyKey:
+    """Decode a ``did:key`` Ed25519 identifier back into a PyNaCl VerifyKey."""
     if not did_key.startswith(DID_KEY_SCHEME):
         raise ValueError(f"not a did:key identifier: {did_key}")
     multibase = did_key.removeprefix(DID_KEY_SCHEME)
@@ -58,4 +58,4 @@ def did_key_to_public_key(did_key: str) -> PublicKey:
             f"multicodec prefix 0x{decoded[0]:02x}{decoded[1]:02x} "
             "is not the Ed25519 prefix 0xed01"
         )
-    return PublicKey(decoded[2:])
+    return VerifyKey(decoded[2:])

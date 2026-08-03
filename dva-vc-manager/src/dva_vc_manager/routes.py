@@ -29,7 +29,6 @@ import urllib.parse
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from nacl.signing import VerifyKey
 
 from .dependencies import get_key_store, get_whitelist
 from .did_key import did_key_to_public_key
@@ -139,7 +138,7 @@ async def aov_verify(
     # 6. Verify the Ed25519 signature.  A structurally-valid JWS whose
     # signature does not verify returns verified=false.
     try:
-        ok = verify_jws(req.jws, VerifyKey(bytes(public_key)))
+        ok = verify_jws(req.jws, public_key)
     except ValueError as e:
         return AovVerifyResponse(verified=False, reason=f"signature check failed: {e}")
 
