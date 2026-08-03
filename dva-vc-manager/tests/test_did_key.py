@@ -1,4 +1,4 @@
-"""did:key codec round-trip tests — mirror ``DidKeyTest.kt`` exactly."""
+"""did:key codec round-trip tests."""
 
 from __future__ import annotations
 

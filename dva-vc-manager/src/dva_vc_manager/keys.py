@@ -6,8 +6,8 @@ PyNaCl exposes the private key as a 32-byte seed, the public key as 32
 bytes. The seed is the canonical "private key" representation for
 Ed25519 in libsodium.
 
-POSIX file permissions 0600 are applied to the key file, mirroring
-``SigningKeyStore.kt:107-114``. Parent directories are 0700.
+POSIX file permissions 0600 are applied to the key file, and 0700 to
+parent directories.
 """
 
 from __future__ import annotations

@@ -3,8 +3,7 @@ Whitelist of trusted attester ``did:key`` identifiers.
 
 Two implementations:
 * :class:`FakeWhitelist` – in-memory list for tests.
-* :class:`PgWhitelist` – async-backed PostgreSQL repository via
-  asyncpg; mirrors ``whitelistMapping.kt:17-20``.
+* :class:`PgWhitelist` – async-backed PostgreSQL repository via asyncpg.
 """
 
 from __future__ import annotations

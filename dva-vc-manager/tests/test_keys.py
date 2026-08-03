@@ -1,4 +1,4 @@
-"""Signing key store tests — mirror ``SigningKeyStoreTest.kt``."""
+"""Signing key store tests."""
 
 from __future__ import annotations
 
