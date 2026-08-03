@@ -53,6 +53,7 @@ uv run dva-vc-manager         # boot the service on :8000
 |---|---|---|
 | ``DVA_VC_MANAGER_SIGNING_KEY_PATH`` | ``/data/dva-vc-signing-key.pem`` | Ed25519 key file path (created 0600 on first boot) |
 | ``DVA_VC_MANAGER_DB_URL`` | *(empty)* | Postgres DSN for the whitelist. Empty → in-memory ``FakeWhitelist`` (verify path fails-closed until admin populates it). |
-| ``DVA_VC_MANAGER_API_KEY`` | *(empty)* | Shared-secret bearer for ``/admin/*``. When empty, admin endpoints are disabled. |
+| ``DVA_VC_MANAGER_HOST`` | ``0.0.0.0`` | Listen address |
 | ``DVA_VC_MANAGER_PORT`` | ``8000`` | Listen port |
-| ``DVA_VC_MANAGER_LOG_LEVEL`` | ``INFO`` | Standard Python log-level name |
+| ``DVA_VC_MANAGER_LOG_LEVEL`` | ``info`` | One of ``critical``, ``error``, ``warning``, ``info``, ``debug`` |
+| ``DVA_VC_MANAGER_OPENAPI_FILE`` | ``/app/openapi.yaml`` | Hand-written spec served at ``/swagger``. Missing → FastAPI's generated schema. |
