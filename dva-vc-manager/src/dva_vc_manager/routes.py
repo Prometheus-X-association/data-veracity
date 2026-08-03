@@ -44,7 +44,7 @@ from .models import (
     WhitelistEntryDTO,
 )
 from .signing import AovClaims, decode_payload, sign_jws, verify_jws
-from .whitelist import WhitelistRepo
+from .whitelist import WhitelistEntry, WhitelistRepo
 
 router = APIRouter()
 
@@ -58,9 +58,9 @@ async def aov_issue(
     keypair = key_store.load_or_generate()
     issuer_did_key = key_store.issuer_did_key()
 
-    # AoVClaims is passed in snake_case and build_aov_payload embeds these
-    # values into the VC JSON-LD payload (credentialSubject keys are snake_case
-    # to match the existing Kotlin implementation)
+    # build_aov_payload embeds these values into the VC JSON-LD payload.
+    # Note the credentialSubject keys stay snake_case even though the
+    # request body is camelCase -- see the models module docstring.
     claims = AovClaims(
         vc_id=str(uuid4()),
         valid_since=req.valid_since,
@@ -153,11 +153,8 @@ admin_router = APIRouter()
 @admin_router.get("/admin/whitelist", response_model=list[WhitelistEntryDTO])
 async def whitelist_list(
     whitelist: WhitelistRepo = Depends(get_whitelist),
-) -> list[WhitelistEntryDTO]:
-    entries = await whitelist.all()
-    return [
-        WhitelistEntryDTO(id=e.id, did_key=e.did_key, label=e.label) for e in entries
-    ]
+) -> list[WhitelistEntry]:
+    return await whitelist.all()
 
 
 @admin_router.post(
@@ -168,9 +165,8 @@ async def whitelist_list(
 async def whitelist_add(
     req: WhitelistAddRequest,
     whitelist: WhitelistRepo = Depends(get_whitelist),
-) -> WhitelistEntryDTO:
-    entry = await whitelist.add(req.did_key, req.label)
-    return WhitelistEntryDTO(id=entry.id, did_key=entry.did_key, label=entry.label)
+) -> WhitelistEntry:
+    return await whitelist.add(req.did_key, req.label)
 
 
 @admin_router.delete(
