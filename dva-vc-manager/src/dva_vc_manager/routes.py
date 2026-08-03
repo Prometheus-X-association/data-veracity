@@ -43,7 +43,14 @@ from .models import (
     WhitelistAddRequest,
     WhitelistEntryDTO,
 )
-from .signing import AovClaims, decode_payload, sign_jws, verify_jws
+from .signing import (
+    AovClaims,
+    MalformedJws,
+    decode_payload,
+    sign_jws,
+    split_jws,
+    verify_jws,
+)
 from .whitelist import WhitelistEntry, WhitelistRepo
 
 router = APIRouter()
@@ -88,12 +95,10 @@ async def aov_verify(
     """
 
     # 1. Structural check: must be a 3-part compact JWS.
-    parts = req.jws.split(".")
-    if len(parts) != 3:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            detail="Compact JWS must have 3 dot-separated parts",
-        )
+    try:
+        split_jws(req.jws)
+    except MalformedJws as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
     # 2. Whitelist must be non-empty. Checked early so an operator who
     # has not configured any trusted issuers gets a clear reason rather
@@ -110,7 +115,7 @@ async def aov_verify(
     # is reported as a verification failure, not a 400.
     try:
         payload = decode_payload(req.jws)
-    except Exception as e:
+    except ValueError as e:
         return AovVerifyResponse(verified=False, reason=f"malformed JWS payload: {e}")
 
     issuer_did_key = payload.get("issuer")
@@ -125,7 +130,7 @@ async def aov_verify(
     # 5. Derive the public key from the whitelist record's did:key.
     try:
         public_key = did_key_to_public_key(entry.did_key)
-    except Exception as e:
+    except ValueError as e:
         return AovVerifyResponse(
             verified=False,
             reason=f"whitelist entry contains invalid did:key: {e}",
@@ -135,7 +140,7 @@ async def aov_verify(
     # signature does not verify returns verified=false.
     try:
         ok = verify_jws(req.jws, VerifyKey(bytes(public_key)))
-    except Exception as e:
+    except ValueError as e:
         return AovVerifyResponse(verified=False, reason=f"signature check failed: {e}")
 
     if not ok:

@@ -38,6 +38,18 @@ class AovClaims(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class MalformedJws(ValueError):
+    """The string is not a well-formed compact JWS."""
+
+
+def split_jws(jws: str) -> tuple[str, str, str]:
+    """Split a compact JWS into its header, payload and signature segments."""
+    parts = jws.split(".")
+    if len(parts) != 3:
+        raise MalformedJws("Compact JWS must have 3 dot-separated parts")
+    return parts[0], parts[1], parts[2]
+
+
 def _b64url(data: bytes) -> str:
     """Standard JWS base64url **without** padding (per RFC 7515 §2.2.2)."""
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
@@ -93,11 +105,9 @@ def sign_jws(claims: AovClaims, signing_key: SigningKey, issuer_did_key: str) ->
 
 def verify_jws(jws: str, public_key: VerifyKey) -> bool:
     """Verify a compact JWS."""
-    parts = jws.split(".")
-    if len(parts) != 3:
-        raise ValueError("Compact JWS must have 3 dot-separated parts")
-    signing_input = f"{parts[0]}.{parts[1]}".encode("ascii")
-    signature = _b64url_decode(parts[2])
+    header_b64, payload_b64, signature_b64 = split_jws(jws)
+    signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
+    signature = _b64url_decode(signature_b64)
     try:
         public_key.verify(signing_input, signature)
         return True
@@ -107,7 +117,10 @@ def verify_jws(jws: str, public_key: VerifyKey) -> bool:
 
 def decode_payload(jws: str) -> dict[str, Any]:
     """Decode (without verifying) the payload middle segment of a JWS."""
-    parts = jws.split(".")
-    if len(parts) != 3:
-        raise ValueError("Compact JWS must have 3 dot-separated parts")
-    return json.loads(_b64url_decode(parts[1]))
+    _, payload_b64, _ = split_jws(jws)
+    payload = json.loads(_b64url_decode(payload_b64))
+    if not isinstance(payload, dict):
+        raise MalformedJws(
+            f"JWS payload must be a JSON object, got {type(payload).__name__}"
+        )
+    return payload
