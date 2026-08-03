@@ -37,9 +37,13 @@ def whitelist() -> FakeWhitelist:
 
 
 @pytest.fixture
-def client(whitelist: FakeWhitelist, tmp_path) -> Iterator[TestClient]:
-    cfg_module.cfg.signing_key_path = str(tmp_path / "key.pem")
-    cfg_module.cfg.postgres_dsn = ""
+def client(
+    whitelist: FakeWhitelist, tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[TestClient]:
+    # setattr (rather than plain assignment) so the global cfg is restored
+    # afterwards and settings do not leak between tests.
+    monkeypatch.setattr(cfg_module.cfg, "signing_key_path", str(tmp_path / "key.pem"))
+    monkeypatch.setattr(cfg_module.cfg, "postgres_dsn", "")
 
     app = create_app()
     app.dependency_overrides[get_whitelist] = lambda: whitelist
@@ -147,15 +151,17 @@ def test_aov_verify_rejects_malformed_jws_with_400(
     assert r.status_code == 400
 
 
-def test_lifespan_builds_the_whitelist_repo_at_startup(tmp_path) -> None:
+def test_lifespan_builds_the_whitelist_repo_at_startup(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     The repo is built once during startup rather than lazily per request.
 
     The ``client`` fixture overrides ``get_whitelist``, so this is the only
     test that exercises the lifespan.
     """
-    cfg_module.cfg.signing_key_path = str(tmp_path / "key.pem")
-    cfg_module.cfg.postgres_dsn = ""
+    monkeypatch.setattr(cfg_module.cfg, "signing_key_path", str(tmp_path / "key.pem"))
+    monkeypatch.setattr(cfg_module.cfg, "postgres_dsn", "")
     app = create_app()
 
     assert not hasattr(app.state, "whitelist"), "repo must not exist before startup"
