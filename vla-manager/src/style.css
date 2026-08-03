@@ -5,7 +5,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f3f4f6;
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
 }
 

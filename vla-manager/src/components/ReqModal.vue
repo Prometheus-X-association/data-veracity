@@ -124,7 +124,7 @@
       for(const key in newChosenFragment.evaluationMethod?.variableSchema?.properties || {}) {
         if(key === 'property') {
           values[key] = props.element
-        } else if (newChosenFragment.evaluationMethod.variableSchema.properties[key].type === 'boolean') {
+        } else if (newChosenFragment.evaluationMethod?.variableSchema?.properties?.[key]?.type === 'boolean') {
           values[key] = false
         } else {
           values[key] = ""
