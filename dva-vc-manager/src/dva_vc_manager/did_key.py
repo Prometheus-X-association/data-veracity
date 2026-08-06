@@ -1,13 +1,8 @@
 """
 ``did:key`` codec for Ed25519 keys.
 
-* The Ed25519 public key is encoded as 32 raw bytes (RFC 8032).
-* Prefixed with the Ed25519 multicodec prefix ``0xed 0x01``.
-* Then ``multibase(base58btc(...))`` – prefixed with the ``z`` character
-  for base58btc.
-* Finally wrapped in ``did:key:``.
-
-This is exactly the W3C did:key specification – no custom cryptography.
+The multibase/multicodec encoding is delegated to ``multiformats``; this
+module only adds the ``did:key:`` scheme and the Ed25519 constraints.
 
 Reference:
 - https://w3c-ccg.github.io/did-method-key/
@@ -16,46 +11,42 @@ Reference:
 
 from __future__ import annotations
 
-import base58
+from multiformats import multibase, multicodec
 from nacl.signing import VerifyKey
 
 ED25519_RAW_SIZE = 32
-ED25519_MULTICODEC_PREFIX = b"\xed\x01"
-MULTIBASE_BASE58BTC_PREFIX = "z"
+ED25519_MULTICODEC = "ed25519-pub"
+MULTIBASE_BASE58BTC = "base58btc"
 DID_KEY_SCHEME = "did:key:"
 
 
 def public_key_to_did_key(public_key: VerifyKey) -> str:
     """Encode a PyNaCl Ed25519 VerifyKey into a ``did:key`` identifier."""
     raw = bytes(public_key)
+    # multicodec.wrap does not check the payload length for us.
     if len(raw) != ED25519_RAW_SIZE:
         raise ValueError(f"Ed25519 public key must be exactly 32 bytes, got {len(raw)}")
-    multicodec = ED25519_MULTICODEC_PREFIX + raw
-    return (
-        DID_KEY_SCHEME
-        + MULTIBASE_BASE58BTC_PREFIX
-        + base58.b58encode(multicodec).decode("ascii")
-    )
+    wrapped = multicodec.wrap(ED25519_MULTICODEC, raw)
+    return DID_KEY_SCHEME + multibase.encode(wrapped, MULTIBASE_BASE58BTC)
 
 
 def did_key_to_public_key(did_key: str) -> VerifyKey:
     """Decode a ``did:key`` Ed25519 identifier back into a PyNaCl VerifyKey."""
     if not did_key.startswith(DID_KEY_SCHEME):
         raise ValueError(f"not a did:key identifier: {did_key}")
-    multibase = did_key.removeprefix(DID_KEY_SCHEME)
-    if not multibase.startswith(MULTIBASE_BASE58BTC_PREFIX):
-        raise ValueError(
-            f"only base58btc multibase ('z') is supported, got: {multibase}"
-        )
-    decoded = base58.b58decode(multibase[1:])
-    if len(decoded) != len(ED25519_MULTICODEC_PREFIX) + ED25519_RAW_SIZE:
-        raise ValueError(
-            f"decoded multicodec is {len(decoded)} bytes, "
-            f"expected {len(ED25519_MULTICODEC_PREFIX) + ED25519_RAW_SIZE}"
-        )
-    if decoded[:2] != ED25519_MULTICODEC_PREFIX:
-        raise ValueError(
-            f"multicodec prefix 0x{decoded[0]:02x}{decoded[1]:02x} "
-            "is not the Ed25519 prefix 0xed01"
-        )
-    return VerifyKey(decoded[2:])
+
+    try:
+        base, decoded = multibase.decode_raw(did_key.removeprefix(DID_KEY_SCHEME))
+        codec, raw = multicodec.unwrap(decoded)
+    except KeyError as e:
+        # multiformats reports unknown multibase/multicodec prefixes with
+        # KeyError subclasses; callers here expect malformed input to raise
+        # ValueError, as everything else in this module does.
+        raise ValueError(f"unsupported did:key encoding: {did_key}") from e
+
+    if base.name != MULTIBASE_BASE58BTC:
+        raise ValueError(f"did:key must use base58btc multibase, got {base.name}")
+    if codec.name != ED25519_MULTICODEC:
+        raise ValueError(f"did:key must be {ED25519_MULTICODEC}, got {codec.name}")
+
+    return VerifyKey(raw)

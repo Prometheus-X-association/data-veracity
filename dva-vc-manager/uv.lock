@@ -1,6 +1,10 @@
 version = 1
 revision = 3
 requires-python = ">=3.10"
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version < '3.14'",
+]
 
 [[package]]
 name = "annotated-doc"
@@ -112,12 +116,17 @@ wheels = [
 ]
 
 [[package]]
-name = "base58"
-version = "2.1.1"
+name = "bases"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7f/45/8ae61209bb9015f516102fa559a2914178da1d5868428bd86a1b4421141d/base58-2.1.1.tar.gz", hash = "sha256:c5d0cb3f5b6e81e8e35da5754388ddcc6d0d14b6c6a132cb93d69ed580a7278c", size = 6528, upload-time = "2021-10-30T22:12:17.858Z" }
+dependencies = [
+    { name = "typing-extensions" },
+    { name = "typing-validation", version = "1.2.12", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
+    { name = "typing-validation", version = "2.2.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/de/8d/105bca352e2fc5f1ee07f425ec296aa680525aac7f197ef135ea057902ac/bases-0.3.0.tar.gz", hash = "sha256:70f04a4a45d63245787f9e89095ca11042685b6b64b542ad916575ba3ccd1570", size = 789978, upload-time = "2023-12-18T16:57:17.898Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4a/45/ec96b29162a402fc4c1c5512d114d7b3787b9d1c2ec241d9568b4816ee23/base58-2.1.1-py3-none-any.whl", hash = "sha256:11a36f4d3ce51dfc1043f3218591ac4eb1ceb172919cebe05b52a5bcc8d245c2", size = 5621, upload-time = "2021-10-30T22:12:16.658Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/15/7bcf28a3f971e1b0523fab46ae3ca935a589249544187558e5a8e70af393/bases-0.3.0-py3-none-any.whl", hash = "sha256:a2fef3366f3e522ff473d2e95c21523fe8e44251038d5c6150c01481585ebf5b", size = 36053, upload-time = "2023-12-18T16:57:14.253Z" },
 ]
 
 [[package]]
@@ -266,8 +275,8 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "asyncpg" },
-    { name = "base58" },
     { name = "fastapi" },
+    { name = "multiformats" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pynacl" },
@@ -287,8 +296,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "asyncpg", specifier = ">=0.30.0" },
-    { name = "base58", specifier = ">=2.1.1" },
     { name = "fastapi", specifier = "~=0.136.3" },
+    { name = "multiformats", specifier = ">=0.3.1" },
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "pydantic-settings", specifier = ">=2.5.0" },
     { name = "pynacl", specifier = ">=1.5.0" },
@@ -386,6 +395,34 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/72/34/14ca021ce8e5dfedc35312d08ba8bf51fdd999c576889fc2c24cb97f4f10/iniconfig-2.3.0.tar.gz", hash = "sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730", size = 20503, upload-time = "2025-10-18T21:55:43.219Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484, upload-time = "2025-10-18T21:55:41.639Z" },
+]
+
+[[package]]
+name = "multiformats"
+version = "0.3.1.post4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "bases" },
+    { name = "multiformats-config" },
+    { name = "typing-extensions" },
+    { name = "typing-validation", version = "1.2.12", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
+    { name = "typing-validation", version = "2.2.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b2/41/2efc6e99fa2ed9f1a47fbfed5d124215e35db0a849585db72eeb1490de0e/multiformats-0.3.1.post4.tar.gz", hash = "sha256:d00074fdbc7d603c2084b4c38fa17bbc28173cf2750f51f46fbbc5c4d5605fbb", size = 826017, upload-time = "2023-12-20T14:18:00.571Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fa/02/0eff41b136c6723441d052c61c9dae36b86b3ae68ec064813445580222a6/multiformats-0.3.1.post4-py3-none-any.whl", hash = "sha256:5b1d61bd8275c9e817bdbee38dbd501b26629011962ee3c86c46e7ccd0b14129", size = 57148, upload-time = "2023-12-20T14:17:58.576Z" },
+]
+
+[[package]]
+name = "multiformats-config"
+version = "0.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "multiformats" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c6/09/ccb6867c2d6c6de98d1d285d8a3a2103fdf452c2fef5019bb3d8ac9938d9/multiformats-config-0.3.1.tar.gz", hash = "sha256:7eaa80ef5d9c5ee9b86612d21f93a087c4a655cbcb68960457e61adbc62b47a7", size = 28345, upload-time = "2023-12-18T21:35:23.972Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f3/9b/c21a9c1d5ea4847989f1eb00e3147e38e79aaea7c4b4d1cbd4f1afae9740/multiformats_config-0.3.1-py3-none-any.whl", hash = "sha256:dec4c9d42ed0d9305889b67440f72e8e8d74b82b80abd7219667764b5b0a8e1d", size = 17153, upload-time = "2023-12-18T21:35:21.171Z" },
 ]
 
 [[package]]
@@ -832,6 +869,33 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/55/e3/70399cb7dd41c10ac53367ae42139cf4b1ca5f36bb3dc6c9d33acdb43655/typing_inspection-0.4.2.tar.gz", hash = "sha256:ba561c48a67c5958007083d386c3295464928b01faa735ab8547c5692e87f464", size = 75949, upload-time = "2025-10-01T02:14:41.687Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl", hash = "sha256:4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7", size = 14611, upload-time = "2025-10-01T02:14:40.154Z" },
+]
+
+[[package]]
+name = "typing-validation"
+version = "1.2.12"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.14'",
+]
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or python_full_version >= '3.14'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ba/c0/374639373a99b62f51c3204521235906dca1ed1886e73f65d6664465b187/typing_validation-1.2.12.tar.gz", hash = "sha256:7ea9463a18bd04922e799cac1954f687e68e9564773f81db491536852ffe1d54", size = 774523, upload-time = "2025-03-18T14:54:49.4Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/59/7b/29a088c5be56f40e0b1e611c460681f411ce79f0083d2cd3b233a35b7c4d/typing_validation-1.2.12-py3-none-any.whl", hash = "sha256:d68e22a41bf2b98ae91e5d6407db56e9ef83e9e5600164a7aff64aaa082fc232", size = 20657, upload-time = "2025-03-18T14:54:47.529Z" },
+]
+
+[[package]]
+name = "typing-validation"
+version = "2.2.1"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+]
+sdist = { url = "https://files.pythonhosted.org/packages/60/0c/1a8a4850f9b24fb8c8ac2f99394d3fb4fd929360ebfd1436e13ecebf5baf/typing_validation-2.2.1.tar.gz", hash = "sha256:db33e27b0269098902677aa23eba07fcd13f076b6ef2ffc1bb341be5c0942c75", size = 61583, upload-time = "2026-07-18T13:25:01.444Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/0c/f44ed22596e22ec9b359d4bb99742ee3380aa433e9e161ff7acb824e5fac/typing_validation-2.2.1-py3-none-any.whl", hash = "sha256:7b6740a98ebd3ba73a542032406807cd4a9620d578b69040a99bd58bdde9da7c", size = 71132, upload-time = "2026-07-18T13:25:00.275Z" },
 ]
 
 [[package]]
