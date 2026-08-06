@@ -61,7 +61,7 @@ async def aov_issue(
     key_store: SigningKeyStore = Depends(get_key_store),
 ) -> AovIssueResponse:
     """Issue an AoV JWS credential from the veracity-check results."""
-    keypair = key_store.load_or_generate()
+    signing_key = key_store.load_or_generate()
     issuer_did_key = key_store.issuer_did_key()
 
     # build_aov_payload embeds these values into the VC JSON-LD payload.
@@ -77,7 +77,7 @@ async def aov_issue(
         data_exchange_id=req.data_exchange_id,
         payload=req.payload,
     )
-    jws = sign_jws(claims, keypair.private, issuer_did_key)
+    jws = sign_jws(claims, signing_key, issuer_did_key)
     return AovIssueResponse(jws=jws)
 
 

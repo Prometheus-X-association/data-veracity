@@ -1,10 +1,9 @@
 """
 Ed25519 signing-key store.
 
-Persistence format: ``base64(private key seed)|base64(public key)`` –
-PyNaCl exposes the private key as a 32-byte seed, the public key as 32
-bytes. The seed is the canonical "private key" representation for
-Ed25519 in libsodium.
+Persistence format: base64 of the 32-byte private seed, encoded with
+PyNaCl's own codec.  The public key is *derived* from the seed, so a
+``SigningKey`` is the whole keypair and only the seed is written to disk.
 
 POSIX file permissions 0600 are applied to the key file, and 0700 to
 parent directories.
@@ -12,90 +11,63 @@ parent directories.
 
 from __future__ import annotations
 
-import base64
 import os
 from pathlib import Path
 
-from nacl.signing import SigningKey, VerifyKey
+from nacl.encoding import Base64Encoder
+from nacl.signing import SigningKey
 
 from .did_key import public_key_to_did_key
 
-__all__ = ["SigningKeyStore", "KeyPair"]
-
-
-class KeyPair:
-    """A loaded Ed25519 keypair (PyNaCl types)."""
-
-    def __init__(self, private: SigningKey, public: VerifyKey) -> None:
-        self._private = private
-        self._public = public
-
-    @property
-    def private(self) -> SigningKey:
-        return self._private
-
-    @property
-    def public(self) -> VerifyKey:
-        return self._public
+__all__ = ["SigningKeyStore"]
 
 
 class SigningKeyStore:
-    """Persistent Ed25519 keypair store backed by a filesystem path."""
+    """Persistent Ed25519 signing key backed by a filesystem path."""
 
     def __init__(self, path: str) -> None:
         self._path = Path(path)
-        self._cached: KeyPair | None = None
+        self._cached: SigningKey | None = None
 
     @property
     def path(self) -> Path:
         """The key file backing this store."""
         return self._path
 
-    def load_or_generate(self) -> KeyPair:
-        """Return the cached keypair, load from disk, or generate+persist."""
-        if self._cached is not None:
-            return self._cached
-
-        if self._path.exists():
-            content = self._path.read_text()
-            parts = content.split("|")
-            if len(parts) != 2:
-                raise RuntimeError(
-                    f"Signing key file at {self._path} is malformed (expected "
-                    f"'base64(priv)|base64(pub)', got {len(parts)} segment(s)). "
-                    "Remove the file manually if you intend to generate a new key."
-                )
-            priv_seed = base64.b64decode(parts[0])
-            pub_bytes = base64.b64decode(parts[1])
-            signing_key = SigningKey(priv_seed)
-            if bytes(signing_key.verify_key) != pub_bytes:
-                raise RuntimeError(
-                    f"Signing key file at {self._path} is inconsistent: "
-                    "public key does not match private seed. Refusing to load."
-                )
-            self._cached = KeyPair(signing_key, signing_key.verify_key)
-            return self._cached
-
-        # File doesn't exist — generate a fresh keypair and persist it.
-        signing_key = SigningKey.generate()
-        self._cached = KeyPair(signing_key, signing_key.verify_key)
-
-        parent = self._path.parent or Path(".")
-        parent.mkdir(parents=True, exist_ok=True)
-        try:
-            os.chmod(parent, 0o700)
-        except (NotImplementedError, OSError):
-            pass  # Non-POSIX filesystems (Windows)
-
-        priv_b64 = base64.b64encode(bytes(signing_key)).decode("ascii")
-        pub_b64 = base64.b64encode(bytes(signing_key.verify_key)).decode("ascii")
-        self._path.write_text(f"{priv_b64}|{pub_b64}")
-
-        try:
-            os.chmod(self._path, 0o600)
-        except (NotImplementedError, OSError):
-            pass
+    def load_or_generate(self) -> SigningKey:
+        """Return the cached key, load it from disk, or generate and persist one."""
+        if self._cached is None:
+            self._cached = (
+                self._load() if self._path.exists() else self._generate_and_persist()
+            )
         return self._cached
+
+    def _load(self) -> SigningKey:
+        try:
+            return SigningKey(self._path.read_bytes().strip(), encoder=Base64Encoder)
+        except (ValueError, TypeError) as e:
+            raise RuntimeError(
+                f"Signing key file at {self._path} is malformed ({e}). Expected "
+                "base64 of the 32-byte Ed25519 seed. Delete the file to generate "
+                "a fresh key -- note that this changes the issuer did:key, which "
+                "must then be re-registered with every verifying participant."
+            ) from e
+
+    def _generate_and_persist(self) -> SigningKey:
+        signing_key = SigningKey.generate()
+
+        # A directory we create is ours, so lock it down; one the operator
+        # already provided is left as we found it.
+        parent = self._path.parent or Path(".")
+        parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+
+        # Open with 0600 up front rather than chmod-ing afterwards, so the
+        # seed is never briefly readable by other users.
+        fd = os.open(self._path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(signing_key.encode(encoder=Base64Encoder))
+
+        return signing_key
 
     def issuer_did_key(self) -> str:
         """Return the ``did:key`` identifier of the loaded public key."""
@@ -103,4 +75,4 @@ class SigningKeyStore:
             raise RuntimeError(
                 "SigningKeyStore.load_or_generate() must be called before issuer_did_key()"
             )
-        return public_key_to_did_key(self._cached.public)
+        return public_key_to_did_key(self._cached.verify_key)
