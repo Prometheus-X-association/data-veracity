@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+from multiformats import multibase, multicodec
 from nacl.signing import SigningKey
 
 from dva_vc_manager.did_key import (
@@ -37,3 +39,33 @@ def test_starts_with_did_key_z6mk() -> None:
     assert did_key.startswith("did:key:z6Mk"), (
         "did:key identifier must start with 'did:key:z6Mk'"
     )
+
+
+def _did_key(codec: str, base: str = "base58btc", raw: bytes | None = None) -> str:
+    raw = raw if raw is not None else bytes(SigningKey.generate().verify_key)
+    return "did:key:" + multibase.encode(multicodec.wrap(codec, raw), base)
+
+
+@pytest.mark.parametrize(
+    "bad_did_key",
+    [
+        pytest.param("did:web:example.com", id="not_a_did_key"),
+        pytest.param("did:key:", id="empty"),
+        pytest.param("did:key:Q6MkhaXgBZDvotDkL5257fai", id="unknown_multibase"),
+        pytest.param("did:key:z6MkO0Il", id="invalid_base58_chars"),
+        pytest.param(_did_key("ed25519-pub", base="base16"), id="not_base58btc"),
+        pytest.param(_did_key("x25519-pub"), id="x25519_not_ed25519"),
+        pytest.param(_did_key("secp256k1-pub"), id="secp256k1_not_ed25519"),
+        pytest.param(_did_key("ed25519-pub", raw=b"short"), id="wrong_key_length"),
+    ],
+)
+def test_malformed_did_key_raises_value_error(bad_did_key: str) -> None:
+    """
+    Malformed input must raise ValueError, never KeyError.
+
+    ``multiformats`` signals unknown multibase/multicodec prefixes with
+    KeyError subclasses, which ``aov_verify`` does not catch -- those would
+    surface as HTTP 500 rather than ``verified: false``.
+    """
+    with pytest.raises(ValueError):
+        did_key_to_public_key(bad_did_key)
