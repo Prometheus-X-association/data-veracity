@@ -11,8 +11,8 @@ Reference:
 
 from __future__ import annotations
 
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from multiformats import multibase, multicodec
-from nacl.signing import VerifyKey
 
 ED25519_RAW_SIZE = 32
 ED25519_MULTICODEC = "ed25519-pub"
@@ -20,9 +20,9 @@ MULTIBASE_BASE58BTC = "base58btc"
 DID_KEY_SCHEME = "did:key:"
 
 
-def public_key_to_did_key(public_key: VerifyKey) -> str:
-    """Encode a PyNaCl Ed25519 VerifyKey into a ``did:key`` identifier."""
-    raw = bytes(public_key)
+def public_key_to_did_key(public_key: Ed25519PublicKey) -> str:
+    """Encode an Ed25519 public key into a ``did:key`` identifier."""
+    raw = public_key.public_bytes_raw()
     # multicodec.wrap does not check the payload length for us.
     if len(raw) != ED25519_RAW_SIZE:
         raise ValueError(f"Ed25519 public key must be exactly 32 bytes, got {len(raw)}")
@@ -30,8 +30,8 @@ def public_key_to_did_key(public_key: VerifyKey) -> str:
     return DID_KEY_SCHEME + multibase.encode(wrapped, MULTIBASE_BASE58BTC)
 
 
-def did_key_to_public_key(did_key: str) -> VerifyKey:
-    """Decode a ``did:key`` Ed25519 identifier back into a PyNaCl VerifyKey."""
+def did_key_to_public_key(did_key: str) -> Ed25519PublicKey:
+    """Decode a ``did:key`` Ed25519 identifier back into an Ed25519 public key."""
     if not did_key.startswith(DID_KEY_SCHEME):
         raise ValueError(f"not a did:key identifier: {did_key}")
 
@@ -49,4 +49,4 @@ def did_key_to_public_key(did_key: str) -> VerifyKey:
     if codec.name != ED25519_MULTICODEC:
         raise ValueError(f"did:key must be {ED25519_MULTICODEC}, got {codec.name}")
 
-    return VerifyKey(raw)
+    return Ed25519PublicKey.from_public_bytes(raw)

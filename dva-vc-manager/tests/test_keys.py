@@ -18,8 +18,8 @@ def test_generates_key_on_first_run_when_file_missing(tmp_path: Path) -> None:
     signing_key = store.load_or_generate()
 
     assert key_path.exists(), "Key file must be created on first run"
-    assert len(bytes(signing_key)) == 32
-    assert signing_key.verify_key is not None
+    assert len(signing_key.private_bytes_raw()) == 32
+    assert signing_key.public_key() is not None
     # Permissions: 0600 on the key, 0700 on a directory we created.
     if os.name == "posix":
         assert (key_path.stat().st_mode & 0o777) == 0o600
@@ -36,10 +36,12 @@ def test_persists_and_reloads_the_same_key_across_instances(tmp_path: Path) -> N
     store2 = SigningKeyStore(str(key_path))
     key2 = store2.load_or_generate()
 
-    assert bytes(key1.verify_key) == bytes(key2.verify_key), (
-        "reload must yield the same public key as the original generation"
+    assert (
+        key1.public_key().public_bytes_raw() == key2.public_key().public_bytes_raw()
+    ), "reload must yield the same public key as the original generation"
+    assert key1.private_bytes_raw() == key2.private_bytes_raw(), (
+        "reload must yield the same private seed"
     )
-    assert bytes(key1) == bytes(key2), "reload must yield the same private seed"
 
 
 def test_stores_only_the_seed_not_the_public_key(tmp_path: Path) -> None:
@@ -49,7 +51,7 @@ def test_stores_only_the_seed_not_the_public_key(tmp_path: Path) -> None:
 
     contents = key_path.read_bytes()
     assert b"|" not in contents, "legacy seed|public separator must be gone"
-    assert base64.b64decode(contents) == bytes(signing_key)
+    assert base64.b64decode(contents) == signing_key.private_bytes_raw()
     assert len(base64.b64decode(contents)) == 32
 
 

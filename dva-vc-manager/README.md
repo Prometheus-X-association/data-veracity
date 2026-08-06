@@ -3,7 +3,7 @@
 DVA VC Manager is a FastAPI service hosted at each **Participant** that owns the
 Attestation-of-Veracity credential lifecycle:
 
-* **Issues** AoV credentials as W3C VC 2.0 JSON-LD JWS (Ed25519/EdDSA) at the provider side.
+* **Issues** AoV credentials as W3C VC 2.0 JSON-LD JWS (Ed25519) at the provider side.
 * **Verifies** AoV JWS credentials at the consumer side against a local ``did:key`` whitelist.
 
 ## Why

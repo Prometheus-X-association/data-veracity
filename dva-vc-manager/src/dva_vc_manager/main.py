@@ -55,7 +55,7 @@ def create_app() -> FastAPI:
         title="DVA VC Manager",
         description=(
             "Issues and verifies Attestation of Veracity (AoV) credentials as "
-            "W3C VC 2.0 JSON-LD JWS (Ed25519) using PyNaCl. Hosted at "
+            "W3C VC 2.0 JSON-LD JWS (Ed25519). Hosted at "
             "each Participant. Called by the DVA API during credential "
             "issuance in the synchronous attestation flow."
         ),
