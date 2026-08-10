@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from .config import cfg
-from .dependencies import build_key_store, build_whitelist
+from .dependencies import build_audit, build_key_store, build_whitelist
 from .log import get_logger, setup_logging
 from .routes import admin_router, router
 
@@ -39,13 +39,16 @@ def _load_openapi_schema(app: FastAPI) -> dict[str, Any]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Build the whitelist repo (and its connection pool) up front."""
+    """Build persistence repositories up front and close them on shutdown."""
     app.state.key_store = build_key_store()
     app.state.whitelist = await build_whitelist()
     try:
+        app.state.audit = await build_audit()
         yield
     finally:
         await app.state.whitelist.close()
+        if hasattr(app.state, "audit"):
+            await app.state.audit.close()
 
 
 def create_app() -> FastAPI:

@@ -203,6 +203,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OwnKey'
+  /admin/credentials:
+    get:
+      summary: List locally issued credentials
+      description: >-
+        Returns the append-only PostgreSQL audit records for credentials issued
+        by this VC manager, newest first. Each entry includes the full compact
+        JWS and its original issuance request.
+      operationId: listCredentials
+      responses:
+        '200':
+          description: Issued credential audit records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CredentialAudit'
+  /admin/verifications:
+    get:
+      summary: List credential verification attempts
+      description: >-
+        Returns the append-only PostgreSQL audit records for verification
+        requests and their returned responses, newest first.
+      operationId: listVerifications
+      responses:
+        '200':
+          description: Verification audit records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VerificationAudit'
 
 
 components:
@@ -367,6 +400,43 @@ components:
           type: string
           description: >-
             Filesystem path where the signing key is persisted.
+    CredentialAudit:
+      type: object
+      description: An issued credential retained in the local PostgreSQL audit log.
+      required: [id, credential_id, jws, request, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        credential_id:
+          type: string
+          description: UUID embedded in the credential subject.
+        jws:
+          type: string
+          description: Full compact JWS credential.
+        request:
+          type: object
+          description: Original POST /aov/issue request body.
+        created_at:
+          type: string
+          format: date-time
+    VerificationAudit:
+      type: object
+      description: A verification request and the response returned by this service.
+      required: [id, request, response, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        request:
+          type: object
+          description: Original POST /aov/verify request body.
+        response:
+          type: object
+          description: Response body with its HTTP status code.
+        created_at:
+          type: string
+          format: date-time
     Error:
       type: object
       description: RFC 7807-style problem object emitted on all error responses.
