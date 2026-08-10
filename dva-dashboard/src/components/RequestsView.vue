@@ -16,9 +16,15 @@
   
   onMounted(async () => {
     try {
-      let url = '/api/info/requests'
-      const reqsFromAPI = await axios.get(url)
-      reqs.value = reqsFromAPI.data
+      const [reqsFromAPI, vlasFromAPI] = await Promise.all([
+        axios.get('/api/info/requests'),
+        axios.get('/api/vla')
+      ])
+      const vlasById = new Map(vlasFromAPI.data.map(vla => [String(vla.id).toLowerCase(), vla]))
+      reqs.value = reqsFromAPI.data.map(req => ({
+        ...req,
+        vla: req.vlaID ? vlasById.get(String(req.vlaID).toLowerCase()) : undefined
+      }))
     } catch (err) {
       console.error('Fetch error:', err)
     }
