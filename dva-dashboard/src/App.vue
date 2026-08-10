@@ -9,9 +9,9 @@
       theme="white-theme"
     />
 
-    <div class="content">
+    <main class="content page-container">
       <router-view />
-    </div>
+    </main>
   </div>
 </template>
 
@@ -59,11 +59,20 @@ export default {
 <style scoped>
   .content-wrapper {
     display: flex;
-    height: 100%;
+    min-height: calc(100vh - 82px);
+    background: #f3f4f6;
   }
 
   .content {
     flex-grow: 1;
-    padding: 2rem;
+    min-width: 0;
+  }
+
+  .page-container {
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px;
+    box-sizing: border-box;
   }
 </style>

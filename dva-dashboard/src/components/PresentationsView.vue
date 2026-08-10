@@ -1,5 +1,6 @@
 <template>
   <section>
+    <div class="page-header"><div><h2>Verifications</h2><p>Presentation exchanges and verification results</p></div><span class="count-badge">{{ press.length }}</span></div>
     <div class="card-container">
       <p class="placeholder" v-if="press.length === 0">No verifications yet</p>
       <PresentationCard :pres="pres" v-for="pres in press" :key="pres.thread_id"/>
@@ -35,6 +36,11 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
   }
+
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  h2 { margin: 0; color: #0f172a; font-size: 1.65rem; }
+  .page-header p { margin: 4px 0 0; color: #64748b; }
+  .count-badge { padding: 5px 11px; border-radius: 999px; background: #cffafe; color: #0e7490; font-weight: 700; }
 
   .placeholder {
     font-style: italic;

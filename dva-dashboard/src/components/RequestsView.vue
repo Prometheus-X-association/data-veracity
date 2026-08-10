@@ -1,5 +1,9 @@
 <template>
   <section>
+    <div class="page-header">
+      <div><h2>Attestations</h2><p>Requests evaluated by the veracity service</p></div>
+      <span class="count-badge">{{ reqs.length }}</span>
+    </div>
     <div class="card-container">
       <p class="placeholder" v-if="reqs.length === 0">No requests yet</p>
       <RequestCard :req="req" v-for="req in reqs" :key="req.requestID"/>
@@ -37,6 +41,11 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
   }
+
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  h2 { margin: 0; color: #0f172a; font-size: 1.65rem; }
+  .page-header p { margin: 4px 0 0; color: #64748b; }
+  .count-badge { padding: 5px 11px; border-radius: 999px; background: #cffafe; color: #0e7490; font-weight: 700; }
 
   .placeholder {
     font-style: italic;
