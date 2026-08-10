@@ -56,11 +56,10 @@
                 v-for="participant in metadata.participants"
                 :key="participant"
                 closable
-                :type="knownParticipants.has(participant) ? 'success' : 'warning'"
+                type="info"
                 @close="removeParticipant(participant)"
               >
                 {{ participant }}
-                <template #icon><span class="participant-status">{{ knownParticipants.has(participant) ? '✓' : '?' }}</span></template>
               </n-tag>
             </n-space>
             <n-auto-complete
@@ -68,12 +67,9 @@
               :options="participantSuggestions"
               placeholder="Type an ID or email, then press comma or Enter"
               clearable
-              @select="addParticipant"
+              @select="handleParticipantSelect"
               @keydown="handleParticipantKeydown"
             />
-            <n-text depth="3" class="participant-hint">
-              Green participants are already used by another VLA. Yellow entries are new identifiers.
-            </n-text>
           </div>
         </n-form-item>
         <n-form-item label="Tags">
@@ -88,7 +84,7 @@
               :options="tagSuggestions"
               placeholder="Type a tag, then press comma or Enter"
               clearable
-              @select="addTag"
+              @select="handleTagSelect"
               @keydown="handleTagKeydown"
             />
           </div>
@@ -270,10 +266,12 @@
   const tagDraft = ref('')
   const knownTags = ref(new Set())
   const tagSuggestions = ref([])
+  const participantSelectedFromAutocomplete = ref(false)
+  const tagSelectedFromAutocomplete = ref(false)
 
   const addParticipant = (value = participantDraft.value) => {
     const participant = String(value || '').trim().replace(/,$/, '')
-    if (participant && !metadata.value.participants.includes(participant)) {
+    if (participant && !metadata.value.participants.some(item => item.toLowerCase() === participant.toLowerCase())) {
       metadata.value.participants.push(participant)
     }
     participantDraft.value = ''
@@ -283,16 +281,25 @@
     metadata.value.participants = metadata.value.participants.filter(item => item !== participant)
   }
 
+  const handleParticipantSelect = (value) => {
+    participantSelectedFromAutocomplete.value = true
+    addParticipant(value)
+  }
+
   const handleParticipantKeydown = (event) => {
     if (event.key === ',' || event.key === 'Enter') {
       event.preventDefault()
+      if (participantSelectedFromAutocomplete.value) {
+        participantSelectedFromAutocomplete.value = false
+        return
+      }
       addParticipant()
     }
   }
 
   const addTag = (value = tagDraft.value) => {
     const tag = String(value || '').trim().replace(/,$/, '')
-    if (tag && !metadata.value.tags.includes(tag)) metadata.value.tags.push(tag)
+    if (tag && !metadata.value.tags.some(item => item.toLowerCase() === tag.toLowerCase())) metadata.value.tags.push(tag)
     tagDraft.value = ''
   }
 
@@ -300,9 +307,18 @@
     metadata.value.tags = metadata.value.tags.filter(item => item !== tag)
   }
 
+  const handleTagSelect = (value) => {
+    tagSelectedFromAutocomplete.value = true
+    addTag(value)
+  }
+
   const handleTagKeydown = (event) => {
     if (event.key === ',' || event.key === 'Enter') {
       event.preventDefault()
+      if (tagSelectedFromAutocomplete.value) {
+        tagSelectedFromAutocomplete.value = false
+        return
+      }
       addTag()
     }
   }
@@ -374,9 +390,9 @@
       const participants = response.data.flatMap(vla => Array.isArray(vla.participants) ? vla.participants : [])
       const tags = response.data.flatMap(vla => Array.isArray(vla.tags) ? vla.tags : [])
       knownParticipants.value = new Set(participants)
-      participantSuggestions.value = [...knownParticipants.value].map(value => ({ label: `${value} · known participant`, value }))
+      participantSuggestions.value = [...knownParticipants.value].map(value => ({ label: value, value }))
       knownTags.value = new Set(tags)
-      tagSuggestions.value = [...knownTags.value].map(value => ({ label: `${value} · used tag`, value }))
+      tagSuggestions.value = [...knownTags.value].map(value => ({ label: value, value }))
     } catch {
       // Suggestions are optional; participants can still be entered manually.
     }
