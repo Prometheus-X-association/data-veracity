@@ -3,6 +3,7 @@
 
   <div class="content-wrapper">
     <sidebar-menu
+      class="dashboard-sidebar"
       :menu="menu"
       width="220px"
       :relative="true"
