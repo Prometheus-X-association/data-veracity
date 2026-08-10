@@ -74,7 +74,7 @@
                       <n-button
                         type="primary"
                         ghost
-                        @click="showModalAndSetFields(vla)"
+                        @click.stop="showModalAndSetFields(vla)"
                       >
                         Try with Sample
                       </n-button>
@@ -128,10 +128,10 @@
   const selectedVLA = ref(null)
 
   const showModalAndSetFields = (vla) => {
-    sampleModal.value?.show()
     selectedVLA.value = vla
     vlaID.value = vla.id
-    quality.value = vla.quality
+    quality.value = vla.quality || []
+    sampleModal.value?.show()
   }
 
   const data = ref(null)
