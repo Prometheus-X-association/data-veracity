@@ -89,9 +89,10 @@
   }
 
   .card {
-    background-color: #F0EAFB;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
     border-radius: 0.75rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .1);
     overflow: hidden;
     transition: transform 0.1s, box-shadow 0.1s;
     display: flex;
@@ -109,7 +110,7 @@
 
   .card-header {
     height: 2rem;
-    background-color: #a80cad;
+    background-color: #0891b2;
     color: #fff;
     padding: 1rem;
     display: flex;
@@ -118,7 +119,7 @@
   }
   
   .card-title {
-    font-family: monospace;
+    font-family: inherit;
     text-align: center;
     font-size: 1rem;
     font-weight: 600;
