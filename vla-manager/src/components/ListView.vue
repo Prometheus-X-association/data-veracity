@@ -16,9 +16,9 @@
       </template>
     </n-page-header>
 
-    <n-alert v-if="lastAttestation" type="success" class="submission-alert" closable @close="lastAttestation = null">
-      Sample data submitted for <strong>{{ lastAttestation.name }}</strong>.
-      The attestation request was accepted at {{ lastAttestation.time }}.
+    <n-alert v-if="lastAttestation" type="info" class="submission-alert" closable @close="lastAttestation = null">
+      <strong>Attestation accepted and queued</strong> for {{ lastAttestation.name }}.
+      Evaluation is processed asynchronously. Request ID: <code>{{ lastAttestation.id }}</code>
     </n-alert>
 
     <n-spin :show="loading">
@@ -170,7 +170,7 @@
       if (response.status === 200 || response.status === 201 || response.status === 202) {
         lastAttestation.value = {
           name: selectedVLA.value?.name || selectedVLA.value?.description || 'VLA',
-          time: new Date().toLocaleTimeString()
+          id: response.data?.id || 'not returned'
         }
         message.success('Attestation submitted successfully!')
       }
