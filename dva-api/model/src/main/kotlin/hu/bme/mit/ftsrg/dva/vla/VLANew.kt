@@ -11,7 +11,10 @@ import kotlin.uuid.Uuid
 // TODO: Verify conformance to ODCS
 @Serializable
 data class VLANew(
+    val name: String? = null,
     val description: String? = null,
+    val participants: JsonArray? = null,
+    val dataReference: String? = null,
     val servers: JsonArray? = null,
     val schema: JsonObject? = null,
     val quality: List<DataQuality>? = null,
@@ -25,7 +28,10 @@ data class VLANew(
 
 @Serializable
 data class VLANewFromTemplates(
+    val name: String? = null,
     val description: String? = null,
+    val participants: JsonArray? = null,
+    val dataReference: String? = null,
     val servers: JsonArray? = null,
     val schema: JsonObject? = null,
     val quality: List<DataQuality>? = null,

@@ -5,7 +5,11 @@ import { renderTemplate } from './templates'
 const vlas = [
   {
     id: uuid(),
+    name: 'Customer events quality',
     description: 'Mocked VLA one',
+    participants: ['analytics-team', 'customer-data-provider'],
+    dataReference: 'customer-events',
+    tags: ['freshness', 'schema'],
     quality: [
       {
         engine: 'JQ',
@@ -15,7 +19,11 @@ const vlas = [
   },
   {
     id: uuid(),
+    name: 'Learning record quality',
     description: 'Mocked VLA two',
+    participants: ['learning-platform'],
+    dataReference: 'xapi-statements',
+    tags: ['accuracy'],
     quality: [
       {
         engine: 'GREAT_EXPECTATIONS',
@@ -81,8 +89,13 @@ export const handlers = [
     console.log(body)
 
     const vla = {
-      description: `Mock-generated VLA ${vlaCounter++}: ${request.description}`,
-      quality: request.qualityTemplates.map(({ id, model }) => {
+      id: uuid(),
+      name: body.name || `Mock-generated VLA ${vlaCounter++}`,
+      description: body.description,
+      participants: body.participants || [],
+      dataReference: body.dataReference || '',
+      tags: body.tags || [],
+      quality: (body.qualityTemplates || []).map(({ id, model }) => {
         const template = templates.find((t) => t.id === id)
         if (template === undefined) {
           console.error(`Mock backend could not find template ${id}`)

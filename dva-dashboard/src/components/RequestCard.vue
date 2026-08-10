@@ -1,7 +1,7 @@
 <template>
   <div class="card">
     <div class="card-header">
-      <h5 class="card-title">{{ req.requestID }}</h5>
+      <h5 class="card-title">{{ req.vla?.name || req.vla?.description || 'Attestation request' }}</h5>
     </div>
     <div class="card-body">
       <table>
@@ -12,6 +12,14 @@
         <tr>
           <th><v-icon name="fa-file-signature" /> Contract ID</th>
           <td class="data">{{ req.contractID }}</td>
+        </tr>
+        <tr v-if="req.vla?.dataReference">
+          <th><v-icon name="fa-database" /> Data reference</th>
+          <td class="data">{{ req.vla.dataReference }}</td>
+        </tr>
+        <tr v-if="req.vla?.participants?.length">
+          <th><v-icon name="fa-users" /> Participants</th>
+          <td class="data">{{ req.vla.participants.join(', ') }}</td>
         </tr>
         <tr>
           <th><v-icon name="fa-clock" /> Requested</th>
@@ -34,6 +42,12 @@
           <td class="data">{{ req.attesterID }}</td>
         </tr>
       </table>
+
+      <div v-if="req.vla?.tags?.length" class="vla-tags">
+        <span v-for="tag in req.vla.tags" :key="tag" class="badge badge-tag">{{ tag }}</span>
+      </div>
+
+      <p v-if="req.vla?.description" class="vla-description">{{ req.vla.description }}</p>
 
       <div class="badges">
         <span v-if="req.type == 'aov'" class="badge badge-aov"><v-icon name="fa-stamp" /> Attestation</span>
@@ -162,6 +176,24 @@
     margin-top: 1rem;
     display: flex;
     gap: .25rem;
+  }
+
+  .vla-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+    margin-top: .75rem;
+  }
+
+  .badge-tag {
+    background-color: #6f42c1;
+    font-size: .75rem;
+  }
+
+  .vla-description {
+    margin: .75rem 0 0;
+    color: #4b5563;
+    font-size: .9rem;
   }
   
   /* Badge overrides */

@@ -20,13 +20,34 @@
       <div v-if="vlas.length > 0">
         <n-grid x-gap="16" y-gap="16" cols="1 s:2 m:3 l:4" responsive="screen">
           <n-grid-item v-for="vla in vlas" :key="vla.id">
-            <n-card :title="vla.id" hoverable class="vla-card">
+            <n-card :title="vla.name || vla.description || 'Unnamed VLA'" hoverable class="vla-card">
               <template #header-extra>
                 <n-tag type="info" size="small" round>VLA</n-tag>
               </template>
               
               <div class="vla-content">
                 <n-text depth="3" class="vla-desc">{{ vla.description || 'No description provided' }}</n-text>
+
+                <div class="metadata-list">
+                  <div v-if="vla.dataReference" class="metadata-row">
+                    <n-text strong>Data</n-text>
+                    <n-text depth="2">{{ vla.dataReference }}</n-text>
+                  </div>
+                  <div v-if="vla.participants?.length" class="metadata-row">
+                    <n-text strong>Participants</n-text>
+                    <n-space size="small" :wrap="true">
+                      <n-tag v-for="participant in vla.participants" :key="participant" size="small" type="warning">
+                        {{ participant }}
+                      </n-tag>
+                    </n-space>
+                  </div>
+                  <div v-if="vla.tags?.length" class="metadata-row">
+                    <n-text strong>Tags</n-text>
+                    <n-space size="small" :wrap="true">
+                      <n-tag v-for="tag in vla.tags" :key="tag" size="small" round>{{ tag }}</n-tag>
+                    </n-space>
+                  </div>
+                </div>
                 
                 <n-divider class="my-3" />
                 
@@ -53,7 +74,7 @@
                       <n-button
                         type="primary"
                         ghost
-                        @click="showModalAndSetFields(vla.id, vla.quality)"
+                        @click="showModalAndSetFields(vla)"
                       >
                         Try with Sample
                       </n-button>
@@ -61,6 +82,7 @@
                     Test this VLA using sample data
                   </n-tooltip>
                 </n-space>
+                <n-text depth="3" class="vla-id">ID: {{ vla.id }}</n-text>
               </template>
             </n-card>
           </n-grid-item>
@@ -103,10 +125,13 @@
 
   const sampleModal = ref(null)
 
-  const showModalAndSetFields = (id, qua) => {
+  const selectedVLA = ref(null)
+
+  const showModalAndSetFields = (vla) => {
     sampleModal.value?.show()
-    vlaID.value = id
-    quality.value = qua
+    selectedVLA.value = vla
+    vlaID.value = vla.id
+    quality.value = vla.quality
   }
 
   const data = ref(null)
@@ -123,6 +148,10 @@
         "dataProvider": "/catalog/participants/provider-test-id",
         "vla": {
           "id": vlaID.value,
+          "name": selectedVLA.value?.name,
+          "description": selectedVLA.value?.description,
+          "participants": selectedVLA.value?.participants || [],
+          "dataReference": selectedVLA.value?.dataReference,
           "schema": {
             "quality": quality.value
           }
@@ -140,6 +169,7 @@
     } finally {
       vlaID.value = null
       quality.value = null
+      selectedVLA.value = null
     }
   }
 
@@ -185,5 +215,24 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  .metadata-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .metadata-row {
+    display: grid;
+    gap: 4px;
+  }
+
+  .vla-id {
+    display: block;
+    margin-top: 10px;
+    font-family: monospace;
+    font-size: 0.7rem;
+    word-break: break-all;
   }
 </style>
