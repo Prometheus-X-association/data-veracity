@@ -85,6 +85,32 @@ def test_aov_issue_returns_jws(client: TestClient) -> None:
     assert issuer.startswith("did:key:z6Mk")
 
 
+def test_audit_endpoints_store_issued_credentials_and_verifications(
+    client: TestClient,
+) -> None:
+    issued = client.post("/aov/issue", json=_issue_request())
+    assert issued.status_code == 200
+
+    credentials = client.get("/admin/credentials")
+    assert credentials.status_code == 200
+    credential = credentials.json()[0]
+    assert credential["jws"] == issued.json()["jws"]
+    assert credential["request"]["recordId"] == "rec-0001"
+
+    verification = client.post("/aov/verify", json={"jws": "a.b.c"})
+    assert verification.status_code == 200
+
+    verifications = client.get("/admin/verifications")
+    assert verifications.status_code == 200
+    attempt = verifications.json()[0]
+    assert attempt["request"] == {"jws": "a.b.c"}
+    assert attempt["response"] == {
+        "status_code": 200,
+        "verified": False,
+        "reason": "whitelist is not configured; verification is disabled",
+    }
+
+
 async def test_aov_issue_then_verify_round_trip(
     client: TestClient, whitelist: FakeWhitelist
 ) -> None:

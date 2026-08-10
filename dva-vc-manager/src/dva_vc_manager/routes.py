@@ -30,7 +30,8 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from .dependencies import get_key_store, get_whitelist
+from .audit import AuditRepo, CredentialAudit, VerificationAudit
+from .dependencies import get_audit, get_key_store, get_whitelist
 from .did_key import did_key_to_public_key
 from .keys import SigningKeyStore
 from .models import (
@@ -38,7 +39,9 @@ from .models import (
     AovIssueResponse,
     AovVerifyRequest,
     AovVerifyResponse,
+    CredentialAuditDTO,
     OwnKeyDTO,
+    VerificationAuditDTO,
     WhitelistAddRequest,
     WhitelistEntryDTO,
 )
@@ -59,6 +62,7 @@ router = APIRouter()
 async def aov_issue(
     req: AovIssueRequest,
     key_store: SigningKeyStore = Depends(get_key_store),
+    audit: AuditRepo = Depends(get_audit),
 ) -> AovIssueResponse:
     """Issue an AoV JWS credential from the veracity-check results."""
     signing_key = key_store.load_or_generate()
@@ -78,6 +82,11 @@ async def aov_issue(
         payload=req.payload,
     )
     jws = sign_jws(claims, signing_key, issuer_did_key)
+    await audit.record_credential(
+        credential_id=claims.vc_id,
+        jws=jws,
+        request=req.model_dump(mode="json", by_alias=True),
+    )
     return AovIssueResponse(jws=jws)
 
 
@@ -85,6 +94,7 @@ async def aov_issue(
 async def aov_verify(
     req: AovVerifyRequest,
     whitelist: WhitelistRepo = Depends(get_whitelist),
+    audit: AuditRepo = Depends(get_audit),
 ) -> AovVerifyResponse:
     """
     Verify an AoV JWS.
@@ -93,10 +103,34 @@ async def aov_verify(
     payload and looked up in the whitelist.
     """
 
+    request = req.model_dump(mode="json", by_alias=True)
+
+    async def audited_response(
+        verified: bool,
+        reason: str | None = None,
+        status_code: int = 200,
+        body: dict[str, object] | None = None,
+    ) -> AovVerifyResponse:
+        response = AovVerifyResponse(verified=verified, reason=reason)
+        await audit.record_verification(
+            request=request,
+            response={
+                "status_code": status_code,
+                **(body if body is not None else response.model_dump(exclude_none=True)),
+            },
+        )
+        return response
+
     # 1. Structural check: must be a 3-part compact JWS.
     try:
         split_jws(req.jws)
     except MalformedJws as e:
+        await audited_response(
+            False,
+            str(e),
+            status.HTTP_400_BAD_REQUEST,
+            body={"detail": str(e)},
+        )
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
     # 2. Whitelist must be non-empty. Checked early so an operator who
@@ -104,9 +138,8 @@ async def aov_verify(
     # than a payload-decode error.
     entries = await whitelist.all()
     if not entries:
-        return AovVerifyResponse(
-            verified=False,
-            reason="whitelist is not configured; verification is disabled",
+        return await audited_response(
+            False, "whitelist is not configured; verification is disabled"
         )
 
     # 3. Decode the JWS payload to extract the issuer did:key. A payload
@@ -115,24 +148,23 @@ async def aov_verify(
     try:
         payload = decode_payload(req.jws)
     except ValueError as e:
-        return AovVerifyResponse(verified=False, reason=f"malformed JWS payload: {e}")
+        return await audited_response(False, f"malformed JWS payload: {e}")
 
     issuer_did_key = payload.get("issuer")
     if not isinstance(issuer_did_key, str) or not issuer_did_key:
-        return AovVerifyResponse(verified=False, reason="JWS payload missing issuer")
+        return await audited_response(False, "JWS payload missing issuer")
 
     # 4. Issuer must be whitelisted
     entry = await whitelist.find(issuer_did_key)
     if entry is None:
-        return AovVerifyResponse(verified=False, reason="issuer not whitelisted")
+        return await audited_response(False, "issuer not whitelisted")
 
     # 5. Derive the public key from the whitelist record's did:key.
     try:
         public_key = did_key_to_public_key(entry.did_key)
     except ValueError as e:
-        return AovVerifyResponse(
-            verified=False,
-            reason=f"whitelist entry contains invalid did:key: {e}",
+        return await audited_response(
+            False, f"whitelist entry contains invalid did:key: {e}"
         )
 
     # 6. Verify the Ed25519 signature.  A structurally-valid JWS whose
@@ -140,12 +172,12 @@ async def aov_verify(
     try:
         ok = verify_jws(req.jws, public_key)
     except ValueError as e:
-        return AovVerifyResponse(verified=False, reason=f"signature check failed: {e}")
+        return await audited_response(False, f"signature check failed: {e}")
 
     if not ok:
-        return AovVerifyResponse(verified=False, reason="signature mismatch")
+        return await audited_response(False, "signature mismatch")
 
-    return AovVerifyResponse(verified=True)
+    return await audited_response(True)
 
 
 # --- Admin ------------------------------------------------------------
@@ -195,3 +227,19 @@ async def keys_view(
     return OwnKeyDTO(
         issuer_did_key=key_store.issuer_did_key(), key_path=str(key_store.path)
     )
+
+
+@admin_router.get("/admin/credentials", response_model=list[CredentialAuditDTO])
+async def credentials_list(
+    audit: AuditRepo = Depends(get_audit),
+) -> list[CredentialAudit]:
+    """Return every credential this VC manager issued, newest first."""
+    return await audit.credentials()
+
+
+@admin_router.get("/admin/verifications", response_model=list[VerificationAuditDTO])
+async def verifications_list(
+    audit: AuditRepo = Depends(get_audit),
+) -> list[VerificationAudit]:
+    """Return every verification request and outcome, newest first."""
+    return await audit.verifications()

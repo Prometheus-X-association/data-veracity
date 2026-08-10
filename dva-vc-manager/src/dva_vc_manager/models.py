@@ -9,7 +9,7 @@ attribute names stay ``snake_case``.  ``populate_by_name`` keeps
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -105,3 +105,22 @@ class OwnKeyDTO(BaseModel):
 
     issuer_did_key: str
     key_path: str
+
+
+class CredentialAuditDTO(BaseModel):
+    """A locally issued credential retained for audit and display."""
+
+    id: UUID
+    credential_id: str
+    jws: str
+    request: dict[str, Any]
+    created_at: datetime
+
+
+class VerificationAuditDTO(BaseModel):
+    """One credential-verification request and its returned result."""
+
+    id: UUID
+    request: dict[str, Any]
+    response: dict[str, Any]
+    created_at: datetime

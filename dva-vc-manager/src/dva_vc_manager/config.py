@@ -32,7 +32,7 @@ class Config(BaseSettings):
     # Loaded at startup; created and persisted (0600) if missing.
     signing_key_path: str = "/data/dva-vc-signing-key.pem"
 
-    # Postgres DSN (whitelist); empty → fall back to in-memory FakeWhitelist.
+    # Postgres DSN (whitelist and credential audit); empty → in-memory dev stores.
     # Predates the env_prefix convention, hence the explicit alias.
     postgres_dsn: str = Field("", validation_alias="DVA_VC_MANAGER_DB_URL")
 

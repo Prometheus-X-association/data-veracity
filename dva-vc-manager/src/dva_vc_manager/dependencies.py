@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncpg
 from fastapi import Request
 
+from .audit import AuditRepo, FakeAudit, PgAudit
 from .config import cfg
 from .keys import SigningKeyStore
 from .log import get_logger
@@ -50,6 +51,22 @@ async def build_whitelist() -> WhitelistRepo:
     return repo
 
 
+async def build_audit() -> AuditRepo:
+    """Build the audit repository, using the same PostgreSQL database as the whitelist."""
+    if not cfg.postgres_dsn:
+        return FakeAudit()
+
+    pool = await asyncpg.create_pool(dsn=cfg.postgres_dsn, min_size=1, max_size=4)
+    repo = PgAudit(pool)
+    await repo.ensure_schema()
+    return repo
+
+
 def get_whitelist(request: Request) -> WhitelistRepo:
     """Return the whitelist repo built during startup."""
     return request.app.state.whitelist
+
+
+def get_audit(request: Request) -> AuditRepo:
+    """Return the audit repository built during startup."""
+    return request.app.state.audit

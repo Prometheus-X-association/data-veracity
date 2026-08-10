@@ -5,6 +5,8 @@ Attestation-of-Veracity credential lifecycle:
 
 * **Issues** AoV credentials as W3C VC 2.0 JSON-LD JWS (Ed25519) at the provider side.
 * **Verifies** AoV JWS credentials at the consumer side against a local ``did:key`` whitelist.
+* **Audits** every issued credential and verification request/result in the
+  participant's PostgreSQL database.
 
 ## Why
 
@@ -23,6 +25,8 @@ libsodium — no hand-rolled cryptography anywhere).
 | ``POST /admin/whitelist`` | Operator | Register a trusted attester ``did:key`` |
 | ``DELETE /admin/whitelist/{did_key}`` | Operator | Remove a trusted attester |
 | ``GET /admin/keys`` | Operator | View this service's own issuer ``did:key`` (read-only) |
+| ``GET /admin/credentials`` | Operator | List issued credentials, including the JWS and issuance request |
+| ``GET /admin/verifications`` | Operator | List verification requests and their stored responses |
 
 
 ## Cryptography libraries
@@ -52,7 +56,7 @@ uv run dva-vc-manager         # boot the service on :8000
 | Var | Default | Purpose |
 |---|---|---|
 | ``DVA_VC_MANAGER_SIGNING_KEY_PATH`` | ``/data/dva-vc-signing-key.pem`` | Ed25519 key file path (created 0600 on first boot) |
-| ``DVA_VC_MANAGER_DB_URL`` | *(empty)* | Postgres DSN for the whitelist. Empty → in-memory ``FakeWhitelist`` (verify path fails-closed until admin populates it). |
+| ``DVA_VC_MANAGER_DB_URL`` | *(empty)* | PostgreSQL DSN for the whitelist and append-only audit log. Set this in deployed environments; empty uses non-persistent in-memory development stores. |
 | ``DVA_VC_MANAGER_HOST`` | ``0.0.0.0`` | Listen address |
 | ``DVA_VC_MANAGER_PORT`` | ``8000`` | Listen port |
 | ``DVA_VC_MANAGER_LOG_LEVEL`` | ``info`` | One of ``critical``, ``error``, ``warning``, ``info``, ``debug`` |
