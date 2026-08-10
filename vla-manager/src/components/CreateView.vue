@@ -30,7 +30,7 @@
             type="primary"
             size="large"
             @click="handleCreateVLA"
-            :disabled="!sampleData || fragments.length === 0 || !metadata.name.trim() || !metadata.description.trim() || !metadata.participants.trim() || !metadata.dataReference.trim()"
+            :disabled="!sampleData || fragments.length === 0 || !metadata.name.trim() || !metadata.description.trim() || metadata.participants.length === 0 || !metadata.dataReference.trim()"
           >
             Create VLA
           </n-button>
@@ -50,10 +50,45 @@
           <n-input v-model:value="metadata.dataReference" placeholder="Dataset, endpoint, or data product" />
         </n-form-item>
         <n-form-item label="Participants" required>
-          <n-input v-model:value="metadata.participants" placeholder="Comma-separated provider and consumer IDs" />
+          <div class="participant-editor">
+            <n-space v-if="metadata.participants.length" size="small" :wrap="true" class="participant-tags">
+              <n-tag
+                v-for="participant in metadata.participants"
+                :key="participant"
+                closable
+                :type="isKnownParticipant(participant) ? 'info' : 'warning'"
+                @close="removeParticipant(participant)"
+              >
+                {{ participant }}
+                <template v-if="!isKnownParticipant(participant)" #icon><span class="participant-status">?</span></template>
+              </n-tag>
+            </n-space>
+            <n-auto-complete
+              v-model:value="participantDraft"
+              :options="filteredParticipantSuggestions"
+              placeholder="Type an ID or email, then press comma or Enter"
+              clearable
+              @select="handleParticipantSelect"
+              @keydown="handleParticipantKeydown"
+            />
+          </div>
         </n-form-item>
         <n-form-item label="Tags">
-          <n-input v-model:value="metadata.tags" placeholder="Comma-separated tags" />
+          <div class="participant-editor">
+            <n-space v-if="metadata.tags.length" size="small" :wrap="true" class="participant-tags">
+              <n-tag v-for="tag in metadata.tags" :key="tag" closable type="info" @close="removeTag(tag)">
+                {{ tag }}
+              </n-tag>
+            </n-space>
+            <n-auto-complete
+              v-model:value="tagDraft"
+              :options="filteredTagSuggestions"
+              placeholder="Type a tag, then press comma or Enter"
+              clearable
+              @select="handleTagSelect"
+              @keydown="handleTagKeydown"
+            />
+          </div>
         </n-form-item>
       </div>
       <n-form-item label="Description" required>
@@ -168,13 +203,13 @@
 </template>
 
 <script setup>
-  import { ref, toRaw, h, defineComponent } from 'vue'
+  import { ref, toRaw, h, defineComponent, onMounted, nextTick, computed } from 'vue'
   import { useRouter } from 'vue-router'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
   import axios from 'axios'
   import { 
-    NPageHeader, NSpace, NButton, NIcon, NEmpty, NCard, NFormItem, NInput,
+    NPageHeader, NSpace, NButton, NIcon, NEmpty, NCard, NFormItem, NInput, NAutoComplete,
     NText, NStatistic, NTooltip, NTag, NDivider, NScrollbar, useMessage
   } from 'naive-ui'
 
@@ -222,10 +257,85 @@
   const metadata = ref({
     name: '',
     description: '',
-    participants: '',
+    participants: [],
     dataReference: '',
-    tags: ''
+    tags: []
   })
+  const participantDraft = ref('')
+  const knownParticipants = ref(new Set())
+  const participantSuggestions = ref([])
+  const tagDraft = ref('')
+  const knownTags = ref(new Set())
+  const tagSuggestions = ref([])
+  const filteredParticipantSuggestions = computed(() => {
+    const query = participantDraft.value.trim().toLowerCase()
+    return participantSuggestions.value.filter(option => !query || option.value.toLowerCase().includes(query))
+  })
+  const filteredTagSuggestions = computed(() => {
+    const query = tagDraft.value.trim().toLowerCase()
+    return tagSuggestions.value.filter(option => !query || option.value.toLowerCase().includes(query))
+  })
+  const participantSelectedFromAutocomplete = ref(false)
+  const tagSelectedFromAutocomplete = ref(false)
+
+  const addParticipant = (value = participantDraft.value) => {
+    const participant = String(value || '').trim().replace(/,$/, '')
+    if (participant && !metadata.value.participants.some(item => item.toLowerCase() === participant.toLowerCase())) {
+      metadata.value.participants.push(participant)
+    }
+    participantDraft.value = ''
+  }
+
+  const isKnownParticipant = (participant) =>
+    [...knownParticipants.value].some(item => item.toLowerCase() === participant.toLowerCase())
+
+  const removeParticipant = (participant) => {
+    metadata.value.participants = metadata.value.participants.filter(item => item !== participant)
+  }
+
+  const handleParticipantSelect = (value) => {
+    participantSelectedFromAutocomplete.value = true
+    addParticipant(value)
+    nextTick(() => { participantDraft.value = '' })
+  }
+
+  const handleParticipantKeydown = (event) => {
+    if (event.key === ',' || event.key === 'Enter') {
+      event.preventDefault()
+      if (participantSelectedFromAutocomplete.value) {
+        participantSelectedFromAutocomplete.value = false
+        return
+      }
+      addParticipant()
+    }
+  }
+
+  const addTag = (value = tagDraft.value) => {
+    const tag = String(value || '').trim().replace(/,$/, '')
+    if (tag && !metadata.value.tags.some(item => item.toLowerCase() === tag.toLowerCase())) metadata.value.tags.push(tag)
+    tagDraft.value = ''
+  }
+
+  const removeTag = (tag) => {
+    metadata.value.tags = metadata.value.tags.filter(item => item !== tag)
+  }
+
+  const handleTagSelect = (value) => {
+    tagSelectedFromAutocomplete.value = true
+    addTag(value)
+    nextTick(() => { tagDraft.value = '' })
+  }
+
+  const handleTagKeydown = (event) => {
+    if (event.key === ',' || event.key === 'Enter') {
+      event.preventDefault()
+      if (tagSelectedFromAutocomplete.value) {
+        tagSelectedFromAutocomplete.value = false
+        return
+      }
+      addTag()
+    }
+  }
 
   const testedFragment = ref(null)
   const testResult = ref(null)
@@ -262,8 +372,8 @@
   }
 
   const handleCreateVLA = async () => {
-    const participants = metadata.value.participants.split(',').map(value => value.trim()).filter(Boolean)
-    const tags = metadata.value.tags.split(',').map(value => value.trim()).filter(Boolean)
+    const participants = [...metadata.value.participants]
+    const tags = [...metadata.value.tags]
     const body = {
       name: metadata.value.name.trim(),
       description: metadata.value.description.trim(),
@@ -287,6 +397,20 @@
       message.error('Failed to create VLA on backend.')
     }
   }
+
+  onMounted(async () => {
+    try {
+      const response = await axios.get('/api/vla')
+      const participants = response.data.flatMap(vla => Array.isArray(vla.participants) ? vla.participants : [])
+      const tags = response.data.flatMap(vla => Array.isArray(vla.tags) ? vla.tags : [])
+      knownParticipants.value = new Set(participants)
+      participantSuggestions.value = [...knownParticipants.value].map(value => ({ label: value, value }))
+      knownTags.value = new Set(tags)
+      tagSuggestions.value = [...knownTags.value].map(value => ({ label: value, value }))
+    } catch {
+      // Suggestions are optional; participants can still be entered manually.
+    }
+  })
 </script>
 
 <style scoped>
@@ -326,6 +450,25 @@
 
   .metadata-help {
     margin-bottom: 12px;
+  }
+
+  .participant-editor {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .participant-tags {
+    min-height: 28px;
+  }
+
+  .participant-hint {
+    font-size: .75rem;
+  }
+
+  .participant-status {
+    font-size: .75rem;
+    font-weight: 700;
   }
 
   .metadata-grid {
