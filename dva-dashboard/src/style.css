@@ -25,6 +25,8 @@ body {
   margin: 0;
   min-width: 100vw;
   min-height: 100vh;
+  background: #f3f4f6;
+  color: #0f172a;
 }
 
 h1 {
@@ -56,6 +58,16 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
 }
+
+.dashboard-sidebar { width: 220px !important; flex: 0 0 220px; }
+.vsm--menu { border-right: 1px solid #e5e7eb; box-shadow: 1px 0 3px rgba(15, 23, 42, .04); }
+.vsm--toggle-btn { display: none !important; }
+.vsm--header { padding: 22px 16px 10px !important; color: #94a3b8 !important; font-size: .7rem !important; letter-spacing: .08em; }
+.vsm--link { min-height: 42px; box-sizing: border-box !important; color: #475569 !important; border-radius: 8px; margin: 3px 10px; padding: 7px 12px !important; }
+.vsm--link .vsm--icon { width: 30px !important; height: 30px !important; margin-right: 10px !important; border-radius: 7px !important; background: #f1f5f9 !important; color: #64748b !important; }
+.vsm--link_active, .vsm--link:hover { color: #0e7490 !important; background: #ecfeff !important; }
+.vsm--link_active { box-shadow: none !important; }
+.vsm--link_active .vsm--icon { background: #cffafe !important; color: #0891b2 !important; }
 
 .vsm--scroll {
   padding-top: 1rem;
