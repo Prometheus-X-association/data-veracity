@@ -16,6 +16,11 @@
       </template>
     </n-page-header>
 
+    <n-alert v-if="lastAttestation" type="success" class="submission-alert" closable @close="lastAttestation = null">
+      Sample data submitted for <strong>{{ lastAttestation.name }}</strong>.
+      The attestation request was accepted at {{ lastAttestation.time }}.
+    </n-alert>
+
     <n-spin :show="loading">
       <div v-if="vlas.length > 0">
         <n-grid x-gap="16" y-gap="16" cols="1 s:2 m:3 l:4" responsive="screen">
@@ -105,7 +110,7 @@
   import axios from 'axios'
   import { 
     NCard, NButton, NPageHeader, NGrid, NGridItem, 
-    NTag, NSpace, NText, NDivider, NTooltip, NEmpty, NIcon, NSpin, useMessage
+    NTag, NSpace, NText, NDivider, NTooltip, NEmpty, NIcon, NSpin, NAlert, useMessage
   } from 'naive-ui'
   import SampleModal from './SampleModal.vue'
 
@@ -137,6 +142,7 @@
   const data = ref(null)
   const vlaID = ref(null)
   const quality = ref(null)
+  const lastAttestation = ref(null)
 
   const onDataSelected = async (newData) => {
     const body = {
@@ -161,7 +167,11 @@
 
     try {
       const response = await axios.post('/api/attestation', body)
-      if (response.status === 200 || response.status === 201) {
+      if (response.status === 200 || response.status === 201 || response.status === 202) {
+        lastAttestation.value = {
+          name: selectedVLA.value?.name || selectedVLA.value?.description || 'VLA',
+          time: new Date().toLocaleTimeString()
+        }
         message.success('Attestation submitted successfully!')
       }
     } catch (err) {
@@ -188,6 +198,10 @@
 <style scoped>
   .mb-6 {
     margin-bottom: 24px;
+  }
+
+  .submission-alert {
+    margin-bottom: 16px;
   }
   .mb-2 {
     margin-bottom: 8px;
