@@ -56,10 +56,11 @@
                 v-for="participant in metadata.participants"
                 :key="participant"
                 closable
-                type="info"
+                :type="isKnownParticipant(participant) ? 'info' : 'warning'"
                 @close="removeParticipant(participant)"
               >
                 {{ participant }}
+                <template v-if="!isKnownParticipant(participant)" #icon><span class="participant-status">?</span></template>
               </n-tag>
             </n-space>
             <n-auto-complete
@@ -276,6 +277,9 @@
     }
     participantDraft.value = ''
   }
+
+  const isKnownParticipant = (participant) =>
+    [...knownParticipants.value].some(item => item.toLowerCase() === participant.toLowerCase())
 
   const removeParticipant = (participant) => {
     metadata.value.participants = metadata.value.participants.filter(item => item !== participant)
