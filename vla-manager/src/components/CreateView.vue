@@ -202,7 +202,7 @@
 </template>
 
 <script setup>
-  import { ref, toRaw, h, defineComponent, onMounted } from 'vue'
+  import { ref, toRaw, h, defineComponent, onMounted, nextTick } from 'vue'
   import { useRouter } from 'vue-router'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
@@ -284,6 +284,7 @@
   const handleParticipantSelect = (value) => {
     participantSelectedFromAutocomplete.value = true
     addParticipant(value)
+    nextTick(() => { participantDraft.value = '' })
   }
 
   const handleParticipantKeydown = (event) => {
@@ -310,6 +311,7 @@
   const handleTagSelect = (value) => {
     tagSelectedFromAutocomplete.value = true
     addTag(value)
+    nextTick(() => { tagDraft.value = '' })
   }
 
   const handleTagKeydown = (event) => {
