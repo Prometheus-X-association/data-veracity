@@ -99,10 +99,10 @@ export const handlers = [
         const template = templates.find((t) => t.id === id)
         if (template === undefined) {
           console.error(`Mock backend could not find template ${id}`)
-          return HttpResponse(null, { status: 404 })
+          throw new Error(`Mock backend could not find template ${id}`)
         }
 
-        return HttpResponse.json(renderTemplate(template, model))
+        return renderTemplate(template, model)
       })
     }
     vlas.push(vla)
