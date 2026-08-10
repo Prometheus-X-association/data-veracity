@@ -65,7 +65,7 @@
             </n-space>
             <n-auto-complete
               v-model:value="participantDraft"
-              :options="participantSuggestions"
+              :options="filteredParticipantSuggestions"
               placeholder="Type an ID or email, then press comma or Enter"
               clearable
               @select="handleParticipantSelect"
@@ -82,7 +82,7 @@
             </n-space>
             <n-auto-complete
               v-model:value="tagDraft"
-              :options="tagSuggestions"
+              :options="filteredTagSuggestions"
               placeholder="Type a tag, then press comma or Enter"
               clearable
               @select="handleTagSelect"
@@ -203,7 +203,7 @@
 </template>
 
 <script setup>
-  import { ref, toRaw, h, defineComponent, onMounted, nextTick } from 'vue'
+  import { ref, toRaw, h, defineComponent, onMounted, nextTick, computed } from 'vue'
   import { useRouter } from 'vue-router'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
@@ -267,6 +267,14 @@
   const tagDraft = ref('')
   const knownTags = ref(new Set())
   const tagSuggestions = ref([])
+  const filteredParticipantSuggestions = computed(() => {
+    const query = participantDraft.value.trim().toLowerCase()
+    return participantSuggestions.value.filter(option => !query || option.value.toLowerCase().includes(query))
+  })
+  const filteredTagSuggestions = computed(() => {
+    const query = tagDraft.value.trim().toLowerCase()
+    return tagSuggestions.value.filter(option => !query || option.value.toLowerCase().includes(query))
+  })
   const participantSelectedFromAutocomplete = ref(false)
   const tagSelectedFromAutocomplete = ref(false)
 
