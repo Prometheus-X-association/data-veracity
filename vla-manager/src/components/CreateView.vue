@@ -30,13 +30,36 @@
             type="primary"
             size="large"
             @click="handleCreateVLA"
-            :disabled="!sampleData || fragments.length === 0"
+            :disabled="!sampleData || fragments.length === 0 || !metadata.name.trim() || !metadata.description.trim() || !metadata.participants.trim() || !metadata.dataReference.trim()"
           >
             Create VLA
           </n-button>
         </n-space>
       </template>
     </n-page-header>
+
+    <n-card title="VLA metadata" size="small" class="metadata-card mb-4">
+      <n-text depth="3" class="block metadata-help">
+        Add the contract context first so this VLA can be identified without relying on its UUID.
+      </n-text>
+      <div class="metadata-grid">
+        <n-form-item label="Name" required>
+          <n-input v-model:value="metadata.name" placeholder="e.g. Customer events quality" />
+        </n-form-item>
+        <n-form-item label="Data reference" required>
+          <n-input v-model:value="metadata.dataReference" placeholder="Dataset, endpoint, or data product" />
+        </n-form-item>
+        <n-form-item label="Participants" required>
+          <n-input v-model:value="metadata.participants" placeholder="Comma-separated provider and consumer IDs" />
+        </n-form-item>
+        <n-form-item label="Tags">
+          <n-input v-model:value="metadata.tags" placeholder="Comma-separated tags" />
+        </n-form-item>
+      </div>
+      <n-form-item label="Description" required>
+        <n-input v-model:value="metadata.description" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="What does this VLA guarantee?" />
+      </n-form-item>
+    </n-card>
 
     <div v-if="!sampleData" class="empty-state-container">
       <n-empty description="Start by uploading sample data to build your VLA">
@@ -151,7 +174,7 @@
   import 'vue-json-pretty/lib/styles.css'
   import axios from 'axios'
   import { 
-    NPageHeader, NSpace, NButton, NIcon, NEmpty, NCard, 
+    NPageHeader, NSpace, NButton, NIcon, NEmpty, NCard, NFormItem, NInput,
     NText, NStatistic, NTooltip, NTag, NDivider, NScrollbar, useMessage
   } from 'naive-ui'
 
@@ -196,6 +219,13 @@
   const testData = ref(null)
   const lastPath = ref(null)
   const fragments = ref([])
+  const metadata = ref({
+    name: '',
+    description: '',
+    participants: '',
+    dataReference: '',
+    tags: ''
+  })
 
   const testedFragment = ref(null)
   const testResult = ref(null)
@@ -232,8 +262,14 @@
   }
 
   const handleCreateVLA = async () => {
+    const participants = metadata.value.participants.split(',').map(value => value.trim()).filter(Boolean)
+    const tags = metadata.value.tags.split(',').map(value => value.trim()).filter(Boolean)
     const body = {
-      description: "Data is recent and valid",
+      name: metadata.value.name.trim(),
+      description: metadata.value.description.trim(),
+      participants,
+      dataReference: metadata.value.dataReference.trim(),
+      tags,
       schema: {
         properties: {
           timestamp: { type: "string" },
@@ -284,6 +320,20 @@
   .overflow-x-auto { overflow-x: auto; }
   .text-primary { color: #2563eb; }
 
+  .metadata-card {
+    flex: none;
+  }
+
+  .metadata-help {
+    margin-bottom: 12px;
+  }
+
+  .metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+  }
+
   .empty-state-container {
     flex-grow: 1;
     display: flex;
@@ -317,6 +367,12 @@
   .toolbox-card {
     background: #f8fafc;
     border: 2px dashed #cbd5e1;
+  }
+
+  @media (max-width: 900px) {
+    .metadata-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .toolbox-content {
