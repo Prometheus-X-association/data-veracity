@@ -66,6 +66,7 @@ button:focus-visible {
 .vsm--link { min-height: 42px; box-sizing: border-box !important; color: #475569 !important; border-radius: 8px; margin: 3px 10px; padding: 7px 12px !important; }
 .vsm--link .vsm--icon { width: 30px !important; height: 30px !important; margin-right: 10px !important; border-radius: 7px !important; background: #f1f5f9 !important; color: #64748b !important; }
 .vsm--link_active, .vsm--link:hover { color: #0e7490 !important; background: #ecfeff !important; }
+.vsm--link_active { box-shadow: none !important; }
 .vsm--link_active .vsm--icon { background: #cffafe !important; color: #0891b2 !important; }
 
 .vsm--scroll {
