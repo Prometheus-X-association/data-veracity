@@ -117,7 +117,11 @@ def create_app() -> FastAPI:
         """Serve the Swagger UI loaded from the hand-written OpenAPI spec."""
         return HTMLResponse(content=_SWAGGER_UI_HTML)
 
-    @app.get("/swagger/openapi.yaml", response_class=PlainTextResponse, include_in_schema=False)
+    @app.get(
+        "/swagger/openapi.yaml",
+        response_class=PlainTextResponse,
+        include_in_schema=False,
+    )
     async def swagger_spec() -> PlainTextResponse:
         """Serve the hand-written OpenAPI spec YAML from disk."""
         spec_path = os.environ.get("VLA_MANAGER_OPENAPI_FILE", "/app/openapi.yaml")

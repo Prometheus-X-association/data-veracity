@@ -19,12 +19,18 @@ fake returns plain values for ease of testing.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional, Protocol, Sequence
+from typing import Any, Optional, Protocol
 from uuid import UUID, uuid4
 
-__all__ = ["VLARepo", "FakeVLARepo", "PgVLARepo",
-           "TemplateRepo", "FakeTemplateRepo", "PgTemplateRepo",
-           "render_template"]
+__all__ = [
+    "VLARepo",
+    "FakeVLARepo",
+    "PgVLARepo",
+    "TemplateRepo",
+    "FakeTemplateRepo",
+    "PgTemplateRepo",
+    "render_template",
+]
 
 
 class VLARepo(Protocol):
@@ -152,7 +158,9 @@ class TemplateRepo(Protocol):
 
     async def add(self, template: dict[str, Any]) -> Optional[UUID]: ...
 
-    async def update(self, id: UUID, patch: dict[str, Any]) -> Optional[dict[str, Any]]: ...
+    async def update(
+        self, id: UUID, patch: dict[str, Any]
+    ) -> Optional[dict[str, Any]]: ...
 
     async def remove(self, id: UUID) -> bool: ...
 
@@ -315,26 +323,43 @@ class PgTemplateRepo:
                 return None
             em_id = row["evaluation_method_id"]
             if patch.get("name") is not None:
-                await conn.execute("UPDATE templates SET name = $2 WHERE id = $1", id, patch["name"])
+                await conn.execute(
+                    "UPDATE templates SET name = $2 WHERE id = $1", id, patch["name"]
+                )
             if patch.get("description") is not None:
-                await conn.execute("UPDATE templates SET description = $2 WHERE id = $1", id, patch["description"])
+                await conn.execute(
+                    "UPDATE templates SET description = $2 WHERE id = $1",
+                    id,
+                    patch["description"],
+                )
             if patch.get("criterionType") is not None:
-                await conn.execute("UPDATE templates SET criterion_type = $2 WHERE id = $1", id, patch["criterionType"])
+                await conn.execute(
+                    "UPDATE templates SET criterion_type = $2 WHERE id = $1",
+                    id,
+                    patch["criterionType"],
+                )
             if patch.get("targetAspect") is not None:
-                await conn.execute("UPDATE templates SET target_aspect = $2 WHERE id = $1", id, patch["targetAspect"])
+                await conn.execute(
+                    "UPDATE templates SET target_aspect = $2 WHERE id = $1",
+                    id,
+                    patch["targetAspect"],
+                )
             em_patch = patch.get("evaluationMethod")
             if em_patch is not None:
                 await conn.execute(
                     "UPDATE evaluation_methods SET engine = $2 WHERE id = $1",
-                    em_id, em_patch["engine"],
+                    em_id,
+                    em_patch["engine"],
                 )
                 await conn.execute(
                     "UPDATE evaluation_methods SET variable_schema = $2 WHERE id = $1",
-                    em_id, json.dumps(em_patch["variableSchema"]),
+                    em_id,
+                    json.dumps(em_patch["variableSchema"]),
                 )
                 await conn.execute(
                     "UPDATE evaluation_methods SET implementation_template = $2 WHERE id = $1",
-                    em_id, em_patch["implementationTemplate"],
+                    em_id,
+                    em_patch["implementationTemplate"],
                 )
         return await self.by_id(id)
 

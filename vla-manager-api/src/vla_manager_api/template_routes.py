@@ -22,9 +22,8 @@ from pydantic import BaseModel
 
 from .auth import require_api_key
 from .dependencies import get_template_repo
-from .models import ErrDTO, IDDTO, Template, TemplateNew, TemplatePatch
+from .models import IDDTO, ErrDTO, Template, TemplateNew, TemplatePatch
 from .repo import TemplateRepo, render_template
-
 
 router = APIRouter()
 
@@ -37,7 +36,9 @@ class RenderResult(BaseModel):
 
 
 @router.get("/template", response_model=list[Template])
-async def list_templates(repo: TemplateRepo = Depends(get_template_repo)) -> list[dict[str, Any]]:
+async def list_templates(
+    repo: TemplateRepo = Depends(get_template_repo),
+) -> list[dict[str, Any]]:
     return await repo.all()
 
 
@@ -50,13 +51,17 @@ async def create_template(
     if new_id is None:
         raise HTTPException(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=ErrDTO(type="UNKNOWN", title="Failed to create template").model_dump(),
+            detail=ErrDTO(
+                type="UNKNOWN", title="Failed to create template"
+            ).model_dump(),
         )
     return IDDTO(id=new_id)
 
 
 @router.get("/template/{id}", response_model=Template)
-async def get_template(id: UUID, repo: TemplateRepo = Depends(get_template_repo)) -> dict[str, Any]:
+async def get_template(
+    id: UUID, repo: TemplateRepo = Depends(get_template_repo)
+) -> dict[str, Any]:
     template = await repo.by_id(id)
     if template is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
@@ -85,7 +90,9 @@ async def update_template(
 
 
 @router.delete("/template/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_template(id: UUID, repo: TemplateRepo = Depends(get_template_repo)) -> None:
+async def delete_template(
+    id: UUID, repo: TemplateRepo = Depends(get_template_repo)
+) -> None:
     if not await repo.remove(id):
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return None
@@ -115,6 +122,8 @@ async def render_template_route(
     except Exception:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            detail=ErrDTO(type="BAD_REQUEST", title="Failed to render template").model_dump(),
+            detail=ErrDTO(
+                type="BAD_REQUEST", title="Failed to render template"
+            ).model_dump(),
         )
     return RenderResult(engine=em["engine"], implementation=rendered)

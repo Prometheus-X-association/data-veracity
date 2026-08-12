@@ -11,6 +11,7 @@ The tests override the ``get_repo`` dependency with an in-memory
 
 from __future__ import annotations
 
+import asyncio
 from uuid import UUID
 
 import pytest
@@ -139,28 +140,27 @@ def test_vla_from_templates_creates_vla_with_rendered_quality(
     client: TestClient,
     fake_template_repo: FakeTemplateRepo,
 ) -> None:
-    import asyncio
     template_id = "3c58c2fd-6d7a-4953-9f76-7c71fc3ac7e2"
-    asyncio.run(fake_template_repo.add(
-        {
-            "id": template_id,
-            "name": "JQ check",
-            "criterionType": "process",
-            "targetAspect": "field",
-            "evaluationMethod": {
-                "engine": "JQ",
-                "variableSchema": {"value": {"type": "string"}},
-                "implementationTemplate": ".value == \"ok\"",
-            },
-        }
-    ))
+    asyncio.run(
+        fake_template_repo.add(
+            {
+                "id": template_id,
+                "name": "JQ check",
+                "criterionType": "process",
+                "targetAspect": "field",
+                "evaluationMethod": {
+                    "engine": "JQ",
+                    "variableSchema": {"value": {"type": "string"}},
+                    "implementationTemplate": '.value == "ok"',
+                },
+            }
+        )
+    )
     r = client.post(
         "/vla/from-templates",
         json={
             "description": "rendered VLA",
-            "qualityTemplates": [
-                {"id": template_id, "model": {"value": "ok"}}
-            ],
+            "qualityTemplates": [{"id": template_id, "model": {"value": "ok"}}],
         },
     )
     assert r.status_code == 201
