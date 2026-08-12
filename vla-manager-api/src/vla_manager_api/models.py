@@ -14,7 +14,7 @@ Reference:
 from __future__ import annotations
 
 from typing import Any, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -84,6 +84,7 @@ class ErrDTO(BaseModel):
 # ba876ff~1). Wire format is camelCase to remain byte-compatible with the
 # existing VLA Manager Vue UI and the OpenAPI spec.
 # ---------------------------------------------------------------------------
+
 
 class EvaluationMethod(BaseModel):
     """Renderable evaluation method inside a Template."""

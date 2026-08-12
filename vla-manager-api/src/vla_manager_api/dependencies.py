@@ -9,7 +9,6 @@ imports — :mod:`.main` imports :mod:`.routes` which imports
 from __future__ import annotations
 
 import logging
-import os
 
 from .config import cfg
 from .repo import FakeTemplateRepo, FakeVLARepo, TemplateRepo, VLARepo

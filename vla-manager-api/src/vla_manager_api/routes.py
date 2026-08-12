@@ -16,9 +16,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from .auth import require_api_key
 from .dependencies import get_repo, get_template_repo
-from .models import ErrDTO, IDDTO, VLANew, VLANewFromTemplates
+from .models import IDDTO, ErrDTO, VLANew, VLANewFromTemplates
 from .repo import TemplateRepo, VLARepo, render_template
-
 
 router = APIRouter()
 
@@ -62,7 +61,9 @@ async def create_vla(vla_req: VLANew, repo: VLARepo = Depends(get_repo)) -> IDDT
     return IDDTO(id=new_id)
 
 
-@router.post("/vla/from-templates", status_code=status.HTTP_201_CREATED, response_model=IDDTO)
+@router.post(
+    "/vla/from-templates", status_code=status.HTTP_201_CREATED, response_model=IDDTO
+)
 async def create_vla_from_templates(
     vla_req: VLANewFromTemplates,
     repo: VLARepo = Depends(get_repo),
