@@ -22,6 +22,8 @@ import json
 from typing import Any, Optional, Protocol
 from uuid import UUID, uuid4
 
+import chevron
+
 __all__ = [
     "VLARepo",
     "FakeVLARepo",
@@ -144,8 +146,6 @@ def render_template(implementation_template: str, model: dict[str, Any]) -> str:
     Mirrors the deleted Kotlin ``Template.render`` (service/templates.kt).
     Uses the ``chevron`` library for Mustache/Handlebars fidelity.
     """
-    import chevron
-
     return chevron.render(implementation_template, model)
 
 

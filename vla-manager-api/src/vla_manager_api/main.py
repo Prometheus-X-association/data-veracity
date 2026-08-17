@@ -12,10 +12,13 @@ from __future__ import annotations
 import logging
 import os
 
+import asyncpg
+import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, PlainTextResponse
 
 from .config import cfg, setup_logging
+from .repo import PgTemplateRepo, PgVLARepo
 from .routes import router
 from .template_routes import router as template_router
 
@@ -55,10 +58,6 @@ async def _build_production_repo():
     ``get_repo`` dependency) — never wrapped in ``asyncio.run()``, which
     raises ``RuntimeError`` when a loop is already running.
     """
-    import asyncpg
-
-    from .repo import PgVLARepo
-
     if not cfg.postgres_dsn:
         raise RuntimeError(
             "VLA_MANAGER_DB_URL is not set — cannot boot PgVLARepo. "
@@ -77,10 +76,6 @@ async def _build_production_template_repo():
     Opens its own asyncpg pool against the same database as the VLA repo,
     and owns the separate ``templates`` + ``evaluation_methods`` tables.
     """
-    import asyncpg
-
-    from .repo import PgTemplateRepo
-
     if not cfg.postgres_dsn:
         raise RuntimeError(
             "VLA_MANAGER_DB_URL is not set — cannot boot PgTemplateRepo. "
@@ -149,8 +144,6 @@ def _level_to_str(level: int) -> str:
 
 def cli() -> None:
     """uvicorn entrypoint (see ``[project.scripts]`` in pyproject.toml)."""
-    import uvicorn
-
     uvicorn.run(
         "vla_manager_api.main:app",
         host=cfg.host,
