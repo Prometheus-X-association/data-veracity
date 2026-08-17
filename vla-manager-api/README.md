@@ -23,7 +23,7 @@ Separating VLA ownership from the attestation gateway means:
 | `GET /vla/{id}` | DVA API, UI | Retrieve a VLA by its UUID — used during VLA resolution in the synchronous attestation flow |
 | `POST /vla` | VLA Manager UI | Create a VLA from a partial ODCS payload |
 | `POST /vla/from-templates` | VLA Manager UI | *Reserved (501)* — implemented in a later refactor step |
-| `DELETE /vla` | Admin only | Wipe all VLAs (guarded by `VLA_MANAGER_API_KEY` bearer auth; disabled when key is empty) |
+| `DELETE /vla` | Admin only | Wipe all VLAs |
 
 This service intentionally does **not** do evaluation, attestation, or credential issuance —
 those are concerns of `dva-processing` and the `dva-vc-manager` respectively.
@@ -47,6 +47,5 @@ See `test-env/compose.yml` — the service is wired as `vla-manager-api` on port
 | Var | Default | Purpose |
 |---|---|---|
 | `VLA_MANAGER_DB_URL` | *(empty)* | Postgres DSN, e.g. `postgresql://vla:vla@postgres:5432/vla` |
-| `VLA_MANAGER_API_KEY` | *(empty)* | Shared-secret bearer for `DELETE /vla`. When empty, the endpoint is disabled. |
 | `VLA_MANAGER_API_PORT` | `8000` | Listen port |
 | `VLA_MANAGER_API_LOG_LEVEL` | `INFO` | Standard Python log-level name |

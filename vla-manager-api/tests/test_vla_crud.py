@@ -2,8 +2,7 @@
 
 Mirrors the Kotlin ``VLARoutesTest`` contract (the four operations it
 covers): list, get-by-id, create, get-not-found. Adds an explicit
-``DELETE /vla`` test that exercises the fail-closed 401 path when no
-API key is configured.
+``DELETE /vla`` test covering the bulk wipe.
 
 The tests override the ``get_repo`` dependency with an in-memory
 ``FakeVLARepo`` so no Postgres is required.
@@ -109,9 +108,14 @@ def test_created_vla_then_listed(client: TestClient) -> None:
     assert listing[0]["description"] == "My first VLA"
 
 
-def test_delete_all_unauthorised_when_no_api_key(client: TestClient) -> None:
+def test_delete_all_removes_every_vla(client: TestClient) -> None:
+    client.post("/vla", json={"description": "one"})
+    client.post("/vla", json={"description": "two"})
+    assert len(client.get("/vla").json()) == 2
+
     r = client.delete("/vla")
-    assert r.status_code == 401
+    assert r.status_code == 204
+    assert client.get("/vla").json() == []
 
 
 def test_vla_id_is_a_real_uuid_v4(client: TestClient) -> None:
