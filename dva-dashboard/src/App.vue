@@ -28,6 +28,11 @@ export default {
       menu: [
         { header: 'Navigation' },
         {
+          href: '/overview',
+          title: 'Overview',
+          icon: { element: 'v-icon', attributes: { name: 'fa-chart-line' } }
+        },
+        {
           href: '/requests',
           title: 'Attestations',
           icon: {
@@ -50,6 +55,12 @@ export default {
             element: 'v-icon',
             attributes: { name: 'fa-certificate' }
           }
+        },
+        { header: 'Environment' },
+        {
+          href: '/api-status',
+          title: 'Gateway status',
+          icon: { element: 'v-icon', attributes: { name: 'fa-server' } }
         }
       ]
     }

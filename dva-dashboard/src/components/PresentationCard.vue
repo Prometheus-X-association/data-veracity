@@ -1,199 +1,22 @@
 <template>
-  <div class="card">
-    <div class="card-header">
-      <h5 class="card-title">{{ pres.thread_id }}</h5>
-    </div>
-    <div class="card-body">
-      <table>
-        <tr>
-          <th style="width:44%"><v-icon name="fa-people-arrows" /> Data Exchange ID</th>
-          <td class="data">{{ pres.by_format.pres_request.indy.requested_attributes.attr_data_exchange_id.restrictions[0]['attr::data_exchange_id::value'] }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-plus" /> Created</th>
-          <td class="data">{{ pres.created_at }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-pencil-alt" /> Updated</th>
-          <td class="data">{{ pres.updated_at }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-user-cog" /> Role</th>
-          <td class="data">{{ pres.role }}</td>
-        </tr>
-      </table>
-
-      <hr class="divider" />
-
-      <h6 class="card-subtitle">Revealed Attributes</h6>
-
-      <table>
-        <tr>
-          <th style="width:44%"><v-icon name="fa-user-check" /> Subject</th>
-          <td class="data">{{ pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_subject.raw }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-people-arrows" /> Data Exchange ID</th>
-          <td class="data">{{ pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_data_exchange_id.raw }}</td>
-        </tr>
-        <tr>
-          <th style="width:44%"><v-icon name="fa-file-signature" /> Contract ID</th>
-          <td class="data">{{ pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_contract_id.raw }}</td>
-        </tr>
-        <tr>
-          <th style="width:44%"><v-icon name="fa-certificate" /> VC ID</th>
-          <td class="data">{{ pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_vc_id.raw }}</td>
-        </tr>
-        <tr>
-          <th style="width:44%"><v-icon name="fa-user" /> Issuer</th>
-          <td class="data">{{ pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_issuer_id.raw }}</td>
-        </tr>
-      </table>
-      
-      <hr class="divider" />
-
-      <div class="badges">
-        <!-- TODO -->
-        <span class="badge badge-success"><v-icon name="fa-check" /> Verified</span>
-      </div>
-
-      <hr class="divider" />
-
-      <h6 class="card-subtitle">Revealed Results</h6>
-      <vue-json-pretty
-        :data="JSON.parse(pres.by_format.pres.indy.requested_proof.revealed_attrs.attr_payload.raw)"
-        :deep="1"
-        :virtual="true"
-        :height="150"
-      />
-    </div>
-  </div>
+  <article class="card">
+    <div class="card-header"><div class="card-mark"><v-icon name="fa-user-shield" /></div><div class="header-copy"><span>Verification exchange</span><h3>{{ pres.thread_id || 'Presentation' }}</h3></div><span class="status" :class="pres.verified ? 'pass' : 'fail'"><i></i>{{ pres.verified ? 'Verified' : 'Failed' }}</span></div>
+    <div class="card-body"><div class="field-grid"><div class="field"><span><v-icon name="fa-people-arrows" /> Exchange</span><strong>{{ exchangeId }}</strong></div><div class="field"><span><v-icon name="fa-file-signature" /> Contract</span><strong>{{ revealed('attr_contract_id') }}</strong></div><div class="field"><span><v-icon name="fa-user" /> Subject</span><strong>{{ revealed('attr_subject') }}</strong></div><div class="field"><span><v-icon name="fa-user-cog" /> Role</span><strong>{{ pres.role || '—' }}</strong></div></div><div class="meta-row"><span><v-icon name="fa-calendar-alt" /> Created {{ formatDate(pres.created_at) }}</span><span>Updated {{ formatDate(pres.updated_at) }}</span></div><button class="expand-button" @click="expanded = !expanded"><v-icon :name="expanded ? 'fa-chevron-up' : 'fa-chevron-down'" /> {{ expanded ? 'Hide details' : 'Show credential details' }}</button><div v-if="expanded"><div class="section-title"><v-icon name="fa-certificate" /> Revealed credential</div><div class="credential-line"><span>VC ID</span><strong>{{ revealed('attr_vc_id') }}</strong></div><div class="credential-line"><span>Issuer</span><strong>{{ revealed('attr_issuer_id') }}</strong></div><div class="section-title"><v-icon name="fa-code" /> Revealed data</div><vue-json-pretty :data="payload" :deep="2" :virtual="true" :height="150" /></div></div>
+  </article>
 </template>
-
 <script setup>
-  defineProps(['pres'])
+import { computed, ref } from 'vue'
+import VueJsonPretty from 'vue-json-pretty'
+import 'vue-json-pretty/lib/styles.css'
+const props=defineProps({pres:{type:Object,required:true}})
+const expanded=ref(false)
+const attrs=computed(()=>props.pres?.by_format?.pres?.indy?.requested_proof?.revealed_attrs||{})
+const exchangeId=computed(()=>props.pres?.by_format?.pres_request?.indy?.requested_attributes?.attr_data_exchange_id?.restrictions?.[0]?.['attr::data_exchange_id::value']||revealed('attr_data_exchange_id'))
+const revealed=name=>attrs.value?.[name]?.raw||'—'
+const payload=computed(()=>{try{return JSON.parse(revealed('attr_payload'))}catch{return {}}})
+function formatDate(v){return v?new Date(v).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'—'}
 </script>
-
-<script>
-  import VueJsonPretty from 'vue-json-pretty'
-  import 'vue-json-pretty/lib/styles.css'
-
-  export default {
-    components: { VueJsonPretty }
-  }
-</script>
-
 <style scoped>
-  td {
-    padding-left: 1rem;
-  }
-
-  .card {
-    background-color: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, .1);
-    overflow: hidden;
-    transition: transform 0.1s, box-shadow 0.1s;
-    display: flex;
-    flex-direction: column;
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-    height: 100%;
-  }
-  
-  .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .card-header {
-    height: 2rem;
-    background-color: #0891b2;
-    color: #fff;
-    padding: 1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .card-title {
-    font-family: inherit;
-    text-align: center;
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .card-body {
-    padding: .6rem;
-
-  }
-  
-  .divider {
-    border: none;
-    border-top: 1px solid #DDD;
-    margin: 0.75rem 0;
-  }
-  
-  .card-subtitle {
-    font-size: 0.95rem;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    margin-top: 0;
-    text-align: center;
-    color: #333;
-  }
-  
-  .results-list {
-    list-style-type: disc;
-    margin: 0;
-    padding-left: 1.25rem;
-    flex-grow: 1;
-  }
-  
-  .results-list li {
-    margin-bottom: 0.25rem;
-    font-size: 0.9rem;
-    color: #333;
-  }
-  
-  .fw-semibold {
-    font-weight: 600;
-  }
-
-  .badges {
-    margin-top: 1rem;
-    display: flex;
-    gap: .25rem;
-  }
-  
-  /* Badge overrides */
-  .badge {
-    padding: 0.5em;
-    border-radius: 0.5rem;
-    color: #fff;
-  }
-  .badge-success {
-    background-color: #198754;
-  }
-  .badge-danger {
-    background-color: #dc3545;
-  }
-  .badge-aov {
-    background-color: #1e3fb9;
-  }
-  .badge-pov {
-    background-color: #825f00;
-  }
-
-  .data {
-    font-family: monospace;
-  }
-
-  pre {
-    height: 4rem;
-    overflow: auto;
-  }
+.card{display:flex;flex-direction:column;height:100%;overflow:hidden;border:1px solid #e2e8f0;border-radius:14px;background:#fff;box-shadow:0 4px 18px rgba(15,23,42,.045);transition:transform .16s,box-shadow .16s}.card:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(15,23,42,.09)}.card-header{display:flex;align-items:center;gap:11px;padding:16px;color:#fff;background:#0e7490}.card-mark{display:grid;place-items:center;width:37px;height:37px;border-radius:10px;color:#cffafe;background:rgba(255,255,255,.15);font-size:.95rem}.header-copy{min-width:0;flex:1}.header-copy span{display:block;color:#cffafe;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em}.header-copy h3{overflow:hidden;margin:4px 0 0;font-size:.82rem;text-overflow:ellipsis;white-space:nowrap}.status{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border-radius:999px;font-size:.62rem;font-weight:800}.status i{width:6px;height:6px;border-radius:50%}.status.pass{color:#166534;background:#dcfce7}.status.pass i{background:#22c55e}.status.fail{color:#991b1b;background:#fee2e2}.status.fail i{background:#ef4444}.card-body{display:flex;flex:1;flex-direction:column;padding:16px}.field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{min-width:0;padding:10px;border:1px solid #f1f5f9;border-radius:9px;background:#f8fafc}.field span{display:flex;align-items:center;gap:5px;color:#94a3b8;font-size:.65rem}.field span svg{color:#0891b2}.field strong,.credential-line strong{display:block;overflow:hidden;margin-top:5px;color:#475569;font-size:.7rem;text-overflow:ellipsis;white-space:nowrap}.meta-row{display:flex;justify-content:space-between;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9;color:#64748b;font-size:.65rem}.meta-row span:first-child{display:flex;align-items:center;gap:5px}.meta-row svg{color:#0891b2}.section-title{display:flex;align-items:center;gap:6px;margin:14px 0 7px;padding-top:12px;border-top:1px solid #f1f5f9;color:#475569;font-size:.7rem;font-weight:800}.section-title svg{color:#0891b2}.credential-line{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #f8fafc}.credential-line span{color:#94a3b8;font-size:.65rem}.card-body :deep(.vjs-tree){font-size:.68rem}@media(max-width:420px){.field-grid{grid-template-columns:1fr}.meta-row{flex-direction:column}}
+.expand-button{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:14px;padding:8px;border:1px solid #bae6fd;border-radius:8px;color:#0e7490;background:#f0f9ff;font-size:.7rem;font-weight:800;cursor:pointer}.expand-button:hover{background:#e0f2fe}
 </style>
