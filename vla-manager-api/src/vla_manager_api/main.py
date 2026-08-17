@@ -10,44 +10,39 @@ async-backed ``PgVLARepo`` is constructed on startup (via the lazy
 from __future__ import annotations
 
 import logging
-import os
+from typing import Any
 
 import asyncpg
 import uvicorn
+import yaml
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.openapi.utils import get_openapi
 
 from .config import cfg, setup_logging
 from .repo import PgTemplateRepo, PgVLARepo
 from .routes import router
 from .template_routes import router as template_router
 
-_SWAGGER_UI_HTML = """\
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>VLA Manager API — Swagger UI</title>
-    <link href="https://unpkg.com/swagger-ui-dist@5.17.12/swagger-ui.css" rel="stylesheet">
-    <link href="https://unpkg.com/swagger-ui-dist@5.17.12/favicon-32x32.png" rel="icon" type="image/x-icon">
-  </head>
-  <body>
-    <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.17.12/swagger-ui-bundle.js" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.17.12/swagger-ui-standalone-preset.js" crossorigin="anonymous"></script>
-    <script>
-      window.onload = function() {
-        SwaggerUIBundle({
-          url: '/swagger/openapi.yaml',
-          dom_id: '#swagger-ui',
-          deepLinking: false,
-          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-          layout: 'StandaloneLayout'
-        });
-      };
-    </script>
-  </body>
-</html>
-"""
+logger = logging.getLogger(__name__)
+
+
+def _load_openapi_schema(app: FastAPI) -> dict[str, Any]:
+    """Return the hand-written spec, or FastAPI's generated one if absent."""
+    try:
+        with open(cfg.openapi_file, encoding="utf-8") as fh:
+            return yaml.safe_load(fh)
+    except FileNotFoundError:
+        logger.warning(
+            "OpenAPI spec not found at %s, falling back to the auto-generated "
+            "schema; set VLA_MANAGER_OPENAPI_FILE to the hand-written spec",
+            cfg.openapi_file,
+        )
+        return get_openapi(
+            title=app.title,
+            version=app.version,
+            description=app.description,
+            routes=app.routes,
+        )
 
 
 async def _build_production_repo():
@@ -99,33 +94,17 @@ def create_app() -> FastAPI:
             "and serves the VLA authoring UI for VLA CRUD."
         ),
         version="0.1.0",
-        # Disable auto-generated docs — hand-written spec is served at /swagger
-        docs_url=None,
-        redoc_url=None,
-        openapi_url=None,
+        # Docs pages are FastAPI's own; the schema behind them is the
+        # hand-written spec assigned below.
+        docs_url="/swagger",
+        redoc_url="/redoc",
+        openapi_url="/swagger/openapi.json",
     )
     app.include_router(router)
     app.include_router(template_router)
-
-    @app.get("/swagger", response_class=HTMLResponse, include_in_schema=False)
-    async def swagger_ui() -> HTMLResponse:
-        """Serve the Swagger UI loaded from the hand-written OpenAPI spec."""
-        return HTMLResponse(content=_SWAGGER_UI_HTML)
-
-    @app.get(
-        "/swagger/openapi.yaml",
-        response_class=PlainTextResponse,
-        include_in_schema=False,
-    )
-    async def swagger_spec() -> PlainTextResponse:
-        """Serve the hand-written OpenAPI spec YAML from disk."""
-        spec_path = os.environ.get("VLA_MANAGER_OPENAPI_FILE", "/app/openapi.yaml")
-        try:
-            with open(spec_path, "r", encoding="utf-8") as fh:
-                content = fh.read()
-        except FileNotFoundError:
-            return PlainTextResponse(content="# spec file not found", status_code=404)
-        return PlainTextResponse(content=content, media_type="application/yaml")
+    # Populating openapi_schema is what app.openapi() consults first, so
+    # Swagger UI and ReDoc both render the hand-written spec.
+    app.openapi_schema = _load_openapi_schema(app)
 
     return app
 

@@ -14,6 +14,7 @@ RUN \
         "asyncpg>=0.30.0" \
         "pydantic>=2.10.6" \
         "pydantic-settings>=2.5.0" \
+        "pyyaml>=6.0" \
         "structlog>=25.1.0" \
         "uvicorn>=0.34.3" \
         "chevron>=0.14"
@@ -42,7 +43,7 @@ WORKDIR /app
 ENV PYTHONPATH=/app/src \
     PYTHONUNBUFFERED=1
 
-# Hand-written OpenAPI spec — served at /swagger/openapi.yaml
+# Hand-written OpenAPI spec — served at /swagger/openapi.json
 COPY ./docs/spec/vla-manager-api.yaml /app/openapi.yaml
 ENV VLA_MANAGER_OPENAPI_FILE=/app/openapi.yaml
 
