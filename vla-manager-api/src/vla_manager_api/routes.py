@@ -3,8 +3,6 @@
 VLA CRUD routes plus POST /vla/from-templates which fetches VLA
 templates, renders each with a model, and merges the rendered quality
 requirements into the VLA before persistence.
-
-DELETE /vla is guarded by :func:`.auth.require_api_key`.
 """
 
 from __future__ import annotations
@@ -14,7 +12,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from .auth import require_api_key
 from .dependencies import get_repo, get_template_repo
 from .models import IDDTO, ErrDTO, VLANew, VLANewFromTemplates
 from .repo import TemplateRepo, VLARepo, render_template
@@ -105,8 +102,6 @@ async def create_vla_from_templates(
 
 
 @router.delete("/vla", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_all_vlas(
-    _: None = Depends(require_api_key), repo: VLARepo = Depends(get_repo)
-) -> None:
+async def delete_all_vlas(repo: VLARepo = Depends(get_repo)) -> None:
     await repo.remove_all()
     return None

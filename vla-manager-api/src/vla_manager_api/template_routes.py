@@ -8,7 +8,7 @@ Seven routes — byte-compatible with the old dva-api contract:
 * ``GET    /template/{id}``     — fetch a template by id
 * ``PATCH  /template/{id}``     — partial update (id in body must match path)
 * ``DELETE /template/{id}``     — delete one template
-* ``DELETE /template``          — delete all (dev, API-key guarded)
+* ``DELETE /template``          — delete all (dev)
 * ``POST   /template/{id}/render`` — render the Handlebars template with a model
 """
 
@@ -20,7 +20,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from .auth import require_api_key
 from .dependencies import get_template_repo
 from .models import IDDTO, ErrDTO, Template, TemplateNew, TemplatePatch
 from .repo import TemplateRepo, render_template
@@ -100,7 +99,6 @@ async def delete_template(
 
 @router.delete("/template", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_all_templates(
-    _: None = Depends(require_api_key),
     repo: TemplateRepo = Depends(get_template_repo),
 ) -> None:
     await repo.remove_all()

@@ -281,12 +281,6 @@ paths:
       responses:
         '204':
           description: All VLAs deleted.
-        '401':
-          description: Missing or invalid API key.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   /vla/{id}:
     parameters:
       - $ref: '#/components/parameters/idParam'

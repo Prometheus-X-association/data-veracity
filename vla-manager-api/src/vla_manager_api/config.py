@@ -35,11 +35,6 @@ class Config:
     postgres_user: str = os.getenv("VLA_MANAGER_DB_USER", "")
     postgres_password: str = os.getenv("VLA_MANAGER_DB_PASSWORD", "")
 
-    # Optional shared-secret bearer token guarding destructive endpoints
-    # (DELETE /vla). When empty (default), ``DELETE /vla`` is disabled
-    # entirely — mirrors the dva-api guard at vlaRoutes.kt:129-146.
-    api_key: str = os.getenv("VLA_MANAGER_API_KEY", "")
-
 
 cfg = Config()
 
