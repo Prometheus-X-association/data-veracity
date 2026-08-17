@@ -74,8 +74,8 @@ async def _build_production_repo():
 async def _build_production_template_repo():
     """Construct the async-backed Template repository.
 
-    Shares the same asyncpg pool as the VLA repo but owns separate
-    ``templates`` + ``evaluation_methods`` tables.
+    Opens its own asyncpg pool against the same database as the VLA repo,
+    and owns the separate ``templates`` + ``evaluation_methods`` tables.
     """
     import asyncpg
 

@@ -12,10 +12,6 @@ from dataclasses import dataclass
 from sys import stderr
 
 
-def _truthy(value: str | None) -> bool:
-    return value is not None and value.lower() in {"1", "true", "yes", "on"}
-
-
 def _log_level(value: str | None) -> int:
     import logging
 
@@ -31,9 +27,6 @@ class Config:
     # Postgres DSN. Required for the production (asyncpg) repository.
     # Example: postgresql://vla:vla@postgres-vla:5432/vla
     postgres_dsn: str = os.getenv("VLA_MANAGER_DB_URL", "")
-
-    postgres_user: str = os.getenv("VLA_MANAGER_DB_USER", "")
-    postgres_password: str = os.getenv("VLA_MANAGER_DB_PASSWORD", "")
 
 
 cfg = Config()

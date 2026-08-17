@@ -41,12 +41,6 @@ async def get_repo() -> VLARepo:
     return _repo_singleton
 
 
-def install_repo_for_tests(repo: VLARepo) -> None:
-    """Bypass the lazy path and inject a fixed repo for tests."""
-    global _repo_singleton
-    _repo_singleton = repo
-
-
 # --- Template repo (same lazy-singleton pattern) ---
 _template_repo_singleton: TemplateRepo | None = None
 
@@ -65,9 +59,3 @@ async def get_template_repo() -> TemplateRepo:
             )
             _template_repo_singleton = FakeTemplateRepo()
     return _template_repo_singleton
-
-
-def install_template_repo_for_tests(repo: TemplateRepo) -> None:
-    """Bypass the lazy path and inject a fixed template repo for tests."""
-    global _template_repo_singleton
-    _template_repo_singleton = repo
