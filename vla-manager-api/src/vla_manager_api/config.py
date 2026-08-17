@@ -33,6 +33,10 @@ class Config:
     # Example: postgresql://vla:vla@postgres-vla:5432/vla
     postgres_dsn: str = os.getenv("VLA_MANAGER_DB_URL", "")
 
+    # Hand-written OpenAPI spec served at /swagger.
+    # Missing → fall back to FastAPI's auto-generated schema.
+    openapi_file: str = os.getenv("VLA_MANAGER_OPENAPI_FILE", "/app/openapi.yaml")
+
 
 cfg = Config()
 
