@@ -48,4 +48,4 @@ See `test-env/compose.yml` — the service is wired as `vla-manager-api` on port
 |---|---|---|
 | `VLA_MANAGER_DB_URL` | *(empty)* | Postgres DSN, e.g. `postgresql://vla:vla@postgres:5432/vla` |
 | `VLA_MANAGER_API_PORT` | `8000` | Listen port |
-| `VLA_MANAGER_API_LOG_LEVEL` | `INFO` | Standard Python log-level name |
+| `VLA_MANAGER_API_LOG_LEVEL` | `info` | One of `critical`, `error`, `warning`, `info`, `debug` |
