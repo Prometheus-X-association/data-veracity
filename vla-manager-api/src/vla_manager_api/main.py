@@ -9,7 +9,6 @@ async-backed ``PgVLARepo`` is constructed on startup (via the lazy
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import asyncpg
@@ -18,12 +17,13 @@ import yaml
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
-from .config import cfg, setup_logging
+from .config import cfg
+from .log import get_logger, setup_logging
 from .repo import PgTemplateRepo, PgVLARepo
 from .routes import router
 from .template_routes import router as template_router
 
-logger = logging.getLogger(__name__)
+logger = get_logger()
 
 
 def _load_openapi_schema(app: FastAPI) -> dict[str, Any]:
@@ -33,9 +33,9 @@ def _load_openapi_schema(app: FastAPI) -> dict[str, Any]:
             return yaml.safe_load(fh)
     except FileNotFoundError:
         logger.warning(
-            "OpenAPI spec not found at %s, falling back to the auto-generated "
-            "schema; set VLA_MANAGER_OPENAPI_FILE to the hand-written spec",
-            cfg.openapi_file,
+            "OpenAPI spec not found, falling back to the auto-generated schema; "
+            "set VLA_MANAGER_OPENAPI_FILE to the hand-written spec",
+            openapi_file=cfg.openapi_file,
         )
         return get_openapi(
             title=app.title,
@@ -114,18 +114,11 @@ def create_app() -> FastAPI:
 app = create_app()
 
 
-def _level_to_str(level: int) -> str:
-    for name, val in logging._levelToName.items():
-        if val == level:
-            return name.lower()
-    return "info"
-
-
 def cli() -> None:
     """uvicorn entrypoint (see ``[project.scripts]`` in pyproject.toml)."""
     uvicorn.run(
         "vla_manager_api.main:app",
         host=cfg.host,
         port=cfg.port,
-        log_level=_level_to_str(cfg.log_level),
+        log_level=cfg.log_level,
     )
