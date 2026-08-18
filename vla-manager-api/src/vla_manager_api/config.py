@@ -10,13 +10,6 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from sys import stderr
-
-import structlog
-from structlog import make_filtering_bound_logger
-from structlog.dev import ConsoleRenderer
-from structlog.processors import JSONRenderer, StackInfoRenderer, TimeStamper
-from structlog.stdlib import add_log_level
 
 
 def _log_level(value: str | None) -> int:
@@ -39,13 +32,3 @@ class Config:
 
 
 cfg = Config()
-
-
-def setup_logging() -> None:
-    shared = [add_log_level, StackInfoRenderer(), TimeStamper(fmt="iso")]
-    processors = shared + ([ConsoleRenderer()] if stderr.isatty() else [JSONRenderer()])
-    structlog.configure(
-        processors=processors,
-        context_class=dict,
-        wrapper_class=make_filtering_bound_logger(cfg.log_level),
-    )

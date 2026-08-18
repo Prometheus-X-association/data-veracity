@@ -8,12 +8,11 @@ imports — :mod:`.main` imports :mod:`.routes` which imports
 
 from __future__ import annotations
 
-import logging
-
 from .config import cfg
+from .log import get_logger
 from .repo import FakeTemplateRepo, FakeVLARepo, TemplateRepo, VLARepo
 
-logger = logging.getLogger(__name__)
+logger = get_logger()
 
 # Lazy singleton — populated on first request. Tests override via
 # ``app.dependency_overrides[get_repo] = lambda: FakeVLARepo()``.
