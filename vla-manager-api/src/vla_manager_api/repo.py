@@ -92,7 +92,7 @@ class PgVLARepo:
     def __init__(self, pool):  # type: ignore[no-untyped-def]
         self._pool = pool
 
-    async def _ensure_schema(self) -> None:
+    async def ensure_schema(self) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(
                 """
@@ -217,7 +217,7 @@ class PgTemplateRepo:
     def __init__(self, pool):  # type: ignore[no-untyped-def]
         self._pool = pool
 
-    async def _ensure_schema(self) -> None:
+    async def ensure_schema(self) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(
                 """
