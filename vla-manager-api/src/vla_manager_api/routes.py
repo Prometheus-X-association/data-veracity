@@ -14,7 +14,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from .dependencies import get_repo, get_template_repo
 from .models import IDDTO, ErrDTO, VLANew, VLANewFromTemplates
-from .repo import TemplateRepo, VLARepo, render_template
+from .template_repo import TemplateRepo
+from .templates import render_template
+from .vla_repo import VLARepo
 
 router = APIRouter()
 

@@ -28,7 +28,8 @@ from .models import (
     TemplateNew,
     TemplatePatch,
 )
-from .repo import TemplateRepo, render_template
+from .template_repo import TemplateRepo
+from .templates import render_template
 
 router = APIRouter()
 
