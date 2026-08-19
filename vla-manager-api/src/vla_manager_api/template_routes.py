@@ -17,12 +17,12 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from .dependencies import get_template_repo
+from .errors import http_error
 from .models import (
     IDDTO,
-    ErrDTO,
     RenderResult,
     Template,
     TemplateNew,
@@ -48,11 +48,10 @@ async def create_template(
     template = template_req.model_dump(by_alias=True, exclude_none=True)
     new_id = await repo.add(template)
     if new_id is None:
-        raise HTTPException(
+        raise http_error(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=ErrDTO(
-                type="UNKNOWN", title="Failed to create template"
-            ).model_dump(),
+            "Failed to create template",
+            type="UNKNOWN",
         )
     return IDDTO(id=new_id)
 
@@ -63,7 +62,9 @@ async def get_template(
 ) -> dict[str, Any]:
     template = await repo.by_id(id)
     if template is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND)
+        raise http_error(
+            status.HTTP_404_NOT_FOUND, "No template with the given ID exists"
+        )
     return template
 
 
@@ -74,17 +75,16 @@ async def update_template(
     repo: TemplateRepo = Depends(get_template_repo),
 ) -> dict[str, Any]:
     if id != patch.id:
-        raise HTTPException(
+        raise http_error(
             status.HTTP_400_BAD_REQUEST,
-            detail=ErrDTO(
-                type="BAD_REQUEST",
-                title="ID path parameter does not match ID in body",
-            ).model_dump(),
+            "ID path parameter does not match ID in body",
         )
     patch_dict = patch.model_dump(by_alias=True, exclude_none=True)
     updated = await repo.update(id, patch_dict)
     if updated is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND)
+        raise http_error(
+            status.HTTP_404_NOT_FOUND, "No template with the given ID exists"
+        )
     return updated
 
 
@@ -93,7 +93,9 @@ async def delete_template(
     id: UUID, repo: TemplateRepo = Depends(get_template_repo)
 ) -> None:
     if not await repo.remove(id):
-        raise HTTPException(status.HTTP_404_NOT_FOUND)
+        raise http_error(
+            status.HTTP_404_NOT_FOUND, "No template with the given ID exists"
+        )
     return None
 
 
@@ -113,15 +115,14 @@ async def render_template_route(
 ) -> RenderResult:
     template = await repo.by_id(id)
     if template is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND)
+        raise http_error(
+            status.HTTP_404_NOT_FOUND, "No template with the given ID exists"
+        )
     em = template["evaluationMethod"]
     try:
         rendered = render_template(em["implementationTemplate"], model)
-    except Exception:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            detail=ErrDTO(
-                type="BAD_REQUEST", title="Failed to render template"
-            ).model_dump(),
-        )
+    except Exception as exc:
+        raise http_error(
+            status.HTTP_400_BAD_REQUEST, "Failed to render template"
+        ) from exc
     return RenderResult(engine=em["engine"], implementation=rendered)
