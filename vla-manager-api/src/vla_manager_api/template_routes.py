@@ -1,16 +1,4 @@
-"""FastAPI routes for VLA Template CRUD.
-
-Ported from the deleted Kotlin ``templateRoutes.kt`` (commit ba876ff~1).
-Seven routes — byte-compatible with the old dva-api contract:
-
-* ``GET    /template``          — list all templates
-* ``POST   /template``          — create a template
-* ``GET    /template/{id}``     — fetch a template by id
-* ``PATCH  /template/{id}``     — partial update (id in body must match path)
-* ``DELETE /template/{id}``     — delete one template
-* ``DELETE /template``          — delete all (dev)
-* ``POST   /template/{id}/render`` — render the Handlebars template with a model
-"""
+"""FastAPI routes for VLA Template CRUD."""
 
 from __future__ import annotations
 

@@ -1,13 +1,11 @@
-"""VLA Manager API — sole owner of Veracity Level Agreements.
+"""
+VLA Manager API – owner of Veracity Level Agreement operations.
 
-Hosted at the Data Intermediary. Serves the VLA authoring UI and answers
-``GET /vla/{id}`` requests from each participant's DVA API during VLA
-resolution in the synchronous attestation flow.
+Expected to be hosted at the Data Intermediary.
 
 This module deliberately does *not* perform any evaluation, attestation
-or credential issuance — those are concerns of other components. VLA
-Manager API owns only VLAs (and, eventually, VLA templates and the
-"test requirements while building VLAs" proxy endpoint).
+or credential issuance – those are concerns of other components.  VLA
+Manager API owns only VLAs and VLA templates.
 """
 
 __version__ = "0.1.0"

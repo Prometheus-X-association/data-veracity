@@ -1,10 +1,8 @@
 """
 Template repository — pluggable persistence for VLA Templates.
 
-Ported from the deleted Kotlin ``PgTemplateRepo.kt`` (commit ba876ff~1).
 The PostgreSQL implementation owns two tables in a 1:1 relationship,
-``templates`` and ``evaluation_methods``; columns mirror the deleted
-Kotlin ``templateMapping.kt``.
+``templates`` and ``evaluation_methods``.
 
 As with :mod:`vla_manager_api.vla_repo`, the interface is async because
 the production path uses asyncpg; the fake returns plain values for ease
@@ -77,7 +75,8 @@ class FakeTemplateRepo:
 
 
 class PgTemplateRepo:
-    """Async-backed PostgreSQL Template repository using asyncpg.
+    """
+    Async-backed PostgreSQL Template repository using asyncpg.
 
     Owns the ``templates`` + ``evaluation_methods`` tables (1:1).
     Constructed with an ``asyncpg.Pool`` (see

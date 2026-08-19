@@ -3,8 +3,7 @@ VLA repository — pluggable persistence for Veracity Level Agreements.
 
 Two implementations:
 
-* :class:`FakeVLARepo` — in-memory map used in tests (mirrors the Kotlin
-  ``FakeVLARepo``). No external dependencies.
+* :class:`FakeVLARepo` — in-memory map used in tests; no external depdendencies.
 * :class:`PgVLARepo` — async-backed PostgreSQL repository via asyncpg.
   The repository owns the ``vlas`` table on the Data Intermediary's
   Postgres. Each VLA is stored as the raw ODCS JSON text in
