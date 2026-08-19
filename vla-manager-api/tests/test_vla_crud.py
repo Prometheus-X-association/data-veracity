@@ -11,6 +11,7 @@ The tests override the ``get_repo`` dependency with an in-memory
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Iterator
 from uuid import UUID
 
 import pytest
@@ -35,11 +36,14 @@ def fake_template_repo() -> FakeTemplateRepo:
 def client(
     fake_repo: FakeVLARepo,
     fake_template_repo: FakeTemplateRepo,
-) -> TestClient:
+) -> Iterator[TestClient]:
     app = create_app()
     app.dependency_overrides[get_repo] = lambda: fake_repo
     app.dependency_overrides[get_template_repo] = lambda: fake_template_repo
-    return TestClient(app)
+    # As a context manager TestClient runs the lifespan, which is what
+    # builds the repos onto app.state.
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 def test_list_vlas_empty_when_nothing_created(client: TestClient) -> None:

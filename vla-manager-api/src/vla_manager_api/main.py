@@ -1,25 +1,24 @@
 """FastAPI application factory and CLI entrypoint.
 
-The application is wired so the repository implementation is resolved
-through FastAPI's dependency-injection system. In production the
-async-backed ``PgVLARepo`` is constructed on startup (via the lazy
-``dependencies.get_repo``); in tests the caller swaps it via
-``app.dependency_overrides[get_repo]``.
+The application is wired so the repository implementations are resolved
+through FastAPI's dependency-injection system. In production both repos
+are built once during ``lifespan`` and read off ``app.state``; in tests
+the caller swaps them via ``app.dependency_overrides[get_repo]``.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator
 
-import asyncpg
 import uvicorn
 import yaml
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from .config import cfg
+from .dependencies import build_pool, build_template_repo, build_vla_repo
 from .log import get_logger, setup_logging
-from .repo import PgTemplateRepo, PgVLARepo
 from .routes import router
 from .template_routes import router as template_router
 
@@ -45,47 +44,23 @@ def _load_openapi_schema(app: FastAPI) -> dict[str, Any]:
         )
 
 
-async def _build_production_repo():
-    """Construct the async-backed repository.
-
-    Requires ``cfg.postgres_dsn`` to be set (env ``VLA_MANAGER_DB_URL``).
-    Must be awaited from within the running event loop (e.g. the
-    ``get_repo`` dependency) — never wrapped in ``asyncio.run()``, which
-    raises ``RuntimeError`` when a loop is already running.
-    """
-    if not cfg.postgres_dsn:
-        raise RuntimeError(
-            "VLA_MANAGER_DB_URL is not set — cannot boot PgVLARepo. "
-            "Either set it or override the get_repo dependency for tests."
-        )
-
-    pool = await asyncpg.create_pool(dsn=cfg.postgres_dsn, min_size=1, max_size=4)
-    repo = PgVLARepo(pool)
-    await repo._ensure_schema()
-    return repo
-
-
-async def _build_production_template_repo():
-    """Construct the async-backed Template repository.
-
-    Opens its own asyncpg pool against the same database as the VLA repo,
-    and owns the separate ``templates`` + ``evaluation_methods`` tables.
-    """
-    if not cfg.postgres_dsn:
-        raise RuntimeError(
-            "VLA_MANAGER_DB_URL is not set — cannot boot PgTemplateRepo. "
-            "Either set it or override the get_template_repo dependency for tests."
-        )
-
-    pool = await asyncpg.create_pool(dsn=cfg.postgres_dsn, min_size=1, max_size=4)
-    repo = PgTemplateRepo(pool)
-    await repo._ensure_schema()
-    return repo
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Build both repositories up front and close the pool on shutdown."""
+    app.state.pool = await build_pool()
+    app.state.vla_repo = await build_vla_repo(app.state.pool)
+    app.state.template_repo = await build_template_repo(app.state.pool)
+    try:
+        yield
+    finally:
+        if app.state.pool is not None:
+            await app.state.pool.close()
 
 
 def create_app() -> FastAPI:
     setup_logging()
     app = FastAPI(
+        lifespan=lifespan,
         title="VLA Manager API",
         description=(
             "Sole owner of Veracity Level Agreements, hosted at the Data "
