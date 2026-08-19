@@ -10,10 +10,11 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from .dependencies import get_repo, get_template_repo
-from .models import IDDTO, ErrDTO, VLANew, VLANewFromTemplates
+from .errors import http_error
+from .models import IDDTO, VLANew, VLANewFromTemplates
 from .template_repo import TemplateRepo
 from .templates import render_template
 from .vla_repo import VLARepo
@@ -44,7 +45,7 @@ async def list_vlas(repo: VLARepo = Depends(get_repo)) -> list[dict[str, Any]]:
 async def get_vla(id: UUID, repo: VLARepo = Depends(get_repo)) -> dict[str, Any]:
     vla = await repo.by_id(id)
     if vla is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND)
+        raise http_error(status.HTTP_404_NOT_FOUND, "No VLA with the given ID exists")
     return vla
 
 
@@ -53,9 +54,10 @@ async def create_vla(vla_req: VLANew, repo: VLARepo = Depends(get_repo)) -> IDDT
     vla = _wrap_vla(vla_req)
     new_id = await repo.add(vla)
     if new_id is None:
-        raise HTTPException(
+        raise http_error(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=ErrDTO(type="UNKNOWN", title="Failed to create VLA").model_dump(),
+            "Failed to create VLA",
+            type="UNKNOWN",
         )
     return IDDTO(id=new_id)
 
@@ -75,18 +77,17 @@ async def create_vla_from_templates(
     for qt in vla_req.quality_templates:
         template = await template_repo.by_id(qt.id)
         if template is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND)
+            raise http_error(
+                status.HTTP_404_NOT_FOUND, f"No template with ID {qt.id} exists"
+            )
         em = template["evaluationMethod"]
         try:
             implementation = render_template(em["implementationTemplate"], qt.model)
-        except Exception:
-            raise HTTPException(
+        except Exception as exc:
+            raise http_error(
                 status.HTTP_400_BAD_REQUEST,
-                detail=ErrDTO(
-                    type="BAD_REQUEST",
-                    title=f"Failed to render template {qt.id}",
-                ).model_dump(),
-            )
+                f"Failed to render template {qt.id}",
+            ) from exc
         rendered_quality.append(
             {"engine": em["engine"], "implementation": implementation}
         )
@@ -96,9 +97,10 @@ async def create_vla_from_templates(
 
     new_id = await repo.add(base_vla)
     if new_id is None:
-        raise HTTPException(
+        raise http_error(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=ErrDTO(type="UNKNOWN", title="Failed to create VLA").model_dump(),
+            "Failed to create VLA",
+            type="UNKNOWN",
         )
     return IDDTO(id=new_id)
 

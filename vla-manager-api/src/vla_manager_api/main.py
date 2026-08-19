@@ -15,9 +15,11 @@ import uvicorn
 import yaml
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import cfg
 from .dependencies import build_pool, build_template_repo, build_vla_repo
+from .errors import http_exception_handler
 from .log import get_logger, setup_logging
 from .routes import router
 from .template_routes import router as template_router
@@ -77,6 +79,10 @@ def create_app() -> FastAPI:
     )
     app.include_router(router)
     app.include_router(template_router)
+    # Render errors as the spec's {type, title} rather than FastAPI's
+    # {"detail": ...}. Registered for Starlette's exception class so the
+    # 404s and 405s the router itself raises are covered too.
+    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     # Populating openapi_schema is what app.openapi() consults first, so
     # Swagger UI and ReDoc both render the hand-written spec.
     app.openapi_schema = _load_openapi_schema(app)
