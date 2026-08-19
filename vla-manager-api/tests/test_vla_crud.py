@@ -154,8 +154,8 @@ def test_vla_from_templates_creates_vla_with_rendered_quality(
             {
                 "id": template_id,
                 "name": "JQ check",
-                "criterionType": "process",
-                "targetAspect": "field",
+                "criterionType": "VALID_INVALID",
+                "targetAspect": "SYNTAX",
                 "evaluationMethod": {
                     "engine": "JQ",
                     "variableSchema": {"value": {"type": "string"}},
