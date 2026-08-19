@@ -1,9 +1,7 @@
 """
 Template rendering for VLA Templates.
 
-Ported from the deleted Kotlin ``Template.render`` (service/templates.kt).
-Uses Handlebars-compatible ``{{var}}`` syntax via the ``chevron`` package,
-byte-compatible with the old Kotlin Handlebars output.
+Uses Handlebars-compatible ``{{var}}`` syntax via the ``chevron`` package.
 """
 
 from __future__ import annotations

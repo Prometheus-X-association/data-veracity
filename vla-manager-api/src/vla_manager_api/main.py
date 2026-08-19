@@ -1,4 +1,5 @@
-"""FastAPI application factory and CLI entrypoint.
+"""
+FastAPI application factory and CLI entrypoint.
 
 The application is wired so the repository implementations are resolved
 through FastAPI's dependency-injection system. In production both repos

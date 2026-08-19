@@ -1,4 +1,5 @@
-"""FastAPI routes for the VLA Manager API.
+"""
+FastAPI routes for the VLA Manager API.
 
 VLA CRUD routes plus POST /vla/from-templates which fetches VLA
 templates, renders each with a model, and merges the rendered quality
@@ -23,8 +24,7 @@ router = APIRouter()
 
 
 def _wrap_vla(vla_req: VLANew) -> dict[str, Any]:
-    """Wrap a partial ODCS payload with the boilerplate headers, mirroring
-    the Kotlin ``buildJsonObject`` wrapper at ``vlaRoutes.kt:50-67``."""
+    """Wrap a partial ODCS payload with the boilerplate headers."""
     base: dict[str, Any] = {
         "apiVersion": "v3.0.2",
         "kind": "DataContract",
