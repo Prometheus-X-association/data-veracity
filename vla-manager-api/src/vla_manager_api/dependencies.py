@@ -7,14 +7,8 @@ from fastapi import Request
 
 from .config import cfg
 from .log import get_logger
-from .repo import (
-    FakeTemplateRepo,
-    FakeVLARepo,
-    PgTemplateRepo,
-    PgVLARepo,
-    TemplateRepo,
-    VLARepo,
-)
+from .template_repo import FakeTemplateRepo, PgTemplateRepo, TemplateRepo
+from .vla_repo import FakeVLARepo, PgVLARepo, VLARepo
 
 logger = get_logger()
 

@@ -19,7 +19,8 @@ from fastapi.testclient import TestClient
 
 from vla_manager_api.dependencies import get_repo, get_template_repo
 from vla_manager_api.main import create_app
-from vla_manager_api.repo import FakeTemplateRepo, FakeVLARepo
+from vla_manager_api.template_repo import FakeTemplateRepo
+from vla_manager_api.vla_repo import FakeVLARepo
 
 
 @pytest.fixture
