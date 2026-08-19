@@ -18,20 +18,19 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 
 from .dependencies import get_template_repo
-from .models import IDDTO, ErrDTO, Template, TemplateNew, TemplatePatch
+from .models import (
+    IDDTO,
+    ErrDTO,
+    RenderResult,
+    Template,
+    TemplateNew,
+    TemplatePatch,
+)
 from .repo import TemplateRepo, render_template
 
 router = APIRouter()
-
-
-class RenderResult(BaseModel):
-    """Result of rendering a template — a single DataQuality fragment."""
-
-    engine: str
-    implementation: str
 
 
 @router.get("/template", response_model=list[Template])
