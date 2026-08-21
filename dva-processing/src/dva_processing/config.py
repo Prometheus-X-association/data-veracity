@@ -2,12 +2,6 @@ from os import environ as env
 
 from pydantic import BaseModel
 
-# RabbitMQ queue name for AoV requests
-QUEUE_NAME = "ATTESTATION_REQUESTS"
-
-# RabbitMQ server hostname
-RABBITMQ_HOST = env.get("DVA_RABBITMQ_HOST", default="localhost")
-
 # Postgres connection data
 PG_URL = env.get("DVA_POSTGRES_URL", default="postgresql://localhost:5432")
 PG_USER = env.get("DVA_POSTGRES_USER", default="postgres")
