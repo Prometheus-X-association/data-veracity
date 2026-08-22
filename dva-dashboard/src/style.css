@@ -11,6 +11,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -23,8 +27,10 @@ a:hover {
 body {
   display: flex;
   margin: 0;
-  min-width: 100vw;
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   background: #f3f4f6;
   color: #0f172a;
 }
@@ -50,7 +56,8 @@ button:hover {
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
 }
 
 #app {
@@ -71,17 +78,4 @@ button:focus-visible {
 
 .vsm--scroll {
   padding-top: 1rem;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
 }

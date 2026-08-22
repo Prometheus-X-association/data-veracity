@@ -9,6 +9,10 @@
         <n-h1 class="header-title">
           <span class="highlight">Veracity Level Agreement</span> Builder
         </n-h1>
+        <nav class="header-nav" aria-label="Primary navigation">
+          <router-link to="/create" active-class="is-active">Build</router-link>
+          <router-link to="/list" active-class="is-active">Saved VLAs</router-link>
+        </nav>
       </div>
 
       <div class="logo-wrapper ptx-logo">
@@ -52,6 +56,7 @@ import { NH1 } from 'naive-ui'
   .title-container {
     text-align: center;
     flex-grow: 1;
+    min-width: 0;
   }
 
   .header-title {
@@ -66,5 +71,41 @@ import { NH1 } from 'naive-ui'
   .highlight {
     color: #0891b2;
     font-weight: 700;
+  }
+
+  .header-nav {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 6px;
+  }
+
+  .header-nav a {
+    min-height: 32px;
+    padding: 6px 4px;
+    color: #64748b;
+    font-size: .78rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .header-nav a:hover,
+  .header-nav a.is-active {
+    color: #0e7490;
+  }
+
+  .header-nav a:focus-visible {
+    outline: 2px solid #67e8f9;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (max-width: 700px) {
+    .header-content { flex-wrap: wrap; gap: 10px; padding: 12px 16px; }
+    .logo { height: 34px; max-width: 72px; }
+    .title-container { order: 2; flex-basis: 100%; }
+    .header-title { font-size: 1.1rem; line-height: 1.25; }
+    .header-nav { gap: 12px; margin-top: 7px; }
+    .header-nav a { min-height: 40px; padding: 9px 12px; border: 1px solid #dbe3ec; border-radius: 6px; background: #fff; }
   }
 </style>
