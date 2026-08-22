@@ -5,7 +5,7 @@
     title="Add Requirement"
     class="req-modal"
     size="huge"
-    :style="{ width: '600px', maxWidth: '95vw' }"
+    :style="{ width: 'min(600px, calc(100vw - 24px))', maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100vh - 24px)' }"
   >
     <div class="modal-body">
       <n-form :model="values" label-placement="top" size="large">
@@ -242,5 +242,40 @@
     padding: 8px;
     max-height: 200px;
     overflow-y: auto;
+  }
+
+  :deep(.n-card) {
+    max-width: 100%;
+  }
+
+  :deep(.n-card__content),
+  :deep(.n-card__footer) {
+    min-width: 0;
+  }
+
+  :deep(.n-card__footer .n-space) {
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 700px) {
+    .modal-body {
+      gap: 12px;
+      padding-top: 0;
+    }
+
+    .json-preview {
+      max-height: 180px;
+      overflow-x: auto;
+    }
+
+    :deep(.n-card__footer .n-space) {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    :deep(.n-card__footer .n-button) {
+      flex: 1 1 120px;
+      min-height: 44px;
+    }
   }
 </style>

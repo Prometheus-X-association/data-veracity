@@ -7,6 +7,11 @@ html, body {
   background-color: #f3f4f6;
   width: 100%;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 #app {
@@ -14,6 +19,13 @@ html, body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
 }
 
 /* Custom Scrollbar for better UX */
@@ -36,9 +48,15 @@ html, body {
 .page-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 24px;
+  padding: clamp(16px, 3vw, 32px);
   width: 100%;
   box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+  .page-container {
+    padding: 20px 16px 28px;
+  }
 }
 
 .card-title {

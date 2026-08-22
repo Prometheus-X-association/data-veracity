@@ -5,7 +5,7 @@
     :title="props.title ?? 'Insert Sample JSON'"
     class="sample-modal"
     size="huge"
-    :style="{ width: '1100px', maxWidth: '95vw' }"
+    :style="{ width: 'min(1100px, calc(100vw - 24px))', maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100vh - 24px)' }"
   >
     <div class="modal-body">
       <!-- File Upload -->
@@ -266,5 +266,50 @@
   }
   .block {
     display: block;
+  }
+
+  :deep(.n-card) {
+    max-width: 100%;
+  }
+
+  :deep(.n-card__content),
+  :deep(.n-card__footer) {
+    min-width: 0;
+  }
+
+  :deep(.n-card__footer .n-space) {
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 700px) {
+    .modal-body {
+      gap: 12px;
+      max-height: calc(100vh - 150px);
+      padding-right: 0;
+    }
+
+    .split-view {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .json-textarea,
+    .json-preview {
+      height: min(360px, 42vh);
+    }
+
+    .json-preview {
+      padding: 8px;
+    }
+
+    :deep(.n-card__footer .n-space) {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    :deep(.n-card__footer .n-button) {
+      flex: 1 1 120px;
+      min-height: 44px;
+    }
   }
 </style>
