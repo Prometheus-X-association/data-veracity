@@ -1,3 +1,5 @@
+import { attestationFailureScenarios, verificationFailureScenarios } from './failures/demoFailures.js'
+
 const participants = ['Acme Analytics', 'Northwind Logistics', 'Contoso Energy']
 
 const vla = (id, name, description, reference, tags) => ({
@@ -33,6 +35,8 @@ const payloads = [
 const makeRequest = (index, passing) => {
   const vlaIndex = index % demoVLAs.length
   const timestamp = new Date(Date.now() - index * 17 * 60 * 1000).toISOString()
+  const pending = !passing && index % 3 === 1
+  const failure = passing || pending ? null : attestationFailureScenarios[index % attestationFailureScenarios.length]
   return {
     requestID: `req-demo-${String(index + 1).padStart(3, '0')}`,
     type: index % 4 === 0 ? 'pov' : 'aov',
@@ -40,18 +44,28 @@ const makeRequest = (index, passing) => {
     contractID: `contract-${String(vlaIndex + 1).padStart(3, '0')}`,
     vlaID: demoVLAs[vlaIndex].id,
     receivedDate: timestamp,
-    evaluationDate: new Date(new Date(timestamp).getTime() + 1800 * 1000).toISOString(),
+    evaluationDate: pending ? null : new Date(new Date(timestamp).getTime() + 1800 * 1000).toISOString(),
     vcIssuedDate: passing ? new Date(new Date(timestamp).getTime() + 2100 * 1000).toISOString() : null,
     vcID: passing ? `vc-aov-demo-${String(index + 1).padStart(3, '0')}` : null,
     attesterID: participants[(index + 1) % participants.length],
-    evaluationPassing: passing,
+    evaluationPassing: pending ? null : passing,
+    status: pending ? 'pending' : passing ? 'passed' : 'failed',
+    failureCode: pending ? 'EVALUATION_PENDING' : failure?.code || null,
+    failureStage: pending ? 'Processing' : failure?.stage || null,
+    failureReason: pending ? 'The request is waiting for the evaluation processor.' : failure?.reason || null,
+    failureEvidence: pending ? 'No evaluation result has been written yet.' : failure?.evidence || null,
+    recommendedAction: pending ? 'Refresh after processing completes.' : failure?.action || null,
+    failureRetryable: pending ? true : failure?.retryable ?? false,
     data: payloads[index % payloads.length],
     evaluationResults: JSON.stringify({
       schemaValid: passing,
       freshnessMinutes: 17 + index,
       qualityScore: passing ? 0.91 + (index % 7) / 100 : 0.42,
       checks: passing ? ['schema', 'freshness', 'range', 'provenance'] : ['schema', 'freshness'],
-      failureReason: passing ? null : 'Freshness threshold exceeded for the supplied observation'
+      failureCode: pending ? 'EVALUATION_PENDING' : failure?.code || null,
+      failureReason: pending ? 'The request is waiting for the evaluation processor.' : failure?.reason || null,
+      failureEvidence: pending ? 'No evaluation result has been written yet.' : failure?.evidence || null,
+      recommendedAction: pending ? 'Refresh after processing completes.' : failure?.action || null
     })
   }
 }
@@ -61,12 +75,20 @@ export const demoRequests = Array.from({ length: 16 }, (_, index) => makeRequest
 const makePresentation = (index, verified) => {
   const request = demoRequests[index % demoRequests.length]
   const payload = JSON.stringify(request.data)
+  const pending = index % 7 === 3
+  const failure = verified || pending ? null : verificationFailureScenarios[index % verificationFailureScenarios.length]
   return {
     thread_id: `presentation-demo-${String(index + 1).padStart(3, '0')}`,
     created_at: request.receivedDate,
-    updated_at: request.evaluationDate,
+    updated_at: pending ? null : request.evaluationDate,
     role: index % 2 ? 'verifier' : 'prover',
-    verified,
+    verified: pending ? null : verified,
+    status: pending ? 'pending' : verified ? 'verified' : 'failed',
+    failureCode: pending ? 'VERIFICATION_PENDING' : failure?.code || null,
+    failureReason: pending ? verificationFailureScenarios[3].reason : failure?.reason || null,
+    failureEvidence: pending ? verificationFailureScenarios[3].evidence : failure?.evidence || null,
+    recommendedAction: pending ? verificationFailureScenarios[3].action : failure?.action || null,
+    failureRetryable: pending ? true : failure?.retryable ?? false,
     by_format: {
       pres_request: { indy: { requested_attributes: { attr_data_exchange_id: { restrictions: [{ 'attr::data_exchange_id::value': request.exchangeID }] } } } },
       pres: { indy: { requested_proof: { revealed_attrs: {
@@ -92,6 +114,10 @@ export const demoCredentials = Array.from({ length: 14 }, (_, index) => ({
     issuer_id: participants[(index + 1) % participants.length],
     issued_at: new Date(Date.now() - index * 3 * 60 * 60 * 1000).toISOString(),
     status: index % 8 === 0 ? 'revoked' : 'verified',
+    failureCode: index % 8 === 0 ? 'CREDENTIAL_REVOKED' : null,
+    failureReason: index % 8 === 0 ? 'The issuer revoked this credential after issuance.' : null,
+    failureEvidence: index % 8 === 0 ? 'Credential status: revoked.' : null,
+    recommendedAction: index % 8 === 0 ? 'Request a replacement credential.' : null,
     quality_score: (0.84 + (index % 15) / 100).toFixed(2)
   },
   schema_id: `schema:dva:quality:${(index % 5) + 1}`,
