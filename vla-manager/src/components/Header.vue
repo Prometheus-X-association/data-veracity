@@ -12,6 +12,7 @@
         <nav class="header-nav" aria-label="Primary navigation">
           <router-link to="/create" active-class="is-active">Build</router-link>
           <router-link to="/list" active-class="is-active">Saved VLAs</router-link>
+          <router-link to="/templates" active-class="is-active">Templates</router-link>
         </nav>
       </div>
 
