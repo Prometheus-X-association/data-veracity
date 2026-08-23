@@ -1,0 +1,140 @@
+ATTESTATION AND VERIFICATION FAILURES
+
+Purpose
+
+This is the short reference for incomplete attestations, failed evaluations, and
+verification results that need attention. The dashboard shows the same code and
+next action on the record card, table, and overview.
+
+HOW TO READ A RECORD
+
+Passed means the evaluation or verification finished successfully.
+Pending means the operation was accepted but has no final result yet.
+Failed means a check finished and did not pass.
+Needs correction means the request is missing valid input.
+Unavailable means the selected service or template could not be reached.
+Error means the service could not complete or save the operation.
+
+Every incomplete record should contain:
+
+- code: stable failure identifier
+- title: short explanation for the user
+- summary: what the result means
+- evidence: returned error, failed check, or missing field
+- next action: the most useful correction or retry step
+- retryable: whether trying again can reasonably help
+
+ATTESTATION AND EVALUATION FAILURES
+
+EVALUATION_PENDING
+The request was accepted, but the processor has not written a result.
+Check the request again after processing. Retrying immediately can create a
+duplicate request.
+
+SCHEMA_VALIDATION_FAILED
+The data does not match the selected schema. A required field can be absent,
+or a value can have the wrong type or format.
+Compare the payload with the schema, correct it, then submit again.
+
+JQ_CHECK_FAILED
+The JQ expression returned a failed result. The referenced property may be
+missing, empty, or outside the condition in the expression.
+Inspect the expression and the values used by it before retrying.
+
+GREAT_EXPECTATIONS_FAILED
+The tabular expectation did not pass. Common causes are null values, a bad
+column name, an invalid type, or a value outside the configured expectation.
+Review the expectation details and the mapping from the payload to columns.
+
+TEMPLATE_RENDER_FAILED
+The template could not be turned into an implementation. A variable may be
+missing, incorrectly named, or incompatible with the template.
+Check the template variables and render the requirement again.
+
+INVALID_TEMPLATE_INPUT
+The template model is incomplete or has a wrong value type. This is an input
+error, not a failure in the evaluation engine.
+Fill in each required variable using the type shown by the template.
+
+UNKNOWN_TEMPLATE
+The selected template is not available in the current gateway. It may have
+been deleted, belong to another environment, or have become unavailable.
+Refresh the template list and choose an available template.
+
+MISSING_REQUIRED_DATA
+The request does not contain all data required by the contract.
+Add the missing field or select a contract that matches the data being sent.
+
+FRESHNESS_FAILED
+The timestamp is older or newer than the allowed freshness window.
+Send a current observation or review the freshness rule in the contract.
+
+RANGE_FAILED
+A measured value is below the minimum or above the maximum allowed value.
+Correct the value or review the configured range before submitting again.
+
+GATEWAY_UNAVAILABLE
+The dashboard could not reach the DVA gateway. No conclusion about the data
+should be drawn from this result.
+Check gateway health and try again when the service is available.
+
+PROCESSING_TIMEOUT
+The evaluation did not return within the expected time. The final state may
+be unknown, so keep the request ID when contacting support.
+Retry after checking processor health. Avoid repeated retries while the first
+operation may still be running.
+
+QUEUE_FAILURE
+The gateway accepted the request but could not hand it to the processing
+service or message transport.
+Retry when the gateway and transport are healthy.
+
+PERSISTENCE_FAILURE
+The evaluation completed, but its result could not be written to storage.
+Do not assume the result was recorded. Retry once the storage service is
+healthy and keep the request ID.
+
+UNKNOWN_FAILURE
+The service returned an error without a more specific reason.
+Read the evidence, check gateway health, and retry only when the input is
+known to be valid.
+
+VERIFICATION FAILURES
+
+VERIFICATION_PENDING
+The presentation exchange started but no final verification result exists.
+Wait for the exchange to finish and refresh the record. Do not treat pending
+as verified.
+
+VERIFICATION_REJECTED
+The verifier received the presentation but could not accept its claims. The
+requested attribute may be absent, incorrect, expired, or not trusted.
+Compare the requested attributes with the presentation and request a current
+credential when needed.
+
+CREDENTIAL_REVOKED
+The credential was found, but its issuer no longer considers it valid.
+Do not use it for a new verification. Request a replacement credential.
+
+COMMON CHECK ORDER
+
+1. Confirm that the request reached the gateway.
+2. Confirm that the selected template and variables are available.
+3. Confirm that required data and timestamps are present.
+4. Read the engine evidence for the failed field or expectation.
+5. Correct the data or contract rule before retrying.
+6. For transport, timeout, or storage errors, check service health first.
+7. For verification rejection, inspect the credential status and claims.
+
+EXAMPLE EVALUATION RESULT
+
+{
+  "engine": "SCHEMA",
+  "timestamp": "2026-08-23T10:15:00Z",
+  "success": false,
+  "details": "required field customer_id is missing",
+  "error": null
+}
+
+The dashboard maps this to SCHEMA_VALIDATION_FAILED, keeps the engine detail
+as evidence, and tells the user to add customer_id before submitting again.

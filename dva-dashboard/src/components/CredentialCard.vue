@@ -14,6 +14,7 @@
         <div class="field"><span><v-icon name="fa-star" /> Quality score</span><strong>{{ attrs.quality_score || '—' }}</strong></div>
       </div>
       <div class="meta-row"><span><v-icon name="fa-calendar-alt" /> Issued {{ formatDate(attrs.issued_at) }}</span><span class="schema">{{ cred.schema_id || 'Schema unavailable' }}</span></div>
+      <FailureExplanation v-if="credentialFailure" :failure="credentialFailure" heading="Why this credential should not be used" />
       <button class="json-button" @click="showJson = !showJson"><v-icon :name="showJson ? 'fa-chevron-up' : 'fa-code'" /> {{ showJson ? 'Hide JSON' : 'View JSON' }}</button>
       <div v-if="showJson" class="json-panel"><vue-json-pretty :data="cred" :deep="2" :virtual="true" :height="220" /></div>
     </div>
@@ -24,8 +25,11 @@
 import { computed, ref } from 'vue'
 import VueJsonPretty from 'vue-json-pretty'
 import 'vue-json-pretty/lib/styles.css'
+import FailureExplanation from './FailureExplanation.vue'
+import { failureFromCode } from '../failures/failureModel.js'
 const props = defineProps({ cred: { type: Object, required: true } })
 const attrs = computed(() => props.cred?.attrs || {})
+const credentialFailure = computed(() => attrs.value.status === 'revoked' ? failureFromCode(attrs.value.failureCode || 'CREDENTIAL_REVOKED', attrs.value) : null)
 const showJson = ref(false)
 function formatDate (value) { return value ? new Date(value).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'date unavailable' }
 </script>
