@@ -1,7 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import { normaliseError } from '../vla-manager/src/api/templates.js'
 import { normalizeEvaluationResult, failureFromCode } from '../vla-manager/src/failures/failureModel.js'
+
+test('keeps the VLA failure model inside its Docker build context', () => {
+  const source = fs.readFileSync(new URL('../vla-manager/src/failures/failureModel.js', import.meta.url), 'utf8')
+  assert.doesNotMatch(source, /\.\.\/\.\.\/\.\.\/dva-dashboard/)
+})
 
 test('normalises a template validation response for inline guidance', () => {
   const error = normaliseError({
