@@ -18,9 +18,9 @@
 
     <div class="content-grid">
       <div class="panel health-panel">
-        <div class="panel-heading"><div><h2>Gateway health</h2><p>Live integration surface</p></div><span class="status-badge"><i></i> Healthy</span></div>
+        <div class="panel-heading"><div><h2>Gateway health</h2><p>Live integration surface</p></div><span class="status-badge" :class="overallTone"><i></i> {{ overallLabel }}</span></div>
         <div class="health-list">
-          <div v-for="service in services" :key="service.name" class="health-row"><div class="service-icon"><v-icon :name="service.icon" /></div><div class="service-copy"><strong>{{ service.name }}</strong><span>{{ service.description }}</span></div><div class="service-latency">{{ service.latency }}</div><div class="health-check"><v-icon name="fa-check" /></div></div>
+          <div v-for="service in services" :key="service.name" class="health-row"><div class="service-icon"><v-icon :name="service.icon" /></div><div class="service-copy"><strong>{{ service.name }}</strong><span>{{ service.description }}</span></div><div class="service-latency">{{ service.latency }}</div><div class="health-check" :class="service.status"><v-icon :name="service.status === 'unavailable' ? 'fa-exclamation-triangle' : service.status === 'checking' ? 'fa-clock' : 'fa-check'" /></div></div>
         </div>
         <router-link class="panel-link" to="/api-status">View gateway details <v-icon name="fa-arrow-right" /></router-link>
       </div>
@@ -52,6 +52,15 @@ import { demoVLAs } from '../demoData'
 const requests = ref([])
 const contracts = ref([])
 const lastUpdated = ref(null)
+const serviceDefinitions = [
+  { name: 'DVA API gateway', description: 'Routing and policy enforcement', probe: '/api/vla', icon: 'fa-route' },
+  { name: 'Evaluation processor', description: 'Schema, JQ and quality engines', probe: '/api/info/requests', icon: 'fa-microchip' },
+  { name: 'Credential registry', description: 'Verifiable credential storage', probe: '/api/info/credentials', icon: 'fa-certificate' },
+  { name: 'Event stream', description: 'Attestation lifecycle events', probe: '/api/info/presentations', icon: 'fa-wave-square' }
+]
+const services = ref(serviceDefinitions.map(service => ({ ...service, status: 'checking', latency: 'Checking' })))
+const overallTone = computed(() => services.value.some(service => service.status === 'unavailable') ? 'degraded' : services.value.some(service => service.status === 'checking') ? 'checking' : 'healthy')
+const overallLabel = computed(() => ({ healthy: 'All checks passed', degraded: 'Action required', checking: 'Checking services' }[overallTone.value]))
 async function loadRequests () {
   if (demoMode.value) {
     requests.value = demoRequests
@@ -68,6 +77,25 @@ async function loadRequests () {
 }
 onMounted(loadRequests)
 watch(demoMode, loadRequests)
+async function checkServices () {
+  if (demoMode.value) {
+    services.value = serviceDefinitions.map(service => ({ ...service, status: 'operational', latency: 'Demo' }))
+    return
+  }
+  services.value = serviceDefinitions.map(service => ({ ...service, status: 'checking', latency: 'Checking' }))
+  const results = await Promise.all(serviceDefinitions.map(async service => {
+    const started = performance.now()
+    try {
+      await axios.get(service.probe)
+      return { ...service, status: 'operational', latency: `${Math.max(1, Math.round(performance.now() - started))} ms` }
+    } catch {
+      return { ...service, status: 'unavailable', latency: 'Unavailable' }
+    }
+  }))
+  services.value = results
+}
+onMounted(checkServices)
+watch(demoMode, checkServices)
 const passing = computed(() => requests.value.filter(item => item.evaluationPassing).length)
 const pendingCount = computed(() => requests.value.filter(item => !item.evaluationDate).length)
 const failedCount = computed(() => requests.value.filter(item => item.evaluationDate && item.evaluationPassing !== true).length)
@@ -80,12 +108,6 @@ const metrics = computed(() => [
   { label: 'Pending evaluations', value: pendingCount.value, detail: 'Awaiting processing', icon: 'fa-clock', tone: 'amber' },
   { label: 'Active data contracts', value: contracts.value.length, detail: demoMode.value ? 'Seeded contracts' : 'From DVA API gateway', icon: 'fa-file-contract', tone: 'blue' }
 ])
-const services = [
-  { name: 'DVA API gateway', description: 'Routing and policy enforcement', latency: '42 ms', icon: 'fa-route' },
-  { name: 'Evaluation processor', description: 'Schema, JQ and quality engines', latency: '118 ms', icon: 'fa-microchip' },
-  { name: 'Credential registry', description: 'Verifiable credential storage', latency: '86 ms', icon: 'fa-certificate' },
-  { name: 'Event stream', description: 'Attestation lifecycle events', latency: '31 ms', icon: 'fa-wave-square' }
-]
 const recentActivity = computed(() => requests.value.slice(0, 5).map(item => { const state = !item.evaluationDate ? 'pending' : item.evaluationPassing === true ? 'pass' : 'fail'; return { id: item.requestID, title: `${item.type === 'pov' ? 'Proof' : 'Attestation'} ${state === 'pending' ? 'received' : 'evaluated'}`, exchange: item.exchangeID, time: formatRelativeTime(item.evaluationDate || item.receivedDate), state, label: state === 'pass' ? 'Passed' : state === 'pending' ? 'Pending' : 'Failed' } }))
 const failureItems = computed(() => requests.value.map(item => ({ id: item.requestID, exchange: item.exchangeID, failure: normalizeAttestationRecord(item).failure })).filter(item => item.failure.status !== 'passed').slice(0, 4))
 function formatRelativeTime (value) { if (!value) return 'Time unavailable'; const diff = Math.max(0, Date.now() - new Date(value).getTime()); const minutes = Math.floor(diff / 60000); if (minutes < 1) return 'Just now'; if (minutes < 60) return `${minutes} min ago`; const hours = Math.floor(minutes / 60); if (hours < 24) return `${hours} hr ago`; return `${Math.floor(hours / 24)} days ago` }
@@ -109,8 +131,8 @@ const refresh = () => window.location.reload()
   .metric-icon, .service-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; color: #0891b2; background: #ecfeff; } .green .metric-icon { color: #16a34a; background: #f0fdf4; } .amber .metric-icon { color: #d97706; background: #fffbeb; } .blue .metric-icon { color: #2563eb; background: #eff6ff; }
   .metric-copy { display: grid; gap: 2px; } .metric-copy span { color: #64748b; font-size: .72rem; } .metric-copy strong { color: #0f172a; font-size: 1.45rem; line-height: 1.1; } .metric-copy small { color: #94a3b8; font-size: .65rem; }
   .content-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; margin-bottom: 27px; } .panel { padding: 20px; } .panel-heading { margin-bottom: 15px; } .panel-heading p, .section-heading p { margin-top: 4px; font-size: .75rem; }
-  .status-badge { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 999px; color: #15803d; background: #f0fdf4; font-size: .7rem; font-weight: 700; } .status-badge i { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
-  .health-row, .activity-row { display: flex; align-items: center; gap: 11px; padding: 12px 0; border-top: 1px solid #f1f5f9; } .service-copy, .activity-copy { display: grid; flex: 1; gap: 2px; } .service-copy strong, .activity-copy strong { color: #334155; font-size: .78rem; } .service-copy span, .activity-copy span { color: #94a3b8; font-size: .68rem; } .service-latency { color: #64748b; font-size: .7rem; } .health-check { color: #16a34a; }
+  .status-badge { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 999px; color: #15803d; background: #f0fdf4; font-size: .7rem; font-weight: 700; } .status-badge i { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; } .status-badge.degraded{color:#991b1b;background:#fef2f2}.status-badge.degraded i{background:#ef4444}.status-badge.checking{color:#92400e;background:#fffbeb}.status-badge.checking i{background:#f59e0b}
+  .health-row, .activity-row { display: flex; align-items: center; gap: 11px; padding: 12px 0; border-top: 1px solid #f1f5f9; } .service-copy, .activity-copy { display: grid; flex: 1; gap: 2px; } .service-copy strong, .activity-copy strong { color: #334155; font-size: .78rem; } .service-copy span, .activity-copy span { color: #94a3b8; font-size: .68rem; } .service-latency { color: #64748b; font-size: .7rem; } .health-check { color: #16a34a; } .health-check.unavailable{color:#dc2626}.health-check.checking{color:#d97706}
   .panel-link, .panel-heading a { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; color: #0891b2; font-size: .75rem; font-weight: 700; text-decoration: none; } .panel-heading a { margin: 0; }
   .activity-dot { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; font-size: .68rem; } .activity-dot.success { color: #16a34a; background: #f0fdf4; } .activity-dot.warning { color: #d97706; background: #fffbeb; } .mini-status, .window-pill { padding: 5px 8px; border-radius: 999px; font-size: .64rem; font-weight: 700; } .mini-status.pass { color: #15803d; background: #f0fdf4; } .mini-status.fail { color: #991b1b; background: #fee2e2; } .mini-status.pending { color: #92400e; background: #fef3c7; }
   .section-heading { margin-bottom: 13px; } .window-pill { color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; }
