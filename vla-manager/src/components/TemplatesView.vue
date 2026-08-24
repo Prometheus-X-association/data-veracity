@@ -21,6 +21,12 @@
       <n-button text type="primary" @click="loadTemplates">Try again</n-button>
     </n-alert>
 
+    <n-alert v-if="activeMode && activeMode !== 'create' && !activeTemplate" type="warning">
+      This template is no longer available. Refresh the list and choose another template.
+    </n-alert>
+    <TemplateEditor v-if="activeMode === 'create' || (activeMode === 'edit' && activeTemplate)" :template="activeMode === 'edit' ? activeTemplate : null" @saved="handleSaved" @cancel="closeWorkspace" />
+    <TemplateTester v-if="activeMode === 'test' && activeTemplate" :template="activeTemplate" />
+
     <TemplateFilters v-model:query="query" v-model:engine="engine" v-model:aspect="aspect" @clear="clearFilters" />
 
     <n-spin :show="loading">
@@ -37,12 +43,15 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useDialog, useMessage, NAlert, NButton, NCard, NEmpty, NPageHeader, NSpace, NSpin, NStatistic } from 'naive-ui'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import TemplateCard from './TemplateCard.vue'
 import TemplateFilters from './TemplateFilters.vue'
+import TemplateEditor from './TemplateEditor.vue'
+import TemplateTester from './TemplateTester.vue'
 import { deleteTemplate, listTemplates } from '../api/templates.js'
 
 const router = useRouter()
+const route = useRoute()
 const dialog = useDialog()
 const message = useMessage()
 const templates = ref([])
@@ -51,6 +60,8 @@ const error = ref(null)
 const query = ref('')
 const engine = ref(null)
 const aspect = ref(null)
+const activeMode = computed(() => String(route.query.mode || ''))
+const activeTemplate = computed(() => templates.value.find(template => String(template.id) === String(route.query.id)))
 
 const filteredTemplates = computed(() => templates.value.filter(template => {
   const text = `${template.name || ''} ${template.description || ''} ${template.id || ''}`.toLowerCase()
@@ -74,6 +85,12 @@ async function loadTemplates () {
 function openCreate () { router.push({ path: '/templates', query: { mode: 'create' } }) }
 function openEdit (template) { router.push({ path: '/templates', query: { mode: 'edit', id: template.id } }) }
 function openTest (template) { router.push({ path: '/templates', query: { mode: 'test', id: template.id } }) }
+async function handleSaved (template) {
+  await loadTemplates()
+  router.replace({ path: '/templates' })
+  message.success(`Saved ${template.name || 'template'}`)
+}
+function closeWorkspace () { router.replace({ path: '/templates' }) }
 function clearFilters () { query.value = ''; engine.value = null; aspect.value = null }
 
 function removeTemplate (template) {
