@@ -22,6 +22,9 @@
     >
       <template #extra>
         <n-space>
+          <n-button secondary @click="router.push('/templates')">
+            Template workspace
+          </n-button>
           <n-button @click="showSampleModal" type="default">
             <template #icon><n-icon><RefreshIcon /></n-icon></template>
             {{ sampleData ? 'Change Sample Data' : 'Upload Sample Data' }}
@@ -366,7 +369,7 @@
       testResult.value = resp.data
       message.success('Evaluation complete')
     } catch (err) {
-      message.error('Failed to evaluate fragment on the backend.')
+      message.error(err.response?.data?.details || err.response?.data?.title || 'The fragment could not be evaluated.')
       testResult.value = err.response?.data || { error: err.message }
     }
   }
@@ -394,7 +397,7 @@
       message.success(`Successfully created VLA from ${fragments.value.length} fragments`)
       router.push({ path: "/list" })
     } catch (err) {
-      message.error('Failed to create VLA on backend.')
+      message.error(err.response?.data?.details || err.response?.data?.title || 'The VLA could not be created.')
     }
   }
 
