@@ -32,10 +32,14 @@ const payloads = [
   { subjectId: 'SUBJ-4412', visit: 'week-12', observationCount: 17, completeness: 0.94, timestamp: '2026-08-13T07:15:00Z' }
 ]
 
+const demoRequestStatuses = ['failed', 'pending', 'passed', 'failed', 'pending', 'failed', 'failed', 'failed', 'passed', 'failed', 'failed', 'failed', 'pending', 'failed', 'failed', 'passed']
+const demoPresentationStatuses = ['verified', 'failed', 'pending', 'pending', 'failed', 'verified', 'failed', 'verified', 'failed', 'verified', 'pending', 'failed']
+
 const makeRequest = (index, passing) => {
   const vlaIndex = index % demoVLAs.length
   const timestamp = new Date(Date.now() - index * 17 * 60 * 1000).toISOString()
-  const pending = !passing && index % 3 === 1
+  const status = demoRequestStatuses[index]
+  const pending = status === 'pending'
   const failure = passing || pending ? null : attestationFailureScenarios[index % attestationFailureScenarios.length]
   return {
     requestID: `req-demo-${String(index + 1).padStart(3, '0')}`,
@@ -49,7 +53,7 @@ const makeRequest = (index, passing) => {
     vcID: passing ? `vc-aov-demo-${String(index + 1).padStart(3, '0')}` : null,
     attesterID: participants[(index + 1) % participants.length],
     evaluationPassing: pending ? null : passing,
-    status: pending ? 'pending' : passing ? 'passed' : 'failed',
+    status,
     failureCode: pending ? 'EVALUATION_PENDING' : failure?.code || null,
     failureStage: pending ? 'Processing' : failure?.stage || null,
     failureReason: pending ? 'The request is waiting for the evaluation processor.' : failure?.reason || null,
@@ -70,12 +74,14 @@ const makeRequest = (index, passing) => {
   }
 }
 
-export const demoRequests = Array.from({ length: 16 }, (_, index) => makeRequest(index, index % 5 !== 1 && index % 7 !== 0))
+export const demoRequests = Array.from({ length: 16 }, (_, index) => makeRequest(index, demoRequestStatuses[index] === 'passed'))
 
-const makePresentation = (index, verified) => {
+const makePresentation = (index) => {
   const request = demoRequests[index % demoRequests.length]
   const payload = JSON.stringify(request.data)
-  const pending = index % 7 === 3
+  const status = demoPresentationStatuses[index]
+  const verified = status === 'verified'
+  const pending = status === 'pending'
   const failure = verified || pending ? null : verificationFailureScenarios[index % verificationFailureScenarios.length]
   return {
     thread_id: `presentation-demo-${String(index + 1).padStart(3, '0')}`,
@@ -83,7 +89,7 @@ const makePresentation = (index, verified) => {
     updated_at: pending ? null : request.evaluationDate,
     role: index % 2 ? 'verifier' : 'prover',
     verified: pending ? null : verified,
-    status: pending ? 'pending' : verified ? 'verified' : 'failed',
+    status,
     failureCode: pending ? 'VERIFICATION_PENDING' : failure?.code || null,
     failureReason: pending ? verificationFailureScenarios[3].reason : failure?.reason || null,
     failureEvidence: pending ? verificationFailureScenarios[3].evidence : failure?.evidence || null,
@@ -103,7 +109,7 @@ const makePresentation = (index, verified) => {
   }
 }
 
-export const demoPresentations = Array.from({ length: 12 }, (_, index) => makePresentation(index, index % 6 !== 4))
+export const demoPresentations = Array.from({ length: 12 }, (_, index) => makePresentation(index))
 
 export const demoCredentials = Array.from({ length: 14 }, (_, index) => ({
   attrs: {
