@@ -7,7 +7,9 @@
       <small v-if="error.retryable">The gateway may be ready to try again.</small>
     </n-alert>
 
-    <n-form label-placement="top" class="editor-form">
+    <div class="editor-layout">
+      <div class="editor-main">
+        <n-form label-placement="top" class="editor-form">
       <div class="editor-grid">
         <n-form-item label="Name" required :validation-status="errors.name ? 'error' : undefined" :feedback="errors.name">
           <n-input v-model:value="form.name" placeholder="For example, Current customer event" />
@@ -41,14 +43,16 @@
       <n-form-item label="Implementation template" required :validation-status="errors.implementation ? 'error' : undefined" :feedback="errors.implementation || 'Use the variable names above in the implementation.'">
         <n-input v-model:value="form.evaluationMethod.implementationTemplate" type="textarea" :autosize="{ minRows: 8, maxRows: 18 }" placeholder="Write the SCHEMA, JQ, or Great Expectations implementation." />
       </n-form-item>
-    </n-form>
+        </n-form>
 
-    <div class="editor-actions">
-      <n-button @click="$emit('cancel')">Cancel</n-button>
-      <n-button :loading="rendering" :disabled="!canRender" @click="renderCurrent">Preview implementation</n-button>
-      <n-button type="primary" :loading="saving" @click="save">{{ isEditing ? 'Save changes' : 'Create template' }}</n-button>
+        <div class="editor-actions">
+          <n-button @click="$emit('cancel')">Cancel</n-button>
+          <n-button :loading="rendering" :disabled="!canRender" @click="renderCurrent">Preview implementation</n-button>
+          <n-button type="primary" :loading="saving" @click="save">{{ isEditing ? 'Save changes' : 'Create template' }}</n-button>
+        </div>
+      </div>
+      <TemplatePreview :template="form" :value="previewValue" class="preview" />
     </div>
-    <TemplatePreview :template="form" :value="previewValue" class="preview" />
   </n-card>
 </template>
 
@@ -164,7 +168,8 @@ async function renderCurrent () {
 </script>
 
 <style scoped>
-.editor-card{border-radius:8px}.editor-error{margin-bottom:16px}.editor-form{margin-top:4px}.editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 12px}.section-heading>div{display:grid;gap:3px}.section-heading :deep(.n-text:last-child){font-size:.72rem}.variable-table{display:grid;gap:8px;margin-bottom:18px}.variable-row{display:grid;grid-template-columns:1fr 130px 1.5fr auto auto;gap:8px;align-items:center;padding:9px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc}.editor-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:4px}.preview{margin-top:18px}
+.editor-card{border-radius:8px;min-width:0;overflow:hidden}.editor-error{margin-bottom:16px}.editor-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:24px;min-width:0}.editor-main,.preview{min-width:0}.editor-form{margin-top:4px}.editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 12px}.section-heading>div{display:grid;gap:3px;min-width:0}.section-heading :deep(.n-text:last-child){font-size:.72rem}.variable-table{display:grid;gap:8px;margin-bottom:18px;min-width:0}.variable-row{display:grid;grid-template-columns:minmax(0,1fr) 130px minmax(0,1.5fr) auto auto;gap:8px;align-items:center;padding:9px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;min-width:0}.variable-row :deep(.n-input),.variable-row :deep(.n-select){min-width:0}.editor-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:4px}.preview{margin-top:0;align-self:start}.preview :deep(.n-card__content){min-width:0}
+@media(max-width:1050px){.editor-layout{grid-template-columns:1fr}.preview{margin-top:0}}
 @media(max-width:800px){.editor-grid{grid-template-columns:1fr}.variable-row{grid-template-columns:1fr 1fr}.variable-row :deep(.n-input:nth-child(3)){grid-column:1/-1}.variable-row :deep(.n-checkbox){grid-column:1}.variable-row :deep(.n-button){grid-column:2;justify-self:end}}
 @media(max-width:480px){.editor-actions{display:grid}.editor-actions :deep(.n-button){width:100%;min-height:42px}.variable-row{grid-template-columns:1fr}.variable-row :deep(.n-input:nth-child(3)),.variable-row :deep(.n-checkbox),.variable-row :deep(.n-button){grid-column:auto}.variable-row :deep(.n-button){justify-self:stretch}}
 </style>

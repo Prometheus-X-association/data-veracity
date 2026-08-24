@@ -1,15 +1,16 @@
 <template>
   <div class="page-container templates-page">
-    <n-page-header title="VLA templates" subtitle="Create reusable quality requirements for new agreements">
+    <n-page-header :title="pageTitle" :subtitle="pageSubtitle">
       <template #extra>
-        <n-space>
+        <n-space v-if="!activeMode">
           <n-button @click="loadTemplates">Refresh</n-button>
           <n-button type="primary" @click="openCreate">Create template</n-button>
         </n-space>
+        <n-button v-else @click="closeWorkspace">Back to templates</n-button>
       </template>
     </n-page-header>
 
-    <div class="summary-grid">
+    <div v-if="!activeMode" class="summary-grid">
       <n-card size="small"><n-statistic label="Available templates" :value="templates.length" /></n-card>
       <n-card size="small"><n-statistic label="Engines in use" :value="engineCount" /></n-card>
       <n-card size="small"><n-statistic label="Visible results" :value="filteredTemplates.length" /></n-card>
@@ -24,19 +25,23 @@
     <n-alert v-if="activeMode && activeMode !== 'create' && !activeTemplate" type="warning">
       This template is no longer available. Refresh the list and choose another template.
     </n-alert>
-    <TemplateEditor v-if="activeMode === 'create' || (activeMode === 'edit' && activeTemplate)" :template="activeMode === 'edit' ? activeTemplate : null" @saved="handleSaved" @cancel="closeWorkspace" />
-    <TemplateTester v-if="activeMode === 'test' && activeTemplate" :template="activeTemplate" />
+    <div v-if="activeMode" class="workspace-shell">
+      <TemplateEditor v-if="activeMode === 'create' || (activeMode === 'edit' && activeTemplate)" :template="activeMode === 'edit' ? activeTemplate : null" @saved="handleSaved" @cancel="closeWorkspace" />
+      <TemplateTester v-if="activeMode === 'test' && activeTemplate" :template="activeTemplate" />
+    </div>
 
-    <TemplateFilters v-model:query="query" v-model:engine="engine" v-model:aspect="aspect" @clear="clearFilters" />
+    <template v-else>
+      <TemplateFilters v-model:query="query" v-model:engine="engine" v-model:aspect="aspect" @clear="clearFilters" />
 
-    <n-spin :show="loading">
-      <div v-if="filteredTemplates.length" class="template-grid">
-        <TemplateCard v-for="template in filteredTemplates" :key="template.id" :template="template" @edit="openEdit" @test="openTest" @remove="removeTemplate" />
-      </div>
-      <n-empty v-else description="No templates match these filters.">
-        <template #extra><n-button type="primary" @click="openCreate">Create the first template</n-button></template>
-      </n-empty>
-    </n-spin>
+      <n-spin :show="loading">
+        <div v-if="filteredTemplates.length" class="template-grid">
+          <TemplateCard v-for="template in filteredTemplates" :key="template.id" :template="template" @edit="openEdit" @test="openTest" @remove="removeTemplate" />
+        </div>
+        <n-empty v-else description="No templates match these filters.">
+          <template #extra><n-button type="primary" @click="openCreate">Create the first template</n-button></template>
+        </n-empty>
+      </n-spin>
+    </template>
   </div>
 </template>
 
@@ -62,6 +67,8 @@ const engine = ref(null)
 const aspect = ref(null)
 const activeMode = computed(() => String(route.query.mode || ''))
 const activeTemplate = computed(() => templates.value.find(template => String(template.id) === String(route.query.id)))
+const pageTitle = computed(() => ({ create: 'Create template', edit: 'Edit template', test: 'Test template' }[activeMode.value] || 'VLA templates'))
+const pageSubtitle = computed(() => activeMode.value ? 'Work on one reusable quality requirement at a time.' : 'Create reusable quality requirements for new agreements')
 
 const filteredTemplates = computed(() => templates.value.filter(template => {
   const text = `${template.name || ''} ${template.description || ''} ${template.id || ''}`.toLowerCase()
@@ -115,7 +122,7 @@ onMounted(loadTemplates)
 </script>
 
 <style scoped>
-.templates-page{display:grid;gap:18px}.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.template-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.templates-page :deep(.n-page-header){gap:16px}.templates-page :deep(.n-page-header__main){min-width:0}.templates-page :deep(.n-page-header__title){overflow-wrap:anywhere}.templates-page :deep(.n-alert){line-height:1.5}.templates-page :deep(.n-alert__content){min-width:0}.templates-page :deep(.n-spin-container){min-height:160px}
+.templates-page{display:grid;gap:18px;min-width:0}.workspace-shell{min-width:0}.summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.template-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;min-width:0}.templates-page :deep(.n-page-header){gap:16px}.templates-page :deep(.n-page-header__main){min-width:0}.templates-page :deep(.n-page-header__title){overflow-wrap:anywhere}.templates-page :deep(.n-alert){line-height:1.5}.templates-page :deep(.n-alert__content){min-width:0}.templates-page :deep(.n-spin-container){min-height:160px}
 @media(max-width:1050px){.template-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.summary-grid{grid-template-columns:1fr}.template-grid{grid-template-columns:1fr}.templates-page :deep(.n-page-header){align-items:flex-start}.templates-page :deep(.n-page-header__extra),.templates-page :deep(.n-page-header__extra .n-space){width:100%}.templates-page :deep(.n-page-header__extra .n-button){flex:1;min-height:42px}}
 </style>
