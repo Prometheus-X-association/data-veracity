@@ -32,7 +32,8 @@ const aspectOptions = [
 </script>
 
 <style scoped>
-.filters{display:grid;grid-template-columns:minmax(180px,1fr) 180px 200px auto;gap:10px;align-items:center;padding:12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff}
-@media(max-width:760px){.filters{grid-template-columns:1fr 1fr}.filters :deep(.n-input){grid-column:1/-1}.filters :deep(.n-button){min-height:40px}}
+.filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,180px) minmax(160px,200px) auto;gap:10px;align-items:center;padding:12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;min-width:0}.filters :deep(.n-input),.filters :deep(.n-select){min-width:0}
+@media(max-width:900px){.filters{grid-template-columns:minmax(0,1fr) minmax(150px,180px)}.filters :deep(.n-input){grid-column:1/-1}.filters :deep(.n-button){min-height:40px}}
+@media(max-width:760px){.filters{grid-template-columns:1fr 1fr}.filters :deep(.n-button){min-height:40px}}
 @media(max-width:430px){.filters{grid-template-columns:1fr}.filters :deep(.n-input){grid-column:auto}}
 </style>
