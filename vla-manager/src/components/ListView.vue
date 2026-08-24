@@ -7,12 +7,15 @@
       class="mb-6"
     >
       <template #extra>
-        <n-button type="primary" size="large" @click="$router.push('/create')">
-          <template #icon>
-            <n-icon><AddIcon /></n-icon>
-          </template>
-          Create New VLA
-        </n-button>
+        <n-space>
+          <n-button secondary @click="$router.push('/templates')">Template workspace</n-button>
+          <n-button type="primary" size="large" @click="$router.push('/create')">
+            <template #icon>
+              <n-icon><AddIcon /></n-icon>
+            </template>
+            Create New VLA
+          </n-button>
+        </n-space>
       </template>
     </n-page-header>
 

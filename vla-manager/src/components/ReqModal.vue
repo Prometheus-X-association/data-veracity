@@ -18,6 +18,12 @@
           />
         </n-form-item>
 
+        <n-alert v-if="loadError" type="error" :show-icon="false" class="mb-4">
+          <strong>{{ loadError.title }}</strong>
+          <div>{{ loadError.message }}</div>
+          <n-button text type="primary" @click="openTemplateWorkspace">Open template workspace</n-button>
+        </n-alert>
+
         <template v-if="chosenFragment">
           <n-alert v-if="chosenFragment.description" type="info" :show-icon="false" class="mb-4">
             {{ chosenFragment.description }}
@@ -77,6 +83,9 @@
               </n-form-item>
             </template>
           </template>
+          <n-alert v-if="missingKeys.length" type="warning" :show-icon="false" class="mb-4">
+            Complete the required values before adding this requirement: {{ missingKeys.join(', ') }}.
+          </n-alert>
         </template>
       </n-form>
 
@@ -98,10 +107,10 @@
     <template #footer>
       <n-space justify="end">
         <n-button @click="showModalFlag = false">Cancel</n-button>
-        <n-button @click="validateRequirement" :disabled="!chosenFragment || validating">
+        <n-button @click="validateRequirement" :disabled="!chosenFragment || validating || missingKeys.length > 0">
           Validate
         </n-button>
-        <n-button type="primary" @click="addRequirement" :disabled="!chosenFragment || validating">
+        <n-button type="primary" @click="addRequirement" :disabled="!chosenFragment || validating || missingKeys.length > 0">
           {{ validating ? 'Validating…' : 'Add Requirement' }}
         </n-button>
       </n-space>
@@ -110,8 +119,8 @@
 </template>
 
 <script setup>
-  import axios from 'axios'
-  import { ref, watch, reactive, toRaw } from 'vue'
+  import { ref, watch, reactive, toRaw, computed } from 'vue'
+  import { useRouter } from 'vue-router'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
   import {
@@ -120,6 +129,7 @@
   } from 'naive-ui'
   import {
     coerceTemplateValue,
+    listTemplates,
     validateTemplate,
     validationFailureFromError,
     validationTone
@@ -135,6 +145,11 @@
   const selectedFragmentId = ref(null)
   const validating = ref(false)
   const validationResult = ref(null)
+  const loadError = ref(null)
+  const router = useRouter()
+
+  const requiredKeys = computed(() => chosenFragment.value?.evaluationMethod?.variableSchema?.required || [])
+  const missingKeys = computed(() => requiredKeys.value.filter(key => values[key] === undefined || values[key] === null || values[key] === ''))
 
   const handleFragmentSelect = (val) => {
     chosenFragment.value = fragmentOptions.value.find(f => f.id === val)
@@ -174,15 +189,15 @@
   }
 
   const showModal = async () => {
+    loadError.value = null
     try {
-      const res = await axios.get("/api/template")
-      const json = await res.data
+      const json = await listTemplates()
 
       if(Array.isArray(json)) {
         fragmentOptions.value = json
       }
     } catch (err) {
-      console.error(err)
+      loadError.value = { title: 'Templates could not be loaded', message: err.message || 'Check the gateway connection and try again.' }
     }
 
     // Reset state
@@ -193,6 +208,11 @@
       delete values[key]
     }
     showModalFlag.value = true
+  }
+
+  const openTemplateWorkspace = () => {
+    showModalFlag.value = false
+    router.push('/templates')
   }
 
   const emit = defineEmits(['req-added'])
