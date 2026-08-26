@@ -1,0 +1,291 @@
+openapi: 3.1.0
+
+info:
+  title: DVA Processing
+  version: 0.2.0
+  description: >
+    Stateless veracity-check engine. Evaluates data requirements expressed in
+    VLAs (Veracity Level Agreements) against supplied data and returns one
+    EvaluationResult per requirement.
+
+servers:
+  - url: http://localhost:5000
+
+paths:
+  /evaluate:
+    post:
+      operationId: evaluate
+      summary: Evaluate a single requirement against data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationRequest'
+            examples:
+              jq_non_empty_actor_name:
+                summary: jq requirement checking actor name is non-empty
+                value:
+                  requirement:
+                    implementation: >-
+                      { success: (.actor.name | length > 0), details: "actor name non-empty" }
+                    engine: JQ
+                  data:
+                    actor:
+                      name: Jean Dupont
+                    verb:
+                      id: http://adlnet.gov/expapi/verbs/interacted
+      responses:
+        '200':
+          description: Evaluation completed (check `success`/`error` for outcome).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+        '422':
+          description: Validation error for the request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: >-
+            Evaluation engine error. The response body is still an
+            EvaluationResult with success=false and error describing the failure.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /evaluate-batch:
+    post:
+      operationId: evaluateBatch
+      summary: Evaluate all requirements in a VLA against data.
+      description: >
+        Iterates over every quality requirement declared in the VLA and
+        returns one EvaluationResult per requirement.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationBatchRequest'
+            examples:
+              xapi_statement_vla:
+                summary: VLA with two JQ quality requirements in a top-level list
+                value:
+                  vla:
+                    quality:
+                      - engine: JQ
+                        implementation: >-
+                          { success: (.actor.name | length > 0), details: "actor name non-empty" }
+                      - engine: JQ
+                        implementation: >-
+                          { success: (.verb.id | length > 0), details: "verb id non-empty" }
+                  data:
+                    actor:
+                      name: Jean Dupont
+                    verb:
+                      id: http://adlnet.gov/expapi/verbs/interacted
+      responses:
+        '200':
+          description: >-
+            Array of per-requirement evaluation results, one per quality rule.
+            Always returns 200 — check each result's success/error fields.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvaluationResult'
+        '422':
+          description: Validation error for the request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /evaluate/from-template:
+    post:
+      operationId: evaluateFromTemplate
+      summary: Fetch a VLA template, render with a model, and evaluate against data.
+      description: >
+        Fetches the template identified by `templateID`, renders it with
+        `templateModel`, evaluates the resulting requirement against `data`,
+        and returns the result. Field names are camelCase on the wire.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationFromTemplateRequest'
+            examples:
+              actor_name_template:
+                summary: Render an actor.name check template and evaluate passing data
+                value:
+                  templateID: a5dee716-2129-4588-a1a2-04a4c2923a79
+                  templateModel:
+                    field: actor.name
+                  data:
+                    actor:
+                      name: Jean Dupont
+                    verb:
+                      id: http://adlnet.gov/expapi/verbs/interacted
+              template_not_found:
+                summary: Template not found (returns 404)
+                value:
+                  templateID: 00000000-0000-0000-0000-000000000099
+                  templateModel: {}
+                  data: {}
+      responses:
+        '200':
+          description: >-
+            Evaluation completed. Check success/error for the outcome. When
+            the template fails to render, success is false and error contains
+            the reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+        '404':
+          description: The requested template was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error for the request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    QualityEngine:
+      type: string
+      enum: [SCHEMA, GREAT_EXPECTATIONS, JQ]
+      description: >-
+        The engine used to evaluate a requirement. SCHEMA performs structural
+        validation against a JSON schema, GREAT_EXPECTATIONS delegates to the
+        Great Expectations library, and JQ evaluates a jq expression whose output
+        must be `{ success: boolean, details: string }`.
+
+    EvaluationRequest:
+      type: object
+      description: Request body for POST /evaluate.
+      required: [requirement, data]
+      properties:
+        requirement:
+          $ref: '#/components/schemas/Requirement'
+        data:
+          description: The data document to evaluate the requirement against.
+          additionalProperties: true
+      additionalProperties: false
+
+    Requirement:
+      type: object
+      description: A single veracity requirement to evaluate.
+      required: [implementation, engine]
+      properties:
+        implementation:
+          type: string
+          description: >-
+            Engine-specific implementation. For JQ this is a jq expression whose
+            output must be an object `{ success: boolean, details: string }`.
+        engine:
+          $ref: '#/components/schemas/QualityEngine'
+      additionalProperties: false
+
+    EvaluationBatchRequest:
+      type: object
+      description: Request body for POST /evaluate-batch.
+      required: [vla, data]
+      properties:
+        vla:
+          type: object
+          description: >-
+            The VLA document. Requirements may be declared as a top-level
+            `quality` list, under `schema` (a single object with a `quality`
+            list), or as a list of schema items each carrying a `quality` list.
+          additionalProperties: true
+        data:
+          description: The data document to evaluate all requirements against.
+          additionalProperties: true
+      additionalProperties: false
+
+    EvaluationFromTemplateRequest:
+      type: object
+      description: >-
+        Request body for POST /evaluate/from-template. Field names are
+        camelCase on the wire.
+      required: [templateID, templateModel, data]
+      properties:
+        templateID:
+          type: string
+          format: uuid
+          description: UUID of the template to fetch and render.
+        templateModel:
+          type: object
+          description: >-
+            Model object used to render the fetched template. Keys are template
+            placeholders, values are their substitutions.
+          additionalProperties: true
+        data:
+          description: The data document to evaluate the rendered requirement against.
+          additionalProperties: true
+      additionalProperties: false
+
+    EvaluationResult:
+      type: object
+      description: Outcome of evaluating a single requirement against data.
+      required: [timestamp, success]
+      properties:
+        engine:
+          description: >-
+            The engine that produced this result. Nullable (e.g. when evaluation
+            failed before an engine could be selected).
+          oneOf:
+            - $ref: '#/components/schemas/QualityEngine'
+            - type: 'null'
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp at which evaluation completed.
+        success:
+          type: boolean
+          description: Whether the requirement was satisfied by the data.
+        details:
+          type: string
+          description: Engine-provided human-readable details about the outcome.
+        error:
+          type: string
+          description: >-
+            Non-null when the evaluation failed to run (e.g. invalid expression,
+            engine error). When set, `success` is false.
+      additionalProperties: false
+
+    Error:
+      type: object
+      description: RFC 7807 problem document returned for 4xx/5xx responses.
+      required: [type, title]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: A URI reference identifying the error category.
+          default: about:blank
+        title:
+          type: string
+          description: A short human-readable summary of the error.
+        status:
+          type: integer
+          description: The HTTP status code generated by the origin server.
+        detail:
+          type: string
+          description: A human-readable explanation specific to this occurrence.
+        instance:
+          type: string
+          format: uri-reference
+          description: A URI reference identifying the specific occurrence.
+      additionalProperties: false

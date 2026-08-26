@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import StrEnum, auto
 from typing import Any, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CapitalStrEnum(StrEnum):
@@ -27,12 +27,25 @@ class EvaluationRequest(BaseModel):
     data: Any
 
 
+class EvaluateBatchRequest(BaseModel):
+    vla: dict[str, Any]
+    data: Any
+
+
 class EvaluationResult(BaseModel):
     engine: Optional[QualityEngine]
     timestamp: datetime
     success: bool
     details: Optional[str] = None
     error: Optional[str] = None
+
+
+class EvaluationFromTemplateRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    template_id: Any = Field(alias="templateID")
+    template_model: dict[str, Any] = Field(alias="templateModel")
+    data: Any
 
 
 class AoVRequest(BaseModel):
