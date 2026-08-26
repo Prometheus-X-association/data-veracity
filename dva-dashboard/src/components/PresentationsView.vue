@@ -1,60 +1,34 @@
 <template>
-  <section>
-    <div class="card-container">
-      <p class="placeholder" v-if="press.length === 0">No verifications yet</p>
-      <PresentationCard :pres="pres" v-for="pres in press" :key="pres.thread_id"/>
-    </div>
+  <section class="records-page">
+    <div class="page-header"><div><div class="eyebrow">TRUST EXCHANGES</div><h2>Verifications</h2><p>Presentation exchanges and the credential attributes revealed during verification.</p></div><div class="header-actions"><span class="mode-chip"><i></i>{{ demoMode ? 'Demo data' : 'Live gateway' }}</span><span class="count-badge">{{ filtered.length }} records</span></div></div>
+    <div class="stat-grid"><div class="stat-card"><span>Total presentations</span><strong>{{ press.length }}</strong><small>Verification exchanges</small></div><div class="stat-card success"><span>Verified</span><strong>{{ verifiedCount }}</strong><small>{{ verificationRate }}% verified</small></div><div class="stat-card warning"><span>Review queue</span><strong>{{ press.length - verifiedCount }}</strong><small>Needs investigation</small></div><div class="stat-card"><span>Showing</span><strong>{{ paged.length }}</strong><small>Page {{ page }} of {{ pageCount }}</small></div></div>
+    <div class="toolbar-panel"><div class="search-wrap"><v-icon name="fa-search" /><input v-model="query" placeholder="Search thread, exchange, role…" /></div><select v-model="status"><option value="all">All results</option><option value="verified">Verified</option><option value="review">Needs review</option></select><select v-model="sortBy"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="role">Role</option></select><button class="clear-button" v-if="query || status !== 'all' || sortBy !== 'newest'" @click="resetFilters"><v-icon name="fa-times" /> Clear</button><div class="view-switch"><button :class="{active:viewMode==='grid'}" title="Grid view" @click="viewMode='grid'"><v-icon name="fa-th-large" /></button><button :class="{active:viewMode==='table'}" title="Table view" @click="viewMode='table'"><v-icon name="fa-list" /></button></div></div>
+    <div v-if="viewMode === 'grid'" class="card-container"><p class="placeholder" v-if="!paged.length">No verifications match your filters.</p><PresentationCard v-for="pres in paged" :key="pres.thread_id" :pres="pres" /></div>
+    <div v-else class="table-shell"><table><thead><tr><th>Thread</th><th>Exchange</th><th>Role</th><th>Created</th><th>Updated</th><th>Result</th><th>State</th></tr></thead><tbody><tr v-for="pres in paged" :key="pres.thread_id"><td><strong>{{ pres.thread_id }}</strong></td><td>{{ exchangeId(pres) }}</td><td><span class="role-pill"><v-icon name="fa-user-shield" /> {{ pres.role || 'Not available' }}</span></td><td>{{ formatDate(pres.created_at) }}</td><td>{{ formatDate(pres.updated_at) }}</td><td class="failure-cell"><strong>{{ failureFor(pres).title }}</strong><small>{{ failureFor(pres).code || 'PASS' }}</small></td><td><span class="table-status" :class="statusOf(pres)"><i></i>{{ labelOf(pres) }}</span></td></tr></tbody></table><p class="placeholder" v-if="!paged.length">No verifications match your filters.</p></div>
+    <div class="pagination" v-if="filtered.length"><span>Showing {{ start + 1 }}–{{ Math.min(start + pageSize, filtered.length) }} of {{ filtered.length }}</span><div><button :disabled="page===1" @click="page--"><v-icon name="fa-chevron-left" /></button><button v-for="n in pageCount" :key="n" :class="{active:page===n}" @click="page=n">{{ n }}</button><button :disabled="page===pageCount" @click="page++"><v-icon name="fa-chevron-right" /></button></div></div>
   </section>
 </template>
-
 <script setup>
-  import { ref, onMounted } from 'vue'
-  import axios from 'axios'
-  import PresentationCard from './PresentationCard.vue'
-  
-  const press = ref([])
-  
-  onMounted(async () => {
-    try {
-      let url = '/api/presentations'
-      if (import.meta.env.MODE === 'production') {
-        const BACKEND_URL = import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:3000'
-	url = `${BACKEND_URL}${url}`
-      }
-      const pressFromAPI = await axios.get(url)
-      press.value = pressFromAPI.data
-    } catch (err) {
-      console.error('Fetch error:', err)
-    }
-  })
+import { ref, computed, onMounted, watch } from 'vue'
+import axios from 'axios'
+import PresentationCard from './PresentationCard.vue'
+import { demoPresentations } from '../demoData'
+import { demoMode } from '../dataMode'
+import { normalizeVerificationRecord } from '../failures/failureModel.js'
+const press=ref([]),query=ref(''),status=ref('all'),sortBy=ref('newest'),viewMode=ref('grid'),page=ref(1),pageSize=9
+const failureFor = pres => normalizeVerificationRecord(pres).failure
+const statusOf = pres => failureFor(pres).status === 'passed' ? 'pass' : failureFor(pres).status === 'pending' ? 'pending' : 'review'
+const labelOf = pres => statusOf(pres) === 'pass' ? 'Verified' : statusOf(pres) === 'pending' ? 'Pending' : 'Needs review'
+const exchangeId = p => p?.by_format?.pres_request?.indy?.requested_attributes?.attr_data_exchange_id?.restrictions?.[0]?.['attr::data_exchange_id::value'] || '—'
+const filtered=computed(()=>press.value.filter(p=>{const failure = failureFor(p); const text=`${p.thread_id||''} ${exchangeId(p)} ${p.role||''} ${failure.title} ${failure.code||''}`.toLowerCase();const state = statusOf(p);return text.includes(query.value.toLowerCase())&&(status.value==='all'||(status.value==='verified'?state === 'pass':state !== 'pass'))}).sort((a,b)=>{if(sortBy.value==='role')return String(a.role).localeCompare(String(b.role));const d=sortBy.value==='oldest'?1:-1;return d*(new Date(a.created_at||0)-new Date(b.created_at||0))}))
+const pageCount=computed(()=>Math.max(1,Math.ceil(filtered.value.length/pageSize))),start=computed(()=> (page.value-1)*pageSize),paged=computed(()=>filtered.value.slice(start.value,start.value+pageSize)),verifiedCount=computed(()=>press.value.filter(p=>statusOf(p) === 'pass').length),verificationRate=computed(()=>press.value.length?Math.round(verifiedCount.value/press.value.length*100):0)
+watch([query,status,sortBy],()=>page.value=1);watch(pageCount,n=>{if(page.value>n)page.value=n});function resetFilters(){query.value='';status.value='all';sortBy.value='newest'};function formatDate(v){return v?new Date(v).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'—'}
+async function loadPresentations(){if(demoMode.value){press.value=demoPresentations;return}try{const r=await axios.get('/api/info/presentations');press.value=Array.isArray(r.data)?r.data:[]}catch{press.value=[]}}onMounted(loadPresentations);watch(demoMode,loadPresentations)
 </script>
-
 <style scoped>
-  .card-container {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-  }
-
-  .placeholder {
-    font-style: italic;
-  }
-
-  @media (max-width: 1670px) {
-    .card-container {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  @media (max-width: 1350px) {
-    .card-container {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 980px) {
-    .card-container {
-      grid-template-columns: repeat(1, 1fr);
-    }
-  }
+.records-page{color:#334155}.page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px}.eyebrow{color:#0891b2;font-size:.68rem;font-weight:800;letter-spacing:.14em}.page-header h2{margin:6px 0 5px;color:#0f172a;font-size:1.8rem;letter-spacing:-.04em}.page-header p{margin:0;color:#64748b;font-size:.85rem}.header-actions{display:flex;align-items:center;gap:9px}.mode-chip,.count-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;font-size:.7rem;font-weight:700}.mode-chip{color:#0e7490;background:#ecfeff}.mode-chip i{width:6px;height:6px;border-radius:50%;background:#22c55e}.count-badge{color:#0e7490;background:#cffafe}.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat-card{padding:15px 16px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 4px 18px rgba(15,23,42,.035)}.stat-card span,.stat-card small{display:block;color:#64748b;font-size:.7rem}.stat-card strong{display:block;margin:5px 0 2px;color:#0f172a;font-size:1.35rem;letter-spacing:-.04em}.stat-card.success strong{color:#15803d}.stat-card.warning strong{color:#b45309}.toolbar-panel{display:flex;align-items:center;gap:9px;margin-bottom:17px;padding:10px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.search-wrap{display:flex;align-items:center;gap:8px;flex:1;min-width:210px;padding:0 10px;border:1px solid #dbe3ec;border-radius:8px;background:#fff;color:#94a3b8}.search-wrap input{height:34px;width:100%;border:0;outline:0;color:#475569;background:transparent;font:inherit;font-size:.74rem}.toolbar-panel select{height:34px;padding:0 9px;border:1px solid #dbe3ec;border-radius:8px;color:#475569;background:#fff;font:inherit;font-size:.74rem}.clear-button{display:flex;align-items:center;gap:5px;height:34px;padding:0 10px;border:0;border-radius:8px;color:#0e7490;background:#e0f2fe;font-size:.72rem;font-weight:700;cursor:pointer}.view-switch{display:flex;padding:2px;border:1px solid #dbe3ec;border-radius:8px;background:#fff}.view-switch button,.pagination button{display:grid;place-items:center;min-width:29px;height:29px;padding:0;border:0;border-radius:6px;color:#94a3b8;background:transparent;font-size:.72rem;cursor:pointer}.view-switch button.active,.view-switch button:hover,.pagination button.active{color:#0e7490;background:#cffafe}.card-container{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.table-shell{overflow:auto;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 4px 18px rgba(15,23,42,.04)}table{width:100%;border-collapse:collapse;text-align:left;font-size:.75rem}th{padding:13px 15px;color:#64748b;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:.65rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}td{padding:14px 15px;color:#475569;border-bottom:1px solid #f1f5f9;white-space:nowrap}tbody tr:hover{background:#f8fafc}td strong,td small{display:block}td strong{color:#334155}td small{margin-top:3px;color:#94a3b8;font-size:.65rem}.role-pill{display:inline-flex;align-items:center;gap:6px;color:#475569}.table-status{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-weight:700}.table-status i{width:6px;height:6px;border-radius:50%}.table-status.pass{color:#15803d;background:#f0fdf4}.table-status.pass i{background:#22c55e}.table-status.review{color:#b45309;background:#fffbeb}.table-status.review i{background:#f59e0b}.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:14px;color:#64748b;font-size:.7rem}.pagination>div{display:flex;gap:3px}.pagination button:disabled{opacity:.35;cursor:not-allowed}.placeholder{grid-column:1/-1;margin:0;padding:42px;text-align:center;color:#94a3b8;border:1px dashed #cbd5e1;border-radius:12px;background:#fff}@media(max-width:1200px){.card-container{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:800px){.page-header,.toolbar-panel{align-items:stretch;flex-direction:column}.header-actions{justify-content:space-between}.stat-grid{grid-template-columns:repeat(2,1fr)}.card-container{grid-template-columns:1fr}}@media(max-width:480px){.stat-grid{grid-template-columns:1fr}.pagination{align-items:flex-start;gap:10px;flex-direction:column}}
+@media(max-width:820px){.page-header{align-items:flex-start;flex-direction:column}.header-actions{width:100%;flex-wrap:wrap;justify-content:flex-start}}
+@media(max-width:760px){.toolbar-panel{gap:8px}.toolbar-panel select,.search-wrap{width:100%;height:44px}.search-wrap input{height:42px;line-height:42px}.clear-button{min-height:44px}.view-switch button,.pagination button{min-width:40px;height:40px}.table-shell{box-shadow:none}.table-shell table{min-width:720px}td{white-space:normal;overflow-wrap:anywhere}}
+@media(max-width:560px){.stat-grid{grid-template-columns:1fr}.pagination{align-items:flex-start;gap:10px;flex-direction:column}}
+.failure-cell{max-width:230px;white-space:normal}.failure-cell strong{font-size:.7rem}.table-status.pending{color:#92400e;background:#fef3c7}.table-status.pending i{background:#f59e0b}
 </style>

@@ -1,7 +1,8 @@
 <template>
-  <SampleModal v-model="sampleData" ref="sampleModal" />
+  <!-- Modals -->
+  <SampleModal v-model="sampleData" ref="sampleModal" title="Upload Sample Data for VLA Generation" />
   <SampleModal
-    title="Upload test data"
+    title="Upload Test Data for Fragment"
     v-model="testData"
     ref="testModal"
     @update:modelValue="handleTestDataSelected"
@@ -11,126 +12,333 @@
     ref="reqModal"
     @req-added="handleReqAdded"
   />
-  <div class="content">
-    <header>
-      <h2>Create a new VLA</h2>
-    </header>
-    <div class="main-part">
-      <button
-        v-if="sampleData === null"
-        @click="showSampleModal"
-        class="add-button"
-      >
-        Add sample data
-      </button>
 
-      <div v-if="sampleData !== null" class="editor-area">
-        <section class="column">
-          <h3>Sample data structure</h3>
-          <vue-json-pretty
-            :data="sampleData"
-            :showDoubleQuotes="false"
-            :showLength="true"
-            rootPath=""
-            :virtual="true"
-            :height="600"
-            @node-click="onNodeClick"
-          />
-        </section>
+  <div class="page-container builder-container">
+    <n-page-header
+      title="VLA Builder"
+      subtitle="Select JSON nodes from your sample data to attach requirements"
+      class="mb-4"
+      @back="$router.push('/list')"
+    >
+      <template #extra>
+        <n-space>
+          <n-button secondary @click="router.push('/templates')">
+            Template workspace
+          </n-button>
+          <n-button @click="showSampleModal" type="default">
+            <template #icon><n-icon><RefreshIcon /></n-icon></template>
+            {{ sampleData ? 'Change Sample Data' : 'Upload Sample Data' }}
+          </n-button>
+          <n-button
+            type="primary"
+            size="large"
+            @click="handleCreateVLA"
+            :disabled="!sampleData || fragments.length === 0 || !metadata.name.trim() || !metadata.description.trim() || metadata.participants.length === 0 || !metadata.dataReference.trim()"
+          >
+            Create VLA
+          </n-button>
+        </n-space>
+      </template>
+    </n-page-header>
 
-        <section class="column toolbox">
-          <h3>Toolbox</h3>
-
-          <div class="req-box">
-            <p
-              v-if="lastPath === null"
-              class="json-selection"
-              style="font-style:italic"
-            >
-              Select a JSON element…
-            </p>
-            <p
-              v-else
-              class="json-selection"
-            >
-              {{ lastPath }}
-            </p>
-            <button
-              @click="showReqModal"
-            >
-              Add requirement
-            </button>
-          </div>
-        </section>
-
-        <section class="column fragments">
-          <h3>List of Fragments</h3>
-          <div v-for="frag in fragments" class="fragment">
-            <div class="fragment-display">
-              <table>
-                <tr>
-                  <th>Fragment Name</th>
-                  <td>{{ frag.requirement.name }}</td>
-                </tr>
-                <tr>
-                  <th>Quality Engine</th>
-                  <td><code>{{ frag.requirement.evaluationMethod.engine }}</code></td>
-                </tr>
-                <tr>
-                  <th>Template String</th>
-                  <td><code>{{ frag.requirement.evaluationMethod.implementationTemplate }}</code></td>
-                </tr>
-              </table>
-              <vue-json-pretty :data="frag.data" />
-              <button
-                class="btn-test"
-                @click="showTestModal(frag)"
+    <n-card title="VLA metadata" size="small" class="metadata-card mb-4">
+      <n-text depth="3" class="block metadata-help">
+        Add the contract context first so this VLA can be identified without relying on its UUID.
+      </n-text>
+      <div class="metadata-grid">
+        <n-form-item label="Name" required>
+          <n-input v-model:value="metadata.name" placeholder="e.g. Customer events quality" />
+        </n-form-item>
+        <n-form-item label="Data reference" required>
+          <n-input v-model:value="metadata.dataReference" placeholder="Dataset, endpoint, or data product" />
+        </n-form-item>
+        <n-form-item label="Participants" required>
+          <div class="participant-editor">
+            <n-space v-if="metadata.participants.length" size="small" :wrap="true" class="participant-tags">
+              <n-tag
+                v-for="participant in metadata.participants"
+                :key="participant"
+                closable
+                :type="isKnownParticipant(participant) ? 'info' : 'warning'"
+                @close="removeParticipant(participant)"
               >
-                Test
-              </button>
-              <div v-if="testedFragment === frag && testResult !== null">
-                <h4>Evaluation results:</h4>
-                <vue-json-pretty
-                  :data="testResult"
-                />
+                {{ participant }}
+                <template v-if="!isKnownParticipant(participant)" #icon><span class="participant-status">?</span></template>
+              </n-tag>
+            </n-space>
+            <n-auto-complete
+              v-model:value="participantDraft"
+              :options="filteredParticipantSuggestions"
+              placeholder="Type an ID or email, then press comma or Enter"
+              clearable
+              @select="handleParticipantSelect"
+              @keydown="handleParticipantKeydown"
+            />
+          </div>
+        </n-form-item>
+        <n-form-item label="Tags">
+          <div class="participant-editor">
+            <n-space v-if="metadata.tags.length" size="small" :wrap="true" class="participant-tags">
+              <n-tag v-for="tag in metadata.tags" :key="tag" closable type="info" @close="removeTag(tag)">
+                {{ tag }}
+              </n-tag>
+            </n-space>
+            <n-auto-complete
+              v-model:value="tagDraft"
+              :options="filteredTagSuggestions"
+              placeholder="Type a tag, then press comma or Enter"
+              clearable
+              @select="handleTagSelect"
+              @keydown="handleTagKeydown"
+            />
+          </div>
+        </n-form-item>
+      </div>
+      <n-form-item label="Description" required>
+        <n-input v-model:value="metadata.description" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="What does this VLA guarantee?" />
+      </n-form-item>
+    </n-card>
+
+    <div v-if="!sampleData" class="empty-state-container">
+      <n-empty description="Start by uploading sample data to build your VLA">
+        <template #extra>
+          <n-button type="primary" size="large" @click="showSampleModal">
+            Upload Sample Data
+          </n-button>
+        </template>
+      </n-empty>
+    </div>
+
+    <div v-else class="builder-layout">
+      <!-- Left Panel: Data Structure -->
+      <div class="panel data-panel">
+        <n-card title="Data Structure" size="small" class="h-full">
+          <n-text depth="3" class="block mb-2">Click on any JSON node to select it for a new requirement.</n-text>
+          <div class="json-scroll-area">
+            <vue-json-pretty
+              :data="sampleData"
+              :showDoubleQuotes="false"
+              :showLength="true"
+              rootPath=""
+              :virtual="true"
+              :height="526"
+              @node-click="onNodeClick"
+            />
+          </div>
+        </n-card>
+      </div>
+
+      <!-- Center Panel: Toolbox -->
+      <div class="panel toolbox-panel">
+        <n-card title="Toolbox" size="small" class="toolbox-card">
+          <div class="toolbox-content">
+            <n-statistic label="Selected Element" class="mb-4">
+              <template #prefix>
+                <n-icon><CodeIcon /></n-icon>
+              </template>
+              <n-text v-if="!lastPath" depth="3" italic>No element selected</n-text>
+              <n-text v-else type="primary" strong class="break-all">{{ lastPath }}</n-text>
+            </n-statistic>
+
+            <n-tooltip trigger="hover" :disabled="!!lastPath">
+              <template #trigger>
+                <n-button 
+                  type="success" 
+                  size="large" 
+                  block
+                  :disabled="!lastPath"
+                  @click="showReqModal"
+                >
+                  <template #icon><n-icon><LinkIcon /></n-icon></template>
+                  Attach Requirement
+                </n-button>
+              </template>
+              You must select a JSON element from the Data Structure first
+            </n-tooltip>
+          </div>
+        </n-card>
+      </div>
+
+      <!-- Right Panel: Fragments -->
+      <div class="panel fragments-panel">
+        <n-card title="Building Blocks (Fragments)" size="small" class="h-full">
+          <n-text v-if="fragments.length === 0" depth="3" class="block mb-4 text-center">
+            No requirements added yet. Attach them using the toolbox.
+          </n-text>
+          
+          <n-scrollbar style="max-height: 550px">
+            <div class="fragments-list">
+              <div v-for="(frag, index) in fragments" :key="index" class="fragment-block">
+                <n-card size="small" :bordered="false" class="block-card">
+                  <div class="flex justify-between items-start mb-2">
+                    <n-text strong class="text-lg text-primary">{{ frag.requirement.name }}</n-text>
+                    <n-tag type="info" size="small">{{ frag.requirement.evaluationMethod.engine }}</n-tag>
+                  </div>
+                  
+                  <div class="bg-gray-50 p-2 rounded mb-2 overflow-x-auto text-xs font-mono">
+                    {{ frag.requirement.evaluationMethod.implementationTemplate }}
+                  </div>
+                  
+                  <div class="text-xs mb-2">
+                    <vue-json-pretty :data="frag.data" :deep="1" />
+                  </div>
+
+                  <n-divider class="my-2" />
+                  
+                  <div class="flex justify-between items-center">
+                    <n-button size="small" ghost type="warning" @click="showTestModal(frag)">
+                      Test Fragment
+                    </n-button>
+                  </div>
+
+                  <div v-if="testedFragment === frag && testResult !== null" class="mt-3 p-2 bg-green-50 rounded border border-green-200">
+                    <n-text strong type="success" class="text-xs mb-1 block">Test Results:</n-text>
+                    <vue-json-pretty :data="testResult" class="text-xs" />
+                  </div>
+                </n-card>
               </div>
             </div>
-          </div>
-        </section>
+          </n-scrollbar>
+        </n-card>
       </div>
     </div>
-    <footer>
-      <button
-        @click="handleCreateVLA"
-        class="final-button"
-        :disabled="sampleData === null"
-      >
-        Create VLA
-      </button>
-    </footer>
   </div>
 </template>
 
 <script setup>
-  import { ref } from 'vue'
-  import { toRaw } from 'vue'
+  import { ref, toRaw, h, defineComponent, onMounted, nextTick, computed } from 'vue'
   import { useRouter } from 'vue-router'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
   import axios from 'axios'
+  import { 
+    NPageHeader, NSpace, NButton, NIcon, NEmpty, NCard, NFormItem, NInput, NAutoComplete,
+    NText, NStatistic, NTooltip, NTag, NDivider, NScrollbar, useMessage
+  } from 'naive-ui'
 
   import SampleModal from './SampleModal.vue'
   import ReqModal from './ReqModal.vue'
 
+  // Basic SVG Icons
+  const RefreshIcon = defineComponent({
+    render() {
+      return h('svg', { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 512 512" }, [
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-miterlimit": "10", "stroke-width": "32", d: "M320 146s24.36-12-64-12a160 160 0 10160 160" }),
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "32", d: "M256 58l80 80l-80 80" })
+      ])
+    }
+  })
+  const CodeIcon = defineComponent({
+    render() {
+      return h('svg', { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 512 512" }, [
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "32", d: "M160 368L32 256l128-112" }),
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "32", d: "M352 368l128-112l-128-112" })
+      ])
+    }
+  })
+  const LinkIcon = defineComponent({
+    render() {
+      return h('svg', { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 512 512" }, [
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "36", d: "M208 352h-64a96 96 0 010-192h64" }),
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "36", d: "M304 160h64a96 96 0 010 192h-64" }),
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "36", d: "M163.29 256h187.42" })
+      ])
+    }
+  })
+
+  const message = useMessage()
+  const router = useRouter()
+
   const sampleModal = ref(null)
   const testModal = ref(null)
   const reqModal = ref(null)
-  const genericReqModal = ref(null)
 
   const sampleData = ref(null)
   const testData = ref(null)
   const lastPath = ref(null)
   const fragments = ref([])
+  const metadata = ref({
+    name: '',
+    description: '',
+    participants: [],
+    dataReference: '',
+    tags: []
+  })
+  const participantDraft = ref('')
+  const knownParticipants = ref(new Set())
+  const participantSuggestions = ref([])
+  const tagDraft = ref('')
+  const knownTags = ref(new Set())
+  const tagSuggestions = ref([])
+  const filteredParticipantSuggestions = computed(() => {
+    const query = participantDraft.value.trim().toLowerCase()
+    return participantSuggestions.value.filter(option => !query || option.value.toLowerCase().includes(query))
+  })
+  const filteredTagSuggestions = computed(() => {
+    const query = tagDraft.value.trim().toLowerCase()
+    return tagSuggestions.value.filter(option => !query || option.value.toLowerCase().includes(query))
+  })
+  const participantSelectedFromAutocomplete = ref(false)
+  const tagSelectedFromAutocomplete = ref(false)
+
+  const addParticipant = (value = participantDraft.value) => {
+    const participant = String(value || '').trim().replace(/,$/, '')
+    if (participant && !metadata.value.participants.some(item => item.toLowerCase() === participant.toLowerCase())) {
+      metadata.value.participants.push(participant)
+    }
+    participantDraft.value = ''
+  }
+
+  const isKnownParticipant = (participant) =>
+    [...knownParticipants.value].some(item => item.toLowerCase() === participant.toLowerCase())
+
+  const removeParticipant = (participant) => {
+    metadata.value.participants = metadata.value.participants.filter(item => item !== participant)
+  }
+
+  const handleParticipantSelect = (value) => {
+    participantSelectedFromAutocomplete.value = true
+    addParticipant(value)
+    nextTick(() => { participantDraft.value = '' })
+  }
+
+  const handleParticipantKeydown = (event) => {
+    if (event.key === ',' || event.key === 'Enter') {
+      event.preventDefault()
+      if (participantSelectedFromAutocomplete.value) {
+        participantSelectedFromAutocomplete.value = false
+        return
+      }
+      addParticipant()
+    }
+  }
+
+  const addTag = (value = tagDraft.value) => {
+    const tag = String(value || '').trim().replace(/,$/, '')
+    if (tag && !metadata.value.tags.some(item => item.toLowerCase() === tag.toLowerCase())) metadata.value.tags.push(tag)
+    tagDraft.value = ''
+  }
+
+  const removeTag = (tag) => {
+    metadata.value.tags = metadata.value.tags.filter(item => item !== tag)
+  }
+
+  const handleTagSelect = (value) => {
+    tagSelectedFromAutocomplete.value = true
+    addTag(value)
+    nextTick(() => { tagDraft.value = '' })
+  }
+
+  const handleTagKeydown = (event) => {
+    if (event.key === ',' || event.key === 'Enter') {
+      event.preventDefault()
+      if (tagSelectedFromAutocomplete.value) {
+        tagSelectedFromAutocomplete.value = false
+        return
+      }
+      addTag()
+    }
+  }
 
   const testedFragment = ref(null)
   const testResult = ref(null)
@@ -139,6 +347,7 @@
   const showTestModal = (frag) => {
     testModal.value?.show()
     testedFragment.value = frag
+    testResult.value = null // reset previous results
   }
   const showReqModal = () => reqModal.value?.show()
 
@@ -146,163 +355,297 @@
 
   const handleReqAdded = (req) => {
     fragments.value.push(req)
+    message.success(`Attached requirement: ${req.requirement.name}`)
   }
 
   const handleTestDataSelected = async () => {
-    console.log(testedFragment.value)
     const body = {
       templateID: testedFragment.value.data.id,
       templateModel: testedFragment.value.data.model,
       data: testData.value
     }
-    console.log('Sending evaluate request to backend with body:')
-    console.log(body)
-    let resp = null
     try {
-      resp = await axios.post('/api/evaluate/from-template', body)
+      const resp = await axios.post('/api/evaluate/from-template', body)
+      testResult.value = resp.data
+      message.success('Evaluation complete')
     } catch (err) {
-      console.error('Error while evaluating on backend:')
-      console.error(err)
-      return
+      message.error(err.response?.data?.details || err.response?.data?.title || 'The fragment could not be evaluated.')
+      testResult.value = err.response?.data || { error: err.message }
     }
-
-    testResult.value = resp.data
   }
 
-  const router = useRouter()
-
   const handleCreateVLA = async () => {
-    console.log("posting")
+    const participants = [...metadata.value.participants]
+    const tags = [...metadata.value.tags]
     const body = {
-      description: "Data is recent and valid",
+      name: metadata.value.name.trim(),
+      description: metadata.value.description.trim(),
+      participants,
+      dataReference: metadata.value.dataReference.trim(),
+      tags,
       schema: {
         properties: {
-          timestamp: {
-            type: "string"
-          },
-          result: {
-            type: "integer"
-          }
+          timestamp: { type: "string" },
+          result: { type: "integer" }
         }
       },
       qualityTemplates: [...toRaw(fragments.value.map((f) => f.data))]
     }
 
-    console.log(JSON.stringify(body))
     try {
       await axios.post('/api/vla/from-templates', body)
-    } catch (err) {}
-    alert(`Created VLA from ${fragments.value.length} fragments`)
-    router.push({ path: "/list" })
+      message.success(`Successfully created VLA from ${fragments.value.length} fragments`)
+      router.push({ path: "/list" })
+    } catch (err) {
+      message.error(err.response?.data?.details || err.response?.data?.title || 'The VLA could not be created.')
+    }
   }
+
+  onMounted(async () => {
+    try {
+      const response = await axios.get('/api/vla')
+      const participants = response.data.flatMap(vla => Array.isArray(vla.participants) ? vla.participants : [])
+      const tags = response.data.flatMap(vla => Array.isArray(vla.tags) ? vla.tags : [])
+      knownParticipants.value = new Set(participants)
+      participantSuggestions.value = [...knownParticipants.value].map(value => ({ label: value, value }))
+      knownTags.value = new Set(tags)
+      tagSuggestions.value = [...knownTags.value].map(value => ({ label: value, value }))
+    } catch {
+      // Suggestions are optional; participants can still be entered manually.
+    }
+  })
 </script>
 
 <style scoped>
-  h2 {
-    justify-self: stretch;
-    border-top: 4px solid #e08b1b;
-    border-bottom: 4px solid #e08b1b;
-    padding: 1rem;
-    text-align: center;
-    margin: 0;
-    margin-bottom: 1rem;
-  }
-
-  .content {
-    flex-grow: 1;
-    flex-direction: column;
-    display: flex;
-    padding: 1rem;
-  }
-
-  .main-part {
-    flex-grow: 1;
-    display: flex;
-  }
-
-  .add-button {
-    font-size: 2rem;
-    align-self: center;
-    margin: auto;
-  }
-
-  .editor-area {
-    flex-grow: 1;
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .column {
-    width: 30vw;
-  }
-
-  .toolbox {
+  .builder-container {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    align-items: center;
+    min-height: calc(100vh - 100px);
   }
 
-  .fragments {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  .mb-4 { margin-bottom: 16px; }
+  .mb-2 { margin-bottom: 8px; }
+  .mt-3 { margin-top: 12px; }
+  .my-2 { margin-top: 8px; margin-bottom: 8px; }
+  .block { display: block; }
+  .h-full { height: 100%; }
+  .text-center { text-align: center; }
+  .text-lg { font-size: 1.125rem; }
+  .text-xs { font-size: 0.75rem; }
+  .font-mono { font-family: monospace; }
+  .break-all { word-break: break-all; }
+  .flex { display: flex; }
+  .justify-between { justify-content: space-between; }
+  .items-start { align-items: flex-start; }
+  .items-center { align-items: center; }
+  .p-2 { padding: 8px; }
+  .bg-gray-50 { background-color: #f9fafb; }
+  .bg-green-50 { background-color: #f0fdf4; }
+  .border { border-width: 1px; border-style: solid; }
+  .border-green-200 { border-color: #bbf7d0; }
+  .rounded { border-radius: 4px; }
+  .overflow-x-auto { overflow-x: auto; }
+  .text-primary { color: #2563eb; }
+
+  .metadata-card {
+    flex: none;
   }
 
-  .json-selection {
-    font-family: monospace;
-    font-size: 1.25rem;
-    background: #ccc;
-    padding: 1rem;
-    margin: 0 2rem;
+  .metadata-help {
+    margin-bottom: 12px;
+  }
+
+  .participant-editor {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .participant-tags {
+    min-height: 28px;
+  }
+
+  .participant-hint {
+    font-size: .75rem;
+  }
+
+  .participant-status {
+    font-size: .75rem;
+    font-weight: 700;
+  }
+
+  .metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+  }
+
+  .empty-state-container {
     flex-grow: 1;
-  }
-
-  .fragment {
-    padding: 1rem;
-    border: 2px solid black;
-    border-radius: 12px;
-  }
-
-  .fragment-display {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  footer {
     display: flex;
     align-items: center;
     justify-content: center;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
 
-  table {
-    border: 1px solid black;
-    border-collapse: collapse;
-  }
-  th, td {
-    padding: .5rem;
-  }
-  th {
-    border-right: 1px solid #444;
+  .builder-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr;
+    gap: 16px;
+    flex-grow: 1;
+    min-height: 0;
+    width: 100%;
   }
 
-  .btn-test {
-    align-self: end;
-  }
-
-  .final-button {
-    width: 15rem;
-    background-color: #e08b1b;
-    font-size: 1.5rem;
-  }
-
-  .req-box {
-    align-self: stretch;
-    text-align: center;
+  .panel {
     display: flex;
-    gap: 1rem;
-    justify-content: space-between;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .toolbox-panel {
+    align-self: center;
+  }
+
+  .builder-container :deep(.n-page-header) {
+    gap: 16px;
+  }
+
+  .builder-container :deep(.n-page-header__main) {
+    min-width: 0;
+  }
+
+  .builder-container :deep(.n-page-header__extra) {
+    min-width: 0;
+  }
+
+  .builder-container :deep(.n-button) {
+    min-height: 40px;
+  }
+
+  .toolbox-card {
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+  }
+
+  @media (max-width: 900px) {
+    .builder-container {
+      height: auto;
+    }
+
+    .metadata-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .builder-layout {
+      grid-template-columns: 1fr;
+      flex-grow: 0;
+    }
+
+    .toolbox-panel {
+      align-self: stretch;
+    }
+
+    .json-scroll-area {
+      height: min(550px, 50vh);
+    }
+  }
+
+  @media (max-width: 700px) {
+    .builder-container :deep(.n-page-header) {
+      align-items: flex-start;
+    }
+
+    .builder-container :deep(.n-page-header__extra),
+    .builder-container :deep(.n-page-header__extra .n-space) {
+      width: 100%;
+    }
+
+    .builder-container :deep(.n-page-header__extra .n-space) {
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+
+    .builder-container :deep(.n-page-header__extra .n-button) {
+      flex: 1 1 180px;
+    }
+
+    .metadata-grid {
+      row-gap: 4px;
+    }
+
+    .json-scroll-area {
+      height: min(480px, 55vh);
+      padding: 8px;
+    }
+
+    .fragment-block:hover {
+      border-color: #e2e8f0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .builder-layout .panel :deep(.n-card__content) {
+      min-height: 0;
+    }
+  }
+
+  .toolbox-content {
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    text-align: center;
+  }
+
+  .json-scroll-area {
+    background: #f8fafc;
+    border-radius: 6px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 550px;
+    box-sizing: border-box;
+  }
+
+  /* Prevent vue-json-pretty from aggressively breaking words in narrow containers */
+  ::v-deep(.vjs-tree) {
+    word-break: normal !important;
+    white-space: nowrap !important;
+  }
+  ::v-deep(.vjs-value) {
+    word-break: normal !important;
+  }
+
+  .fragments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 8px;
+  }
+
+  .fragment-block {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+  }
+  
+  .fragment-block:hover {
+    border-color: #0891b2;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .block-card {
+    background: transparent;
+  }
+  
+  ::v-deep(.n-card__content) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
 </style>

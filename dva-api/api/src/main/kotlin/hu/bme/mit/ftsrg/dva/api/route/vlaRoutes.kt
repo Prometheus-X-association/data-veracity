@@ -49,7 +49,10 @@ fun Application.vlaRoutes() {
                 put("status", "active")
 
                 vlaReq.apply {
+                    name?.let { put("name", it) }
                     description?.let { put("description", it) }
+                    participants?.let { put("participants", it) }
+                    dataReference?.let { put("dataReference", it) }
                     servers?.let { put("servers", it) }
                     schema?.let { put("schema", it) }
                     quality?.let { put("quality", Json.encodeToJsonElement(it)) }
@@ -78,7 +81,10 @@ fun Application.vlaRoutes() {
                 put("status", "active")
 
                 vlaReq.apply {
+                    name?.let { put("name", it) }
                     description?.let { put("description", it) }
+                    participants?.let { put("participants", it) }
+                    dataReference?.let { put("dataReference", it) }
                     servers?.let { put("servers", it) }
                     schema?.let { put("schema", it) }
                     quality?.let { put("quality", Json.encodeToJsonElement(it)) }

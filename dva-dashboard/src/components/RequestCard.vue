@@ -1,194 +1,26 @@
 <template>
-  <div class="card">
-    <div class="card-header">
-      <h5 class="card-title">{{ req.requestID }}</h5>
-    </div>
-    <div class="card-body">
-      <table>
-        <tr>
-          <th style="width:44%"><v-icon name="fa-people-arrows" /> Data Exchange ID</th>
-          <td class="data">{{ req.exchangeID }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-file-signature" /> Contract ID</th>
-          <td class="data">{{ req.contractID }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-clock" /> Requested</th>
-          <td class="data">{{ req.receivedDate }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-calculator" /> Evaluated</th>
-          <td class="data">{{ req.evaluationDate }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-certificate" /> VC Issued</th>
-          <td class="data">{{ req.vcIssuedDate }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-certificate" /> VC ID</th>
-          <td class="data">{{ req.vcID }}</td>
-        </tr>
-        <tr>
-          <th><v-icon name="fa-user" /> Attester</th>
-          <td class="data">{{ req.attesterID }}</td>
-        </tr>
-      </table>
-
-      <div class="badges">
-        <span v-if="req.type == 'aov'" class="badge badge-aov"><v-icon name="fa-stamp" /> Attestation</span>
-        <span v-else class="badge badge-pov"><v-icon name="fa-code" /> Proof</span>
-
-        <span v-if="req.evaluationPassing" class="badge badge-success"><v-icon name="fa-check" /> Pass</span>
-        <span v-else class="badge badge-danger"><v-icon name="fa-times" /> Fail</span>
-      </div>
-
-      <hr class="divider" />
-
-      <h6 class="card-subtitle">Data</h6>
-      <vue-json-pretty
-        :data="req.data"
-        :deep="0"
-        :virtual="true"
-        :height="100"
-      />
-
-      <hr class="divider" />
-
-      <h6 class="card-subtitle">Evaluation Results</h6>
-      <vue-json-pretty
-        :data="JSON.parse(req.evaluationResults)"
-        :deep="1"
-        :virtual="true"
-        :height="150"
-      />
-    </div>
-  </div>
+  <article class="card">
+    <div class="card-header"><div class="card-mark"><v-icon name="fa-stamp" /></div><div class="header-copy"><span>Veracity event</span><h3>{{ req.vla?.name || 'Attestation request' }}</h3></div><span class="status" :class="state"><i></i>{{ stateLabel }}</span></div>
+    <div class="card-body"><p v-if="req.vla?.description" class="description">{{ req.vla.description }}</p><div class="field-grid"><div class="field"><span><v-icon name="fa-people-arrows" /> Exchange</span><strong>{{ req.exchangeID || 'Not available' }}</strong></div><div class="field"><span><v-icon name="fa-file-signature" /> Contract</span><strong>{{ req.contractID || 'Not available' }}</strong></div><div class="field"><span><v-icon name="fa-user" /> Attester</span><strong>{{ req.attesterID || 'Not available' }}</strong></div><div class="field"><span><v-icon name="fa-clock" /> Received</span><strong>{{ formatDate(req.receivedDate) }}</strong></div></div><div v-if="req.vla?.tags?.length" class="tags"><span v-for="tag in req.vla.tags" :key="tag">{{ tag }}</span></div><div class="meta-row"><span><v-icon name="fa-certificate" /> {{ req.vcID || 'Credential not issued' }}</span><span>{{ req.type === 'pov' ? 'Proof' : 'Attestation' }}</span></div><FailureExplanation v-if="record.failure.status !== 'passed'" :failure="record.failure" heading="Why this request is not complete" /><button class="expand-button" @click="expanded = !expanded"><v-icon :name="expanded ? 'fa-chevron-up' : 'fa-chevron-down'" /> {{ expanded ? 'Hide details' : 'Show data and evaluation' }}</button><div v-if="expanded"><div class="section-title"><v-icon name="fa-database" /> Data</div><vue-json-pretty :data="req.data" :deep="2" :virtual="true" :height="100" /><div class="section-title"><v-icon name="fa-chart-line" /> Evaluation results</div><vue-json-pretty :data="evaluationResults" :deep="2" :virtual="true" :height="150" /></div></div>
+  </article>
 </template>
-
 <script setup>
-  defineProps(['req'])
+import { computed, ref } from 'vue'
+import VueJsonPretty from 'vue-json-pretty'
+import 'vue-json-pretty/lib/styles.css'
+import FailureExplanation from './FailureExplanation.vue'
+import { normalizeAttestationRecord } from '../failures/failureModel.js'
+const props=defineProps({req:{type:Object,required:true}})
+const expanded=ref(false)
+const record = computed(() => normalizeAttestationRecord(props.req))
+const state = computed(() => record.value.failure.status === 'passed' ? 'pass' : record.value.failure.status === 'pending' ? 'pending' : 'fail')
+const stateLabel = computed(() => ({ pass: 'Passed', fail: 'Failed', pending: 'Pending' })[state.value])
+const evaluationResults=computed(()=>{try{return props.req.evaluationResults?JSON.parse(props.req.evaluationResults):{status:'Pending'}}catch{return {status:'Unavailable'}}})
+function formatDate(v){return v?new Date(v).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'—'}
 </script>
-
-<script>
-  import VueJsonPretty from 'vue-json-pretty'
-  import 'vue-json-pretty/lib/styles.css'
-
-  export default {
-    components: { VueJsonPretty }
-  }
-</script>
-
 <style scoped>
-  td {
-    padding-left: 1rem;
-  }
-
-  .card {
-    background-color: #F0EAFB;
-    border-radius: 0.75rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-    overflow: hidden;
-    transition: transform 0.1s, box-shadow 0.1s;
-    display: flex;
-    flex-direction: column;
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-    height: 100%;
-  }
-  
-  .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .card-header {
-    height: 2rem;
-    background-color: #4051b5;
-    color: #fff;
-    padding: 1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .card-title {
-    font-family: monospace;
-    text-align: center;
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .card-body {
-    padding: .6rem;
-
-  }
-  
-  .divider {
-    border: none;
-    border-top: 1px solid #DDD;
-    margin: 0.75rem 0;
-  }
-  
-  .card-subtitle {
-    font-size: 0.95rem;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    margin-top: 0;
-    text-align: center;
-    color: #333;
-  }
-  
-  .results-list {
-    list-style-type: disc;
-    margin: 0;
-    padding-left: 1.25rem;
-    flex-grow: 1;
-  }
-  
-  .results-list li {
-    margin-bottom: 0.25rem;
-    font-size: 0.9rem;
-    color: #333;
-  }
-  
-  .fw-semibold {
-    font-weight: 600;
-  }
-
-  .badges {
-    margin-top: 1rem;
-    display: flex;
-    gap: .25rem;
-  }
-  
-  /* Badge overrides */
-  .badge {
-    padding: 0.5em;
-    border-radius: 0.5rem;
-    color: #fff;
-  }
-  .badge-success {
-    background-color: #198754;
-  }
-  .badge-danger {
-    background-color: #dc3545;
-  }
-  .badge-aov {
-    background-color: #1e3fb9;
-  }
-  .badge-pov {
-    background-color: #825f00;
-  }
-
-  .data {
-    font-family: monospace;
-  }
-
-  pre {
-    height: 4rem;
-    overflow: auto;
-  }
+.card{display:flex;flex-direction:column;height:100%;overflow:hidden;border:1px solid #e2e8f0;border-radius:14px;background:#fff;box-shadow:0 4px 18px rgba(15,23,42,.045);transition:transform .16s,box-shadow .16s}.card:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(15,23,42,.09)}.card-header{display:flex;align-items:center;gap:11px;padding:16px;color:#fff;background:#0e7490}.card-mark{display:grid;place-items:center;width:37px;height:37px;border-radius:10px;color:#cffafe;background:rgba(255,255,255,.15);font-size:.95rem}.header-copy{min-width:0;flex:1}.header-copy span{display:block;color:#cffafe;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em}.header-copy h3{overflow:hidden;margin:4px 0 0;font-size:.82rem;text-overflow:ellipsis;white-space:nowrap}.status{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border-radius:999px;font-size:.62rem;font-weight:800}.status i{width:6px;height:6px;border-radius:50%}.status.pass{color:#166534;background:#dcfce7}.status.pass i{background:#22c55e}.status.fail{color:#991b1b;background:#fee2e2}.status.fail i{background:#ef4444}.card-body{display:flex;flex:1;flex-direction:column;padding:16px}.description{margin:0 0 14px;color:#64748b;font-size:.72rem;line-height:1.45}.field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{min-width:0;padding:10px;border:1px solid #f1f5f9;border-radius:9px;background:#f8fafc}.field span{display:flex;align-items:center;gap:5px;color:#94a3b8;font-size:.65rem}.field span svg{color:#0891b2}.field strong{display:block;overflow:hidden;margin-top:5px;color:#475569;font-size:.7rem;text-overflow:ellipsis;white-space:nowrap}.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}.tags span{padding:4px 7px;border-radius:999px;color:#0e7490;background:#ecfeff;font-size:.62rem;font-weight:700}.meta-row{display:flex;justify-content:space-between;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9;color:#64748b;font-size:.65rem}.meta-row span:first-child{display:flex;gap:5px;overflow:hidden;align-items:center;text-overflow:ellipsis;white-space:nowrap}.meta-row svg{color:#0891b2}.section-title{display:flex;align-items:center;gap:6px;margin:14px 0 7px;padding-top:12px;border-top:1px solid #f1f5f9;color:#475569;font-size:.7rem;font-weight:800}.section-title svg{color:#0891b2}.card-body :deep(.vjs-tree){font-size:.68rem}@media(max-width:420px){.field-grid{grid-template-columns:1fr}}
+.expand-button{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:14px;padding:8px;border:1px solid #bae6fd;border-radius:8px;color:#0e7490;background:#f0f9ff;font-size:.7rem;font-weight:800;cursor:pointer}.expand-button:hover{background:#e0f2fe}
+.status.pending{color:#92400e;background:#fef3c7}.status.pending i{background:#f59e0b}
+@media(max-width:760px){.card:hover{transform:none}.card-header{padding:14px}.card-body{padding:14px}.field strong{white-space:normal;overflow-wrap:anywhere}.meta-row{flex-wrap:wrap}.meta-row span:first-child{white-space:normal;overflow-wrap:anywhere}}
 </style>

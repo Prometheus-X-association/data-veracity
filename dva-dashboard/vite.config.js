@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     proxy: {
-      '/api': {
+      '/api/': {
         target: BACKEND_URL,
         changeOrigin: true,
         secure: false
