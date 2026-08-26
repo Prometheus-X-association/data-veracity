@@ -1,0 +1,153 @@
+quality:
+
+ 
+  # Tranche 1 - Compliance 6 mandatory fields
+  # Binary: passes only if EVERY statement complies
+
+  - name: mandatory_fields_compliance
+    description: 
+      Every statement contains the 6 mandatory Common Educ profile fields:
+      actor (objectType + account.homePage + account.name),
+      verb (IRI), object id (IRI), object definition (name or description),
+      valid timestamp, and context.
+    dimension: completeness
+    type: custom
+    engine: jsonSchema
+    implementation: 
+      {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "required": ["statements"],
+        "properties": {
+          "statements": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/statement" }
+          }
+        },
+        "$defs": {
+          "languagemap": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": { "type": "string", "minLength": 1 }
+          },
+          "statement": {
+            "type": "object",
+            "required": ["actor", "verb", "object", "timestamp", "context"],
+            "properties": {
+              "actor": {
+                "type": "object",
+                "required": ["objectType", "account"],
+                "properties": {
+                  "objectType": {"oneOf": [{"const": "Agent"}, {"const": "Group"}] },
+                  "account": {
+                    "type": "object",
+                    "required": ["homePage", "name"],
+                    "properties": {
+                      "homePage": { "type": "string", "format": "iri" },
+                      "name": { "type": "string", "minLength": 1 }
+                    }
+                  }
+                }
+              },
+              "verb": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                  "id": { "type": "string", "format": "iri" }
+                }
+              },
+              "object": {
+                "type": "object",
+                "required": ["id", "definition"],
+                "properties": {
+                  "id": { "type": "string", "format": "iri" },
+                  "definition": {
+                    "type": "object",
+                    "anyOf": [
+                      { "required": ["name"],
+                        "properties": { "name": { "$ref": "#/$defs/languagemap" } } },
+                      { "required": ["description"],
+                        "properties": { "description": { "$ref": "#/$defs/languagemap" } } }
+                    ]
+                  }
+                }
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "context": {
+                "type": "object",
+                "minProperties": 1
+              }
+            }
+          }
+        }
+      }
+
+
+
+  # Tranche 1 
+  # Binary: passes only if EVERY statement complies
+  - name: tranche2_enriched
+    description: "Tranche 2: every statement has at least 2 of the defined optional richness attributes"
+    dimension: completeness
+    type: custom
+    engine: jq
+    implementation: 
+      def richness_fields:
+        [
+          {name: "result",              present: (has("result") and (.result | type == "object" and length > 0))},
+          {name: "context_extensions",  present: ((.context.extensions? // {}) | length > 0)},
+          {name: "object_extensions",   present: ((.object.definition.extensions? // {}) | length > 0)}
+        ];
+
+      def threshold: 2;
+
+      all(.statements[];
+        (richness_fields | map(select(.present)) | length) >= threshold
+      )
+
+
+  # Tranche 2
+  # Binary: passes only if EVERY statement complies
+  - name: tranche3_full
+    description: "Tranche 3: every statement has all defined optional richness attributes"
+    dimension: completeness
+    type: custom
+    engine: jq
+    implementation: 
+      def richness_fields:
+        [
+          {name: "result",              present: (has("result") and (.result | type == "object" and length > 0))},
+          {name: "context_extensions",  present: ((.context.extensions? // {}) | length > 0)},
+          {name: "object_extensions",   present: ((.object.definition.extensions? // {}) | length > 0)}
+        ];
+
+      all(.statements[];
+        (richness_fields | map(select(.present)) | length) == (richness_fields | length)
+      )
+
+
+	  
+	# Descriptive:Each item represents an xAPI statement and indicates which optional elements and extensions are present. 
+	- name: richness_diagnostic
+		description: Per-statement breakdown of which optional richness fields are present
+		dimension: completeness
+		type: custom
+		engine: jq
+		implementation:
+		  [.statements[] | {
+			statement_id: (.id // "unknown"),
+			has_result: (has("result") and (.result | type == "object" and length > 0)),
+			has_context_extensions: ((.context.extensions? // {}) | length > 0),
+			has_object_extensions: ((.object.definition.extensions? // {}) | length > 0),
+			optional_field_count: (
+			  [
+				(has("result") and (.result | type == "object" and length > 0)),
+				((.context.extensions? // {}) | length > 0),
+				((.object.definition.extensions? // {}) | length > 0)
+			  ] | map(select(.)) | length
+			)
+		  }]

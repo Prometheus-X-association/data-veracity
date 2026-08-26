@@ -1,0 +1,157 @@
+//Valid Agent actor -> Pass
+{
+  "statements": [
+    {
+      "actor": {
+        "objectType": "Agent",
+        "account": { "homePage": "https://lms.example.fr", "name": "student-001" }
+      },
+      "verb": { "id": "https://w3id.org/xapi/dod-isd/verbs/completed" },
+      "object": {
+        "id": "https://lms.example.fr/course/math-101",
+        "definition": { "name": { "fr": "Mathématiques 101" } }
+      },
+      "timestamp": "2026-07-15T09:30:00Z",
+      "context": { "platform": "Moodle" }
+    }
+  ]
+}
+
+//objectType missing -> Fail
+
+{
+  "statements": [
+    {
+      "actor": {
+        "account": { "homePage": "https://lms.example.fr", "name": "student-001" }
+      },
+      "verb": { "id": "https://w3id.org/xapi/dod-isd/verbs/completed" },
+      "object": {
+        "id": "https://lms.example.fr/course/math-101",
+        "definition": { "name": { "fr": "Mathématiques 101" } }
+      },
+      "timestamp": "2026-07-15T09:30:00Z",
+      "context": { "platform": "Moodle" }
+    }
+  ]
+}
+
+//All IRI broken -> Fail
+
+{
+  "statements": [
+    {
+      "actor": {
+        "objectType": "Agent",
+        "account": { "homePage": "not-a-url", "name": "student-001" }
+      },
+      "verb": { "id": "clicked" },
+      "object": {
+        "id": "12345",
+        "definition": { "name": { "fr": "Mathematiques 101" } }
+      },
+      "timestamp": "2026-07-15T09:30:00Z",
+      "context": { "platform": "Moodle" }
+    }
+  ]
+}
+
+
+//Rich level -> fail 
+{
+  "statements": [
+    {
+      "actor": { "objectType": "Agent", "account": { "homePage": "https://lms.example.fr", "name": "student-001" } },
+      "verb": { "id": "https://w3id.org/xapi/dod-isd/verbs/completed" },
+      "object": {
+        "id": "https://lms.example.fr/course/math-101",
+        "definition": { "name": { "fr": "Math 101" }, "extensions": { "skills": ["fractions"] } }
+      },
+      "timestamp": "2026-07-15T09:30:00Z",
+      "context": { "platform": "Moodle" },
+      "result": { "completion": true }
+    },
+    {
+      "actor": { "objectType": "Agent", "account": { "homePage": "https://lms.example.fr", "name": "student-004" } },
+      "verb": { "id": "https://w3id.org/xapi/dod-isd/verbs/attempted" },
+      "object": { "id": "https://lms.example.fr/course/math-104", "definition": { "name": { "fr": "Math 104" } } },
+      "timestamp": "2026-07-15T10:00:00Z",
+      "context": { "platform": "Moodle" }
+    }
+  ]
+}
+
+
+// Rich level 2 -> Pass
+
+{
+  "statements": [
+    {
+      "actor": { "objectType": "Agent", "account": { "homePage": "https://lms.example.fr", "name": "student-001" } },
+      "verb": { "id": "https://w3id.org/xapi/dod-isd/verbs/completed" },
+      "object": { "id": "https://lms.example.fr/course/math-101", "definition": { "name": { "fr": "Math 101" } } },
+      "timestamp": "2026-07-15T09:30:00Z",
+      "context": { "platform": "Moodle", "extensions": { "team": "groupe-A" } },
+      "result": { "completion": true }
+    },
+    {
+      "actor": { "objectType": "Agent", "account": { "homePage": "https://lms.example.fr", "name": "student-002" } },
+      "verb": { "id": "https://w3id.org/xapi/dod-isd/verbs/completed" },
+      "object": {
+        "id": "https://lms.example.fr/course/math-102",
+        "definition": { "name": { "fr": "Math 102" }, "extensions": { "skills": ["geometry"] } }
+      },
+      "timestamp": "2026-07-15T09:40:00Z",
+      "context": { "platform": "Moodle" },
+      "result": { "success": true }
+    },
+    {
+      "actor": { "objectType": "Agent", "account": { "homePage": "https://lms.example.fr", "name": "student-003" } },
+      "verb": { "id": "https://w3id.org/xapi/dod-isd/verbs/attempted" },
+      "object": {
+        "id": "https://lms.example.fr/course/math-103",
+        "definition": { "name": { "fr": "Math 103" }, "extensions": { "publisher": "EduPress" } }
+      },
+      "timestamp": "2026-07-15T09:50:00Z",
+      "context": { "platform": "Moodle", "extensions": { "instructor": "prof-dupont" } }
+    }
+  ]
+}
+
+// Rich level 3 -> Pass
+
+{
+  "statements": [
+    {
+      "actor": {
+        "objectType": "Agent",
+        "account": { "homePage": "https://lms.example.fr", "name": "student-001" }
+      },
+      "verb": { "id": "https://w3id.org/xapi/dod-isd/verbs/completed" },
+      "object": {
+        "id": "https://lms.example.fr/course/math-101",
+        "definition": {
+          "name": { "fr": "Mathématiques 101" },
+          "extensions": {
+            "https://w3id.org/xapi/commoneduc/extensions/skills": ["fractions", "algebre"],
+            "https://w3id.org/xapi/commoneduc/extensions/format": "e-learning"
+          }
+        }
+      },
+      "timestamp": "2026-07-15T09:30:00Z",
+      "context": {
+        "platform": "Moodle",
+        "extensions": {
+          "https://w3id.org/xapi/commoneduc/extensions/team": "groupe-A",
+          "https://w3id.org/xapi/commoneduc/extensions/instructor": "prof-dupont"
+        }
+      },
+      "result": {
+        "score": { "scaled": 0.9, "raw": 45, "min": 0, "max": 50 },
+        "completion": true,
+        "success": true,
+        "duration": "PT20M"
+      }
+    }
+  ]
+}
