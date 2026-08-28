@@ -283,6 +283,47 @@ Not by default. The normal flow relies on trust in the signer, which is the reas
 
 Requirement failures belong to the provider. VLA-definition problems belong to the VLA author. Operational failures belong to service operators. Verification failures belong to the consumer and operator. Repeated cryptographic failures or detected false claims should also reach a security operator.
 
+## Proposed Feedback Record
+
+Components need the same structured information even when they present it differently. The following shape is a proposed contract for implementation work. It is not a claim that every field is already returned by the APIs.
+
+```json
+{
+  "code": "DATA_COMMITMENT_MISMATCH",
+  "outcome": "ERROR",
+  "stage": "AOV_VERIFICATION",
+  "category": "COMMITMENT_FAULT",
+  "parentCode": "AOV_VERIFICATION_FAULT",
+  "message": "The attestation refers to different data.",
+  "evidence": {
+    "algorithm": "sha-256",
+    "expected": "...",
+    "actual": "..."
+  },
+  "detectability": "AUTOMATIC",
+  "recipients": ["DATA_CONSUMER", "OPERATOR"],
+  "retryable": false,
+  "suggestedAction": "Reject the attestation and investigate the exchanged data."
+}
+```
+
+`code`, `outcome`, `stage`, and `category` are stable machine-readable values. `message` and `suggestedAction` are user-facing text. `evidence` contains safe structured details returned by the component that detected the problem. It must not expose private keys, credentials, raw secrets, or unnecessary personal data.
+
+The backend should provide the most specific code it can justify. If it cannot identify the cause, it should return an explicit unknown code for the stage rather than asking the frontend to infer a cause from exception text.
+
+## Relationships Between Failures
+
+| Source | Relationship | Target | Meaning |
+|---|---|---|---|
+| `EVALUATION_TRANSIENT_FAULT` | specialization of | `EVALUATION_OPERATIONAL_FAULT` | It is an evaluation execution fault whose result may change across controlled attempts. |
+| `EVALUATION_LOGIC_SYNTAX_INVALID` | may cause | `EVALUATION_OPERATIONAL_FAULT` | Invalid logic becomes a runtime execution fault if VLA creation fails to block it. |
+| `SIGNATURE_VERIFICATION_FAILED` | observes | `AOV_SIGNATURE_INVALID` | The verification event exposes the underlying cryptographic problem. |
+| `DATA_COMMITMENT_MISMATCH` | invalidates use of | AoV for received data | A valid signature cannot make the credential applicable to different data. |
+| `VLA_COMMITMENT_MISMATCH` | invalidates use of | AoV for referenced agreement | The credential cannot prove requirements from another VLA version. |
+| Optional consumer re-evaluation | may reveal | `AOV_CLAIMS_FORGED` | Re-evaluation can expose a disagreement but is not part of normal signature verification. |
+
+These links are not all parent-child relationships. The hierarchy is used for grouping and filtering, while this table records causation, observation, and verification consequences.
+
 ## Known Limitations and Implementation Status
 
 - The current failure vocabulary is not yet a shared backend contract.
