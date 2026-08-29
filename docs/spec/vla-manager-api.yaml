@@ -225,6 +225,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationError'
+  /template/{id}/validate:
+    parameters:
+      - $ref: '#/components/parameters/idParam'
+    post:
+      tags: [Templates]
+      summary: Validate a rendered template requirement
+      description: >-
+        Checks the supplied model against the template variable schema,
+        renders the implementation, and asks DVA Processing to validate the
+        resulting engine logic. Invalid template input and unavailable
+        processing are returned as structured outcomes.
+      operationId: validateTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateValidationRequest'
+      responses:
+        '200':
+          description: Validation completed or could not be completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateValidationResult'
+        '404':
+          description: No template with the given ID exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Invalid request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
   /vla:
     get:
       tags: [VLA]
@@ -583,6 +620,42 @@ components:
         implementation:
           type: string
           description: The rendered data-quality fragment.
+    TemplateValidationRequest:
+      type: object
+      required: [model]
+      additionalProperties: false
+      properties:
+        model:
+          type: object
+          additionalProperties: true
+          description: Values used to render the selected template.
+    TemplateValidationResult:
+      type: object
+      required: [valid, status, code, engine, message]
+      additionalProperties: false
+      properties:
+        valid:
+          type: boolean
+        status:
+          type: string
+          enum: [VALID, INVALID, UNAVAILABLE]
+        code:
+          type: string
+          enum:
+            - EVALUATION_LOGIC_VALID
+            - TEMPLATE_INPUT_INVALID
+            - TEMPLATE_RENDER_FAILED
+            - EVALUATION_LOGIC_SYNTAX_INVALID
+            - EVALUATION_ENGINE_UNAVAILABLE
+        engine:
+          $ref: '#/components/schemas/QualityEngine'
+        message:
+          type: string
+        details:
+          type: string
+        implementation:
+          type: string
+          description: Rendered implementation when rendering succeeded.
     QualityEngine:
       type: string
       enum: [SCHEMA, GREAT_EXPECTATIONS, JQ]

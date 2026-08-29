@@ -8,6 +8,7 @@ from fastapi import Request
 from .config import cfg
 from .log import get_logger
 from .template_repo import FakeTemplateRepo, PgTemplateRepo, TemplateRepo
+from .validation import ProcessingRequirementValidator, RequirementValidator
 from .vla_repo import FakeVLARepo, PgVLARepo, VLARepo
 
 logger = get_logger()
@@ -63,3 +64,8 @@ def get_repo(request: Request) -> VLARepo:
 def get_template_repo(request: Request) -> TemplateRepo:
     """Return the Template repo built during startup."""
     return request.app.state.template_repo
+
+
+def get_requirement_validator() -> RequirementValidator:
+    """Return the processing-backed evaluation logic validator."""
+    return ProcessingRequirementValidator(cfg.processing_url)
