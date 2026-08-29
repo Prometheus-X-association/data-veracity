@@ -2,6 +2,7 @@
   "name": "vla-manager-frontend",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:mock": "VITE_USE_MOCKS=true vite",
