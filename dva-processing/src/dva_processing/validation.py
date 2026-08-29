@@ -55,6 +55,12 @@ def _validate_great_expectations(requirement: Requirement) -> None:
 
 
 def validate_requirement(requirement: Requirement) -> RequirementValidationResult:
+    if not requirement.implementation.strip():
+        return _invalid(
+            requirement,
+            "The evaluation implementation is empty.",
+            ValueError("An implementation is required"),
+        )
     try:
         match requirement.engine:
             case QualityEngine.jq:

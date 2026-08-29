@@ -30,6 +30,17 @@ def test_rejects_invalid_jq_syntax():
     assert result.details
 
 
+def test_rejects_blank_implementation():
+    result = validate_requirement(
+        Requirement(engine=QualityEngine.jq, implementation="   ")
+    )
+
+    assert result.valid is False
+    assert result.status == "INVALID"
+    assert result.code == "EVALUATION_LOGIC_SYNTAX_INVALID"
+    assert "empty" in result.message.lower()
+
+
 def test_accepts_valid_json_schema():
     result = validate_requirement(
         Requirement(
