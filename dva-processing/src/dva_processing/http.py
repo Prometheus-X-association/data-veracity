@@ -3,11 +3,18 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import Response
 
 from .log import get_logger
-from .model import EvaluationResult
+from .model import EvaluationResult, Requirement, RequirementValidationResult
 from .processing import EvaluationRequest, handle_eval_request
+from .validation import validate_requirement
 
 logger = get_logger()
 app = FastAPI()
+
+
+@app.post("/validate-requirement", response_model=RequirementValidationResult)
+def validate_requirement_route(request: Requirement) -> RequirementValidationResult:
+    logger.info("Validating evaluation requirement", engine=request.engine)
+    return validate_requirement(request)
 
 
 @app.post("/evaluate")

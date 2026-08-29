@@ -22,6 +22,21 @@ class Requirement(BaseModel):
     engine: QualityEngine
 
 
+class RequirementValidationStatus(CapitalStrEnum):
+    valid = auto()
+    invalid = auto()
+    unavailable = auto()
+
+
+class RequirementValidationResult(BaseModel):
+    valid: bool
+    status: RequirementValidationStatus
+    code: str
+    engine: QualityEngine
+    message: str
+    details: Optional[str] = None
+
+
 class EvaluationRequest(BaseModel):
     requirement: Requirement
     data: Any
