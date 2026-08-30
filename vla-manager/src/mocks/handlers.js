@@ -243,7 +243,7 @@ export const handlers = [
       return HttpResponse.json({
         type: 'BAD_REQUEST',
         title: 'Attestation request is incomplete',
-        details: 'A credential subject and data reference are required before an attestation can be queued.'
+        details: 'A credential subject and data reference are required before an attestation can be requested.'
       }, { status: 400 })
     }
 
