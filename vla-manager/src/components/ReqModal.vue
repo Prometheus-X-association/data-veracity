@@ -101,6 +101,7 @@
   import {
     coerceTemplateValue,
     validateTemplate,
+    validationFailureFromError,
     validationTone
   } from '../api/templates.js'
 
@@ -184,13 +185,7 @@
     try {
       validationResult.value = await validateTemplate(chosenFragment.value.id, model)
     } catch (err) {
-      validationResult.value = {
-        valid: false,
-        status: 'UNAVAILABLE',
-        code: 'EVALUATION_ENGINE_UNAVAILABLE',
-        message: 'The evaluation service is unavailable.',
-        details: err.response?.data?.title || err.message
-      }
+      validationResult.value = validationFailureFromError(err)
     } finally {
       validating.value = false
     }

@@ -20,3 +20,13 @@ export function coerceTemplateValue (type, value) {
   if (type === 'boolean') return value === true || value === 'true'
   return value
 }
+
+export function validationFailureFromError (error) {
+  return {
+    valid: false,
+    status: 'UNAVAILABLE',
+    code: 'EVALUATION_ENGINE_UNAVAILABLE',
+    message: 'The evaluation service is unavailable.',
+    details: error?.response?.data?.title || error?.message || 'No details were returned.'
+  }
+}

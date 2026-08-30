@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import {
   coerceTemplateValue,
   validateTemplate,
+  validationFailureFromError,
   validationTone
 } from '../vla-manager/src/api/templates.js'
 
@@ -36,4 +37,16 @@ test('coerces template inputs to their declared JSON schema type', () => {
   assert.equal(coerceTemplateValue('number', '2.5'), 2.5)
   assert.equal(coerceTemplateValue('boolean', 'true'), true)
   assert.equal(coerceTemplateValue('string', '2'), '2')
+})
+
+test('keeps service failures separate from invalid evaluation logic', () => {
+  const result = validationFailureFromError({
+    message: 'Network Error',
+    response: { data: { title: 'VLA Manager API is unreachable' } }
+  })
+
+  assert.equal(result.valid, false)
+  assert.equal(result.status, 'UNAVAILABLE')
+  assert.equal(result.code, 'EVALUATION_ENGINE_UNAVAILABLE')
+  assert.equal(result.details, 'VLA Manager API is unreachable')
 })
