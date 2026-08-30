@@ -20,7 +20,7 @@
     </n-page-header>
 
     <n-alert v-if="lastAttestation" type="info" class="submission-alert" closable @close="lastAttestation = null">
-      <strong>Attestation accepted and queued</strong> for {{ lastAttestation.name }}.
+      <strong>Attestation request accepted</strong> for {{ lastAttestation.name }}.
       Evaluation is processed asynchronously. Request ID: <code>{{ lastAttestation.id }}</code>
     </n-alert>
 
