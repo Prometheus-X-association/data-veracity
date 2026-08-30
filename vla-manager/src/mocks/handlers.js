@@ -253,7 +253,7 @@ export const handlers = [
 
     return resp
   }),
-  
+
   http.post('/api/evaluate/from-template', async ({ request }) => {
     const body = await request.json()
     console.log('Mock backend received /evaluate/from-template request:')

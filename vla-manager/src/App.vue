@@ -6,7 +6,7 @@
           <n-layout-header bordered>
             <Header />
           </n-layout-header>
-          
+
           <n-layout-content class="app-content">
             <router-view />
           </n-layout-content>
@@ -18,13 +18,13 @@
 
 <script setup>
   import Header from './components/Header.vue'
-  import { 
-    NConfigProvider, 
-    NMessageProvider, 
-    NDialogProvider, 
-    NLayout, 
-    NLayoutHeader, 
-    NLayoutContent 
+  import {
+    NConfigProvider,
+    NMessageProvider,
+    NDialogProvider,
+    NLayout,
+    NLayoutHeader,
+    NLayoutContent
   } from 'naive-ui'
 
   const themeOverrides = {
