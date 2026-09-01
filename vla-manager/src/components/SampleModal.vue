@@ -79,7 +79,7 @@
         {{ error }}
       </n-alert>
     </div>
-    
+
     <template #footer>
       <n-space justify="end">
         <n-button @click="clearAll">
@@ -97,9 +97,9 @@
   import { ref, watch, h, defineComponent } from 'vue'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
-  import { 
-    NModal, NUpload, NUploadDragger, NIcon, NText, NDivider, 
-    NSpace, NButton, NInput, NAlert 
+  import {
+    NModal, NUpload, NUploadDragger, NIcon, NText, NDivider,
+    NSpace, NButton, NInput, NAlert
   } from 'naive-ui'
   import movieJson from '../data/movie.json'
   import xapiJson from '../data/xapi.json'
@@ -207,7 +207,7 @@
     overflow-x: hidden;
     padding-right: 8px;
   }
-  
+
   .split-view {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -218,7 +218,7 @@
   .json-textarea {
     height: 500px;
   }
-  
+
   /* Fix textarea internal element for Naive UI */
   ::v-deep(.n-input__textarea-el) {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
@@ -230,7 +230,7 @@
     overflow-wrap: normal !important;
     overflow-x: auto !important;
   }
-  
+
   .json-preview {
     background: #f8fafc;
     border: 1px solid #e2e8f0;

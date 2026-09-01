@@ -32,7 +32,7 @@
               <template #header-extra>
                 <n-tag type="info" size="small" round>VLA</n-tag>
               </template>
-              
+
               <div class="vla-content">
                 <n-text depth="3" class="vla-desc">{{ vla.description || 'No description provided' }}</n-text>
 
@@ -56,16 +56,16 @@
                     </n-space>
                   </div>
                 </div>
-                
+
                 <n-divider class="my-3" />
-                
+
                 <div class="engine-tags">
                   <n-text strong class="block mb-2">Engines:</n-text>
                   <n-space size="small">
-                    <n-tag 
-                      v-for="engine in new Set(vla.quality.map(q => q.engine))" 
+                    <n-tag
+                      v-for="engine in new Set(vla.quality.map(q => q.engine))"
                       :key="engine"
-                      type="success" 
+                      type="success"
                       size="small"
                       bordered
                     >
@@ -96,7 +96,7 @@
           </n-grid-item>
         </n-grid>
       </div>
-      
+
       <n-empty v-else-if="!loading" description="No VLAs found. Create one to get started!">
         <template #extra>
           <n-button type="primary" @click="$router.push('/create')">
@@ -111,8 +111,8 @@
 <script setup>
   import { ref, onMounted, h, defineComponent } from 'vue'
   import axios from 'axios'
-  import { 
-    NCard, NButton, NPageHeader, NGrid, NGridItem, 
+  import {
+    NCard, NButton, NPageHeader, NGrid, NGridItem,
     NTag, NSpace, NText, NDivider, NTooltip, NEmpty, NIcon, NSpin, NAlert, useMessage
   } from 'naive-ui'
   import SampleModal from './SampleModal.vue'
@@ -216,7 +216,7 @@
   .block {
     display: block;
   }
-  
+
   .vla-card {
     height: 100%;
     display: flex;
@@ -226,7 +226,7 @@
   .vla-content {
     flex-grow: 1;
   }
-  
+
   .vla-desc {
     display: -webkit-box;
     -webkit-line-clamp: 2;

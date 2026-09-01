@@ -142,9 +142,9 @@
 
             <n-tooltip trigger="hover" :disabled="!!lastPath">
               <template #trigger>
-                <n-button 
-                  type="success" 
-                  size="large" 
+                <n-button
+                  type="success"
+                  size="large"
                   block
                   :disabled="!lastPath"
                   @click="showReqModal"
@@ -165,7 +165,7 @@
           <n-text v-if="fragments.length === 0" depth="3" class="block mb-4 text-center">
             No requirements added yet. Attach them using the toolbox.
           </n-text>
-          
+
           <n-scrollbar style="max-height: 550px">
             <div class="fragments-list">
               <div v-for="(frag, index) in fragments" :key="index" class="fragment-block">
@@ -174,17 +174,17 @@
                     <n-text strong class="text-lg text-primary">{{ frag.requirement.name }}</n-text>
                     <n-tag type="info" size="small">{{ frag.requirement.evaluationMethod.engine }}</n-tag>
                   </div>
-                  
+
                   <div class="bg-gray-50 p-2 rounded mb-2 overflow-x-auto text-xs font-mono">
                     {{ frag.requirement.evaluationMethod.implementationTemplate }}
                   </div>
-                  
+
                   <div class="text-xs mb-2">
                     <vue-json-pretty :data="frag.data" :deep="1" />
                   </div>
 
                   <n-divider class="my-2" />
-                  
+
                   <div class="flex justify-between items-center">
                     <n-button size="small" ghost type="warning" @click="showTestModal(frag)">
                       Test Fragment
@@ -211,7 +211,7 @@
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
   import axios from 'axios'
-  import { 
+  import {
     NPageHeader, NSpace, NButton, NIcon, NEmpty, NCard, NFormItem, NInput, NAutoComplete,
     NText, NStatistic, NTooltip, NTag, NDivider, NScrollbar, useMessage
   } from 'naive-ui'
@@ -633,7 +633,7 @@
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     transition: all 0.2s ease;
   }
-  
+
   .fragment-block:hover {
     border-color: #0891b2;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -642,7 +642,7 @@
   .block-card {
     background: transparent;
   }
-  
+
   ::v-deep(.n-card__content) {
     display: flex;
     flex-direction: column;

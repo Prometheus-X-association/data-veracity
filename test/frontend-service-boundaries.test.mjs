@@ -38,7 +38,7 @@ test('does not retain removed ACA-Py and message-queue behavior', () => {
     assert.doesNotMatch(source, pattern)
   }
   assert.doesNotMatch(dashboardSource, /axios\.get\(['"]\/api\/info\/requests/)
-  assert.doesNotMatch(dashboardSource, /axios\.get\(['"]\/api\/vla['"]/) 
+  assert.doesNotMatch(dashboardSource, /axios\.get\(['"]\/api\/vla['"]/)
 })
 
 test('routes production requests to the three HTTP services', () => {

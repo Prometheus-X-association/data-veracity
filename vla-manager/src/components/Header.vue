@@ -4,7 +4,7 @@
       <div class="logo-wrapper">
         <img src="../assets/logo-bme.png" alt="BME Logo" class="logo" />
       </div>
-      
+
       <div class="title-container">
         <n-h1 class="header-title">
           <span class="highlight">Veracity Level Agreement</span> Builder
@@ -33,7 +33,7 @@ import { NH1 } from 'naive-ui'
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     border-bottom: 1px solid #e5e7eb;
   }
-  
+
   .header-content {
     max-width: 1600px;
     margin: 0 auto;
@@ -53,7 +53,7 @@ import { NH1 } from 'naive-ui'
     height: 50px;
     object-fit: contain;
   }
-  
+
   .title-container {
     text-align: center;
     flex-grow: 1;
