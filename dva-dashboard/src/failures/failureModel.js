@@ -1,4 +1,6 @@
 const DEFINITIONS = {
+  EVALUATION_PENDING: ['pending', 'Evaluation is still in progress', 'Refresh after processing completes.', true, 'evaluation'],
+  VERIFICATION_PENDING: ['pending', 'Verification is still in progress', 'Refresh after the verifier responds.', true, 'verification'],
   DATA_REQUIREMENT_NOT_MET: ['failed', 'Data does not fulfil the VLA', 'Review the failed checks, correct the data, and submit it again.', false, 'evaluation'],
   EVALUATION_OPERATIONAL_FAULT: ['error', 'Evaluation could not run', 'Check the processing service and its dependencies before retrying.', true, 'evaluation'],
   EVALUATION_TRANSIENT_FAULT: ['error', 'Evaluation may be inconsistent', 'Retry the evaluation and compare the results. Escalate repeated differences.', true, 'evaluation'],
@@ -41,10 +43,24 @@ function successfulResult (source, evidence) {
   return { code: null, category: source, status: 'passed', title: 'Check passed', summary: 'The check completed successfully.', evidence: evidenceFrom(evidence), nextAction: 'No action is required.', retryable: false, source }
 }
 
+function failureContext (record, details) {
+  return {
+    status: record.status,
+    summary: record.failureReason,
+    evidence: record.failureEvidence,
+    details,
+    nextAction: record.recommendedAction,
+    retryable: record.failureRetryable,
+    source: record.failureStage
+  }
+}
+
 export function normalizeAttestationRecord (record = {}) {
   const code = record.failureCode || record.failure_code || record.error?.code
   const passed = record.evaluationPassing === true || record.status === 'passed' || record.success === true
-  const failure = passed ? successfulResult('evaluation', record.evaluationResults || record.result) : failureFromCode(code, record)
+  const failure = passed
+    ? successfulResult('evaluation', record.evaluationResults || record.result)
+    : failureFromCode(code, failureContext(record, record.evaluationResults || record.result))
   return { ...record, status: failure.status, failure }
 }
 
@@ -52,7 +68,9 @@ export function normalizeVerificationRecord (record = {}) {
   const response = record.response || {}
   const code = record.failureCode || record.failure_code || response.failure_code || response.error?.code
   const verified = record.verified === true || response.verified === true || response.success === true
-  const failure = verified ? successfulResult('verification', response) : failureFromCode(code, { ...record, evidence: response })
+  const failure = verified
+    ? successfulResult('verification', response)
+    : failureFromCode(code, failureContext(record, Object.keys(response).length ? response : undefined))
   return { ...record, status: failure.status, failure }
 }
 

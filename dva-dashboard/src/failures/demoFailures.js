@@ -59,9 +59,9 @@ export const verificationFailureScenarios = [
   },
   {
     code: 'DATA_COMMITMENT_MISMATCH',
-    reason: 'The presented credential was revoked by its issuer.',
-    evidence: 'Credential status returned by the issuer: revoked.',
-    action: 'Request a replacement credential before retrying.',
+    reason: 'The attestation was created for different data.',
+    evidence: 'The attested data hash does not match the received payload hash.',
+    action: 'Request an attestation created for the received data.',
     retryable: false
   },
   {
