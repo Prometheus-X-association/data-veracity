@@ -9,13 +9,14 @@ services:
       context: ../
       dockerfile: ./dva-processing/Dockerfile
     init: true
-  rabbit:
-    image: rabbitmq:4-management-alpine
-    healthcheck:
-      test: rabbitmq-diagnostics -q check_port_connectivity
-      interval: 5s
-      timeout: 5s
-      retries: 3
+  vla-manager-api:
+    build:
+      context: ../
+      dockerfile: ./vla-manager-api/Dockerfile
+  dva-vc-manager:
+    build:
+      context: ../
+      dockerfile: ./dva-vc-manager/Dockerfile
   postgres:
     image: postgres:17-alpine
     environment:

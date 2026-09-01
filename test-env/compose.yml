@@ -6,12 +6,10 @@ services:
       service: dva-api
     environment:
       DVA_PROCESSING_URL: http://dva-processing-provider:5000
-      DVA_RABBITMQ_HOST: rabbit-provider
       DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
     ports: [9091:9090]
     depends_on:
       dva-processing-provider: {condition: service_healthy}
-      rabbit-provider: {condition: service_healthy}
       postgres-provider: {condition: service_healthy}
   dva-api-consumer:
     extends:
@@ -19,42 +17,25 @@ services:
       service: dva-api
     environment:
       DVA_PROCESSING_URL: http://dva-processing-consumer:5000
-      DVA_RABBITMQ_HOST: rabbit-consumer
       DVA_POSTGRES_URL: postgresql://postgres-consumer:5432/dva
     ports: [9092:9090]
     depends_on:
       dva-processing-consumer: {condition: service_healthy}
-      rabbit-consumer: {condition: service_healthy}
       postgres-consumer: {condition: service_healthy}
-  dva-api-vla-manager:
-    extends:
-      file: common-services.yml
-      service: dva-api
-    environment:
-      DVA_PROCESSING_URL: http://dva-processing-vla-manager:5000
-      DVA_RABBITMQ_HOST: rabbit-vla-manager
-      DVA_POSTGRES_URL: postgresql://postgres-vla-manager:5432/dva
-    ports: [9099:9090]
-    depends_on:
-      dva-processing-vla-manager: {condition: service_healthy}
-      rabbit-vla-manager: {condition: service_healthy}
-      postgres-vla-manager: {condition: service_healthy}
   dva-processing-provider:
     extends:
       file: common-services.yml
       service: dva-processing
     environment:
       DVA_LOG_LEVEL: debug
-      DVA_RABBITMQ_HOST: rabbit-provider
       DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
-    healthcheck:
+    healthcheck: &processing-health
       test: nc -z localhost 5000
       interval: 5s
       timeout: 5s
       retries: 3
     ports: [5007:5000]
     depends_on:
-      rabbit-consumer: {condition: service_healthy}
       postgres-provider: {condition: service_healthy}
   dva-processing-consumer:
     extends:
@@ -62,41 +43,35 @@ services:
       service: dva-processing
     environment:
       DVA_LOG_LEVEL: debug
-      DVA_RABBITMQ_HOST: rabbit-consumer
       DVA_POSTGRES_URL: postgresql://postgres-consumer:5432/dva
-    healthcheck:
-      test: nc -z localhost 5000
-      interval: 5s
-      timeout: 5s
-      retries: 3
+    healthcheck: *processing-health
     ports: [5008:5000]
     depends_on:
-      rabbit-consumer: {condition: service_healthy}
       postgres-consumer: {condition: service_healthy}
-  dva-processing-vla-manager:
+  vla-manager-api:
     extends:
       file: common-services.yml
-      service: dva-processing
-    command: [--no-rmq]
+      service: vla-manager-api
     environment:
-      DVA_LOG_LEVEL: debug
-    healthcheck:
-      test: nc -z localhost 5000
+      VLA_MANAGER_DB_URL: postgresql://postgres:postgres@postgres-vla-manager:5432/dva
+    ports: [8000:8000]
+    healthcheck: &api-health
+      test: nc -z localhost 8000
       interval: 5s
       timeout: 5s
-      retries: 3
-  rabbit-provider:
+      retries: 5
+    depends_on:
+      postgres-vla-manager: {condition: service_healthy}
+  dva-vc-manager:
     extends:
       file: common-services.yml
-      service: rabbit
-  rabbit-consumer:
-    extends:
-      file: common-services.yml
-      service: rabbit
-  rabbit-vla-manager:
-    extends:
-      file: common-services.yml
-      service: rabbit
+      service: dva-vc-manager
+    environment:
+      DVA_VC_MANAGER_DB_URL: postgresql://postgres:postgres@postgres-vc-manager:5432/dva
+    ports: [8001:8000]
+    healthcheck: *api-health
+    depends_on:
+      postgres-vc-manager: {condition: service_healthy}
   postgres-provider:
     extends:
       file: common-services.yml
@@ -112,6 +87,11 @@ services:
       file: common-services.yml
       service: postgres
     ports: [5409:5432]
+  postgres-vc-manager:
+    extends:
+      file: common-services.yml
+      service: postgres
+    ports: [5410:5432]
   karate:
     profiles: [karate]
     extends:
@@ -126,26 +106,33 @@ services:
     extends:
       file: common-services.yml
       service: dva-dashboard
-    environment:
+    environment: &dashboard-environment
       DVA_API_URL: http://dva-api-provider:9090
+      VLA_MANAGER_API_URL: http://vla-manager-api:8000
+      VC_MANAGER_API_URL: http://dva-vc-manager:8000
     ports: [3011:80]
     depends_on:
       dva-api-provider: {condition: service_healthy}
+      vla-manager-api: {condition: service_healthy}
+      dva-vc-manager: {condition: service_healthy}
   dva-dashboard-consumer:
     extends:
       file: common-services.yml
       service: dva-dashboard
     environment:
+      <<: *dashboard-environment
       DVA_API_URL: http://dva-api-consumer:9090
     ports: [3012:80]
     depends_on:
       dva-api-consumer: {condition: service_healthy}
+      vla-manager-api: {condition: service_healthy}
+      dva-vc-manager: {condition: service_healthy}
   vla-manager:
     extends:
       file: common-services.yml
       service: vla-manager
     environment:
-      VLA_MANAGER_BACKEND_URL: http://dva-api-vla-manager:9090
+      VLA_MANAGER_BACKEND_URL: http://vla-manager-api:8000
     ports: [3020:80]
     depends_on:
-      dva-api-vla-manager: {condition: service_healthy}
+      vla-manager-api: {condition: service_healthy}
