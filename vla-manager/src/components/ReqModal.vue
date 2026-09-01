@@ -57,21 +57,36 @@
                     </select>
                   </template>
                   <template v-else>
-                    <input :id="key" :type="value.type" v-model="values[key]" @input="convertType(value.type, key)" />
+                    <input :id="key" :type="value.type === 'integer' ? 'number' : value.type" v-model="values[key]" @input="convertType(value.type, key)" />
                   </template>
                 </template>
               </template>
             </template>
           </form>
+
+          <div
+            v-if="validationResult"
+            class="validation-feedback"
+            :class="validationTone(validationResult)"
+            role="status"
+          >
+            <strong>{{ validationResult.message }}</strong>
+            <span class="validation-code">{{ validationResult.code }}</span>
+            <p v-if="validationResult.details">{{ validationResult.details }}</p>
+            <details v-if="validationResult.implementation">
+              <summary>Rendered implementation</summary>
+              <pre>{{ validationResult.implementation }}</pre>
+            </details>
+          </div>
         </section>
         
         <footer>
           <button
             @click="addRequirement"
             class="add-button"
-            :disabled="chosenFragment === null"
+            :disabled="chosenFragment === null || validating"
           >
-            Add Requirement
+            {{ validating ? 'Validating…' : 'Add Requirement' }}
           </button>
         </footer>
       </div>
@@ -80,10 +95,15 @@
 
 <script setup>
   import axios from 'axios'
-  import { ref } from 'vue'
-  import { watch, reactive, toRaw } from 'vue'
+  import { reactive, ref, toRaw, watch } from 'vue'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
+  import {
+    coerceTemplateValue,
+    validateTemplate,
+    validationFailureFromError,
+    validationTone
+  } from '../api/templates.js'
 
   const dialog = ref(null)
 
@@ -93,9 +113,12 @@
   const schemaJSON = ref({})
 
   const chosenFragment = ref(null)
+  const validating = ref(false)
+  const validationResult = ref(null)
 
   watch(chosenFragment, (newChosenFragment) => {
     if(newChosenFragment) {
+      validationResult.value = null
       schemaJSON.value = {}
       for(const key in values) {
         delete values[key]
@@ -113,14 +136,7 @@
   const capitalize = str => str && typeof str === "string" && str.length >= 1 ? str.charAt(0).toUpperCase() + str.slice(1) : "" 
 
   const convertType = (type, key) => {
-    switch(type) {
-      case "number":
-        values[key] = Number(values[key])
-        break
-      case "boolean":
-        values[key] = values[key] === "true"
-        break
-    }
+    values[key] = coerceTemplateValue(type, values[key])
   }
 
   const updateSchemaJSON = (key) => {
@@ -158,12 +174,23 @@
 
   const addRequirement = async () => {
     const rawValues = toRaw(values)
-    const template = {}
     const model = {}
 
     for(const key in rawValues) {
       model[key] = rawValues[key]
     }
+
+    validating.value = true
+    validationResult.value = null
+    try {
+      validationResult.value = await validateTemplate(chosenFragment.value.id, model)
+    } catch (err) {
+      validationResult.value = validationFailureFromError(err)
+    } finally {
+      validating.value = false
+    }
+
+    if (!validationResult.value.valid) return
 
     const req = {
       data: {
@@ -244,6 +271,44 @@
 
   .fragment-desc {
     font-style: italic;
+  }
+
+  .validation-feedback {
+    border: 1px solid;
+    border-radius: 8px;
+    display: grid;
+    gap: .4rem;
+    padding: .8rem;
+  }
+
+  .validation-feedback.valid {
+    background: #edf9ef;
+    border-color: #6eb878;
+  }
+
+  .validation-feedback.invalid {
+    background: #fff0f0;
+    border-color: #d86a6a;
+  }
+
+  .validation-feedback.unavailable {
+    background: #fff8e8;
+    border-color: #d49b35;
+  }
+
+  .validation-code {
+    font-family: monospace;
+    font-size: .8rem;
+  }
+
+  .validation-feedback p,
+  .validation-feedback pre {
+    margin: 0;
+  }
+
+  .validation-feedback pre {
+    overflow-x: auto;
+    white-space: pre-wrap;
   }
   
   footer {

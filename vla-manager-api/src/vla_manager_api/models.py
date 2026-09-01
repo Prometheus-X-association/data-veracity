@@ -199,3 +199,25 @@ class RenderResult(BaseModel):
 
     engine: QualityEngine
     implementation: str
+
+
+class TemplateValidationRequest(BaseModel):
+    """Model values used to render and validate a stored template."""
+
+    model_config = _CAMEL
+
+    model: dict[str, Any]
+
+
+class TemplateValidationResult(BaseModel):
+    """Rendered implementation and its processing validation result."""
+
+    model_config = _CAMEL
+
+    valid: bool
+    status: str
+    code: str
+    engine: QualityEngine
+    message: str
+    details: Optional[str] = None
+    implementation: Optional[str] = None

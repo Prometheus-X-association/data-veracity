@@ -6,8 +6,10 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
+from jsonschema import ValidationError as JSONSchemaValidationError
+from jsonschema import validate as validate_json
 
-from .dependencies import get_template_repo
+from .dependencies import get_requirement_validator, get_template_repo
 from .errors import http_error
 from .models import (
     IDDTO,
@@ -15,9 +17,12 @@ from .models import (
     Template,
     TemplateNew,
     TemplatePatch,
+    TemplateValidationRequest,
+    TemplateValidationResult,
 )
 from .template_repo import TemplateRepo
 from .templates import render_template
+from .validation import RequirementValidator
 
 router = APIRouter()
 
@@ -114,3 +119,56 @@ async def render_template_route(
             status.HTTP_400_BAD_REQUEST, "Failed to render template"
         ) from exc
     return RenderResult(engine=em["engine"], implementation=rendered)
+
+
+@router.post("/template/{id}/validate", response_model=TemplateValidationResult)
+async def validate_template_route(
+    id: UUID,
+    request: TemplateValidationRequest,
+    repo: TemplateRepo = Depends(get_template_repo),
+    validator: RequirementValidator = Depends(get_requirement_validator),
+) -> TemplateValidationResult:
+    template = await repo.by_id(id)
+    if template is None:
+        raise http_error(
+            status.HTTP_404_NOT_FOUND, "No template with the given ID exists"
+        )
+
+    em = template["evaluationMethod"]
+    try:
+        validate_json(instance=request.model, schema=em["variableSchema"])
+    except JSONSchemaValidationError as exc:
+        return TemplateValidationResult(
+            valid=False,
+            status="INVALID",
+            code="TEMPLATE_INPUT_INVALID",
+            engine=em["engine"],
+            message="The template input does not match its variable schema.",
+            details=exc.message,
+        )
+
+    try:
+        rendered = render_template(em["implementationTemplate"], request.model)
+    except Exception as exc:
+        return TemplateValidationResult(
+            valid=False,
+            status="INVALID",
+            code="TEMPLATE_RENDER_FAILED",
+            engine=em["engine"],
+            message="The template could not be rendered.",
+            details=str(exc),
+        )
+
+    try:
+        result = await validator.validate(em["engine"], rendered)
+    except Exception as exc:
+        return TemplateValidationResult(
+            valid=False,
+            status="UNAVAILABLE",
+            code="EVALUATION_ENGINE_UNAVAILABLE",
+            engine=em["engine"],
+            message="The evaluation service is unavailable.",
+            details=str(exc),
+            implementation=rendered,
+        )
+    return TemplateValidationResult(**result, implementation=rendered)

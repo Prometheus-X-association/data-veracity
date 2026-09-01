@@ -24,6 +24,7 @@ class Config(BaseSettings):
 
     host: str = "0.0.0.0"
     port: int = 8000
+    processing_url: str = "http://localhost:5000"
 
     # Both structlog and uvicorn take these names, lowercased.
     log_level: LogLevel = "info"
