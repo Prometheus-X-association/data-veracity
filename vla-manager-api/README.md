@@ -37,6 +37,7 @@ deployment: this service is not yet in `test-env/compose.yml`.
 | `DELETE /template` | Admin only | Wipe all templates |
 | `POST /template/{id}/render` | VLA Manager UI | Render a template's `implementationTemplate` with a model |
 | `POST /template/{id}/validate` | VLA Manager UI | Render a template with a model and have DVA Processing check that the logic compiles |
+| `POST /assistant/template` | VLA Manager UI | Generate an unsaved template draft from a natural-language request |
 
 This service intentionally does **not** do evaluation, attestation, or credential issuance —
 those are concerns of `dva-processing` and the `dva-vc-manager` respectively.
@@ -76,3 +77,11 @@ spec is still served and `/swagger/components.yaml` answers `404`.
 | `VLA_MANAGER_API_PORT` | `8000` | Listen port |
 | `VLA_MANAGER_API_LOG_LEVEL` | `info` | One of `critical`, `error`, `warning`, `info`, `debug` |
 | `VLA_MANAGER_API_PROCESSING_URL` | `http://localhost:5000` | URL to a DVA processing instance |
+| `VLA_MANAGER_AI_URL` | *(empty)* | Base URL or full `/chat/completions` URL of an OpenAI-compatible assistant service. Empty disables the assistant. |
+| `VLA_MANAGER_AI_API_KEY` | *(empty)* | API key used only by the VLA Manager API. |
+| `VLA_MANAGER_AI_MODEL` | *(empty)* | Model name sent to the assistant service. |
+| `VLA_MANAGER_AI_TIMEOUT_SECONDS` | `30` | Maximum assistant request duration. |
+
+The assistant returns a structured draft and never saves a template. The UI must show the
+draft for review and use the normal template validation and save actions afterward. Do not
+place the API key in frontend environment variables or browser code.

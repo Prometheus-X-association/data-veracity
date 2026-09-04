@@ -21,6 +21,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import FileResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .assistant_routes import router as assistant_router
 from .config import cfg
 from .dependencies import (
     build_pool,
@@ -91,6 +92,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(router)
     app.include_router(template_router)
+    app.include_router(assistant_router)
 
     @app.get("/swagger/components.yaml", include_in_schema=False)
     async def shared_schemas() -> FileResponse:
