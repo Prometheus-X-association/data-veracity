@@ -35,6 +35,7 @@ routes, and nothing calls this service yet.
 | `DELETE /template/{id}` | VLA Manager UI | Delete one template |
 | `DELETE /template` | Admin only | Wipe all templates |
 | `POST /template/{id}/render` | VLA Manager UI | Render a template's `implementationTemplate` with a model |
+| `POST /assistant/template` | VLA Manager UI | Generate an unsaved template draft from a natural-language request |
 
 This service intentionally does **not** do evaluation, attestation, or credential issuance —
 those are concerns of `dva-processing` and the `dva-vc-manager` respectively.
@@ -57,8 +58,8 @@ runs without a Postgres; state is lost on restart, so set the DSN for any deploy
 
 ## Run in docker-compose
 
-Not yet wired into `test-env/compose.yml`. The `Dockerfile` builds and runs standalone,
-and expects the spec mounted at `/app/openapi.yaml` (see `VLA_MANAGER_OPENAPI_FILE`).
+The service is wired into `test-env/compose.yml`. The `Dockerfile` expects the spec at
+`/app/openapi.yaml` (see `VLA_MANAGER_OPENAPI_FILE`).
 
 ## Configuration (.env)
 
@@ -69,3 +70,11 @@ and expects the spec mounted at `/app/openapi.yaml` (see `VLA_MANAGER_OPENAPI_FI
 | `VLA_MANAGER_API_HOST` | `0.0.0.0` | Listen address |
 | `VLA_MANAGER_API_PORT` | `8000` | Listen port |
 | `VLA_MANAGER_API_LOG_LEVEL` | `info` | One of `critical`, `error`, `warning`, `info`, `debug` |
+| `VLA_MANAGER_AI_URL` | *(empty)* | Base URL or full `/chat/completions` URL of an OpenAI-compatible assistant service. Empty disables the assistant. |
+| `VLA_MANAGER_AI_API_KEY` | *(empty)* | API key used only by the VLA Manager API. |
+| `VLA_MANAGER_AI_MODEL` | *(empty)* | Model name sent to the assistant service. |
+| `VLA_MANAGER_AI_TIMEOUT_SECONDS` | `30` | Maximum assistant request duration. |
+
+The assistant returns a structured draft and never saves a template. The UI must show the
+draft for review and use the normal template validation and save actions afterward. Do not
+place the API key in frontend environment variables or browser code.

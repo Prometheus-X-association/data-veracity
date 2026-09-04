@@ -18,6 +18,7 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .assistant_routes import router as assistant_router
 from .config import cfg
 from .dependencies import build_pool, build_template_repo, build_vla_repo
 from .errors import http_exception_handler
@@ -80,6 +81,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(router)
     app.include_router(template_router)
+    app.include_router(assistant_router)
     # Render errors as the spec's {type, title} rather than FastAPI's
     # {"detail": ...}. Registered for Starlette's exception class so the
     # 404s and 405s the router itself raises are covered too.
