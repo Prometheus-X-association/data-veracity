@@ -47,6 +47,7 @@
 
         <div class="editor-actions">
           <n-button @click="$emit('cancel')">Cancel</n-button>
+          <TemplateAssistant :template="form" @apply="applyAssistantProposal" />
           <n-button :loading="rendering" :disabled="!canRender" @click="renderCurrent">Preview implementation</n-button>
           <n-button type="primary" :loading="saving" @click="save">{{ isEditing ? 'Save changes' : 'Create template' }}</n-button>
         </div>
@@ -60,6 +61,8 @@
 import { computed, ref, watch } from 'vue'
 import { NAlert, NButton, NCard, NCheckbox, NEmpty, NForm, NFormItem, NInput, NSelect, NText, useMessage } from 'naive-ui'
 import TemplatePreview from './TemplatePreview.vue'
+import TemplateAssistant from './TemplateAssistant.vue'
+import { applyTemplateProposal } from '../api/assistant.js'
 import { createTemplate, renderTemplate, updateTemplate } from '../api/templates.js'
 
 const props = defineProps({ template: { type: Object, default: null } })
@@ -137,6 +140,11 @@ function payload () {
   const value = clone(form.value)
   delete value.id
   return value
+}
+function applyAssistantProposal (proposal) {
+  form.value = applyTemplateProposal(form.value, proposal)
+  errors.value = {}
+  message.info('Draft proposal applied. Review and validate it before saving.')
 }
 async function save () {
   if (!validate()) return
