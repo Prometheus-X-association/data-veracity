@@ -32,6 +32,17 @@ frontends to call.
 The environment follows the refactored HTTP-only architecture. It does not start
 RabbitMQ.
 
+The template assistant is optional. To enable it, provide these variables before starting the stack:
+
+```console
+export VLA_MANAGER_AI_URL=https://your-provider.example/v1
+export VLA_MANAGER_AI_API_KEY=your-key
+export VLA_MANAGER_AI_MODEL=your-model
+docker compose up -d --build
+```
+
+The key is passed only to the VLA Manager API container. It is never included in the frontend bundle. Without these variables, the VLA Manager remains available and the assistant reports that it is not configured.
+
 To inspect a service while reviewing a failure:
 ```console
 docker compose logs --follow <service-name>
