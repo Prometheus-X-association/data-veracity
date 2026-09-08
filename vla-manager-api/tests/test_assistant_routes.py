@@ -133,6 +133,7 @@ def test_assistant_prompt_describes_the_template_enums_and_examples_shape() -> N
         'examples must be an object with "passing" and "failing" values'
         in system_prompt
     )
+    assert "at least two representative examples" in system_prompt
 
 
 def test_gemini_uses_its_openai_compatible_defaults(
