@@ -31,7 +31,9 @@ def test_assistant_returns_a_structured_template_proposal(
     async def fake_complete(_messages: list[dict[str, str]]) -> str:
         return '{"message":"Prepared a schema template.","proposal":{"name":"xAPI schema","description":"Checks xAPI data.","criterionType":"VALID_INVALID","targetAspect":"SYNTAX","evaluationMethod":{"engine":"SCHEMA","variableSchema":{"type":"object","properties":{},"required":[]},"implementationTemplate":"{\\"type\\": \\"object\\"}"}},"examples":{"passing":{},"failing":{}}}'
 
-    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    monkeypatch.setattr(
+        "vla_manager_api.assistant_routes.complete_assistant", fake_complete
+    )
 
     response = client.post(
         "/assistant/template",
@@ -56,7 +58,9 @@ def test_assistant_rejects_malformed_model_output(
     async def fake_complete(_messages: list[dict[str, str]]) -> str:
         return "not json"
 
-    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    monkeypatch.setattr(
+        "vla_manager_api.assistant_routes.complete_assistant", fake_complete
+    )
 
     response = client.post(
         "/assistant/template", json={"message": "Create a freshness check."}
@@ -72,7 +76,9 @@ def test_assistant_rejects_a_proposal_outside_the_template_schema(
     async def fake_complete(_messages: list[dict[str, str]]) -> str:
         return '{"message":"Prepared a draft.","proposal":{"name":"bad","criterionType":"VALID_INVALID","targetAspect":"SYNTAX","evaluationMethod":{"engine":"UNSUPPORTED","variableSchema":{},"implementationTemplate":"x"}}}'
 
-    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    monkeypatch.setattr(
+        "vla_manager_api.assistant_routes.complete_assistant", fake_complete
+    )
 
     response = client.post(
         "/assistant/template", json={"message": "Create a template."}

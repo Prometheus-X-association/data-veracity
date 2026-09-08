@@ -85,12 +85,16 @@ def _complete_sync(messages: list[dict[str, str]]) -> str:
         with urlopen(request, timeout=cfg.ai_timeout_seconds) as response:
             payload = json.loads(response.read())
     except (HTTPError, URLError, TimeoutError, OSError) as exc:
-        raise AssistantUnavailable("The template assistant could not be reached.") from exc
+        raise AssistantUnavailable(
+            "The template assistant could not be reached."
+        ) from exc
 
     try:
         content = payload["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as exc:
-        raise AssistantResponseError("The assistant response had an unexpected shape.") from exc
+        raise AssistantResponseError(
+            "The assistant response had an unexpected shape."
+        ) from exc
     if not isinstance(content, str):
         raise AssistantResponseError("The assistant response was not text.")
     return content
