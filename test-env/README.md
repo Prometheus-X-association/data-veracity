@@ -31,11 +31,17 @@ The environment follows the refactored HTTP-only architecture. It does not start
 The template assistant is optional. To enable it, provide these variables before starting the stack:
 
 ```console
-export VLA_MANAGER_AI_URL=https://your-provider.example/v1
+export VLA_MANAGER_AI_PROVIDER=gemini
 export VLA_MANAGER_AI_API_KEY=your-key
-export VLA_MANAGER_AI_MODEL=your-model
 docker compose up -d --build
 ```
+
+Gemini uses Google's OpenAI-compatible endpoint and defaults to the low-cost
+`gemini-3.1-flash-lite` model. For OpenAI-compatible services, set
+`VLA_MANAGER_AI_PROVIDER=openai`, `VLA_MANAGER_AI_URL`, and `VLA_MANAGER_AI_MODEL`.
+For Anthropic, set `VLA_MANAGER_AI_PROVIDER=anthropic`, `VLA_MANAGER_AI_URL`, and
+`VLA_MANAGER_AI_MODEL`; its native Messages API is used automatically. `VLA_MANAGER_AI_URL`
+may be a provider base URL or the complete endpoint URL.
 
 The key is passed only to the VLA Manager API container. It is never included in the frontend bundle. Without these variables, the VLA Manager remains available and the assistant reports that it is not configured.
 

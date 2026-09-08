@@ -8,6 +8,7 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LogLevel = Literal["critical", "error", "warning", "info", "debug"]
+AIProvider = Literal["openai", "gemini", "anthropic"]
 
 
 class Config(BaseSettings):
@@ -40,8 +41,11 @@ class Config(BaseSettings):
         "/app/openapi.yaml", validation_alias="VLA_MANAGER_OPENAPI_FILE"
     )
 
-    # Optional OpenAI-compatible chat completion service used by the
-    # template assistant. Empty URL disables the assistant cleanly.
+    # Optional chat completion service used by the template assistant.
+    # Empty credentials disable the assistant cleanly.
+    ai_provider: AIProvider = Field(
+        "openai", validation_alias="VLA_MANAGER_AI_PROVIDER"
+    )
     ai_url: str = Field("", validation_alias="VLA_MANAGER_AI_URL")
     ai_api_key: str = Field("", validation_alias="VLA_MANAGER_AI_API_KEY")
     ai_model: str = Field("", validation_alias="VLA_MANAGER_AI_MODEL")

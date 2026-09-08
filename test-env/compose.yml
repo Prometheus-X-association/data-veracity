@@ -54,6 +54,7 @@ services:
       service: vla-manager-api
     environment:
       VLA_MANAGER_DB_URL: postgresql://postgres:postgres@postgres-vla-manager:5432/dva
+      VLA_MANAGER_AI_PROVIDER: ${VLA_MANAGER_AI_PROVIDER:-openai}
       VLA_MANAGER_AI_URL: ${VLA_MANAGER_AI_URL:-}
       VLA_MANAGER_AI_API_KEY: ${VLA_MANAGER_AI_API_KEY:-}
       VLA_MANAGER_AI_MODEL: ${VLA_MANAGER_AI_MODEL:-}
