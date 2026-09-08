@@ -70,11 +70,32 @@ The service is wired into `test-env/compose.yml`. The `Dockerfile` expects the s
 | `VLA_MANAGER_API_HOST` | `0.0.0.0` | Listen address |
 | `VLA_MANAGER_API_PORT` | `8000` | Listen port |
 | `VLA_MANAGER_API_LOG_LEVEL` | `info` | One of `critical`, `error`, `warning`, `info`, `debug` |
-| `VLA_MANAGER_AI_URL` | *(empty)* | Base URL or full `/chat/completions` URL of an OpenAI-compatible assistant service. Empty disables the assistant. |
+| `VLA_MANAGER_AI_PROVIDER` | `openai` | `openai` for OpenAI-compatible services, `gemini` for Gemini's compatibility endpoint, or `anthropic` for the native Messages API |
+| `VLA_MANAGER_AI_URL` | *(empty)* | Provider base URL or complete endpoint URL. Defaults to the provider's public endpoint. Empty credentials disable the assistant. |
 | `VLA_MANAGER_AI_API_KEY` | *(empty)* | API key used only by the VLA Manager API. |
-| `VLA_MANAGER_AI_MODEL` | *(empty)* | Model name sent to the assistant service. |
+| `VLA_MANAGER_AI_MODEL` | *(empty)* | Model name sent to the assistant service. Gemini defaults to `gemini-3.1-flash-lite`; other providers require an explicit model. |
 | `VLA_MANAGER_AI_TIMEOUT_SECONDS` | `30` | Maximum assistant request duration. |
 
 The assistant returns a structured draft and never saves a template. The UI must show the
 draft for review and use the normal template validation and save actions afterward. Do not
 place the API key in frontend environment variables or browser code.
+
+Example provider settings:
+
+```console
+# Gemini
+VLA_MANAGER_AI_PROVIDER=gemini
+VLA_MANAGER_AI_API_KEY=your-gemini-key
+
+# OpenAI or another OpenAI-compatible gateway
+VLA_MANAGER_AI_PROVIDER=openai
+VLA_MANAGER_AI_URL=https://api.openai.com/v1
+VLA_MANAGER_AI_API_KEY=your-openai-key
+VLA_MANAGER_AI_MODEL=your-model
+
+# Anthropic
+VLA_MANAGER_AI_PROVIDER=anthropic
+VLA_MANAGER_AI_URL=https://api.anthropic.com/v1
+VLA_MANAGER_AI_API_KEY=your-anthropic-key
+VLA_MANAGER_AI_MODEL=your-model
+```

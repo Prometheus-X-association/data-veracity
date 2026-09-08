@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 
 import pytest
@@ -9,6 +10,20 @@ from vla_manager_api.dependencies import get_repo, get_template_repo
 from vla_manager_api.main import create_app
 from vla_manager_api.template_repo import FakeTemplateRepo
 from vla_manager_api.vla_repo import FakeVLARepo
+
+
+class FakeResponse:
+    def __init__(self, payload: dict[str, object]) -> None:
+        self._payload = json.dumps(payload).encode()
+
+    def __enter__(self) -> FakeResponse:
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self._payload
 
 
 @pytest.fixture
@@ -99,3 +114,90 @@ def test_assistant_reports_missing_model_configuration(
 
     assert response.status_code == 503
     assert response.json()["type"] == "ASSISTANT_UNAVAILABLE"
+
+
+def test_assistant_prompt_describes_the_template_enums_and_examples_shape() -> None:
+    from vla_manager_api.assistant import build_assistant_messages
+
+    system_prompt = build_assistant_messages("draft", [], [], None)[0]["content"]
+
+    assert (
+        "criterionType must be one of VALID_INVALID, IN_RANGE, GREATER_THAN, LESS_THAN"
+        in system_prompt
+    )
+    assert (
+        "targetAspect must be one of SYNTAX, TIMELINESS, ACCURACY, COMPLETENESS, CONSISTENCY"
+        in system_prompt
+    )
+    assert (
+        'examples must be an object with "passing" and "failing" values'
+        in system_prompt
+    )
+
+
+def test_gemini_uses_its_openai_compatible_defaults(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from vla_manager_api import assistant
+
+    monkeypatch.setattr(assistant.cfg, "ai_provider", "gemini")
+    monkeypatch.setattr(assistant.cfg, "ai_url", "")
+    monkeypatch.setattr(assistant.cfg, "ai_model", "")
+    monkeypatch.setattr(assistant.cfg, "ai_api_key", "gemini-test-key")
+    captured: dict[str, object] = {}
+
+    def fake_urlopen(request: object, timeout: float) -> FakeResponse:
+        captured["request"] = request
+        captured["timeout"] = timeout
+        return FakeResponse({"choices": [{"message": {"content": '{"message":"ok"}'}}]})
+
+    monkeypatch.setattr(assistant, "urlopen", fake_urlopen)
+
+    result = assistant._complete_sync([{"role": "user", "content": "hello"}])
+
+    request = captured["request"]
+    assert result == '{"message":"ok"}'
+    assert request.full_url == (
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+    )
+    assert request.headers["Authorization"] == "Bearer gemini-test-key"
+    assert request.headers["X-goog-api-client"] == "prometheus-x-data-veracity/0.1"
+    body = json.loads(request.data)
+    assert body["model"] == "gemini-3.1-flash-lite"
+
+
+def test_anthropic_uses_messages_api_headers_and_system_prompt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from vla_manager_api import assistant
+
+    monkeypatch.setattr(assistant.cfg, "ai_provider", "anthropic")
+    monkeypatch.setattr(assistant.cfg, "ai_url", "https://api.anthropic.com/v1")
+    monkeypatch.setattr(assistant.cfg, "ai_model", "claude-test")
+    monkeypatch.setattr(assistant.cfg, "ai_api_key", "anthropic-test-key")
+    captured: dict[str, object] = {}
+
+    def fake_urlopen(request: object, timeout: float) -> FakeResponse:
+        captured["request"] = request
+        captured["timeout"] = timeout
+        return FakeResponse({"content": [{"type": "text", "text": '{"message":"ok"}'}]})
+
+    monkeypatch.setattr(assistant, "urlopen", fake_urlopen)
+
+    result = assistant._complete_sync(
+        [
+            {"role": "system", "content": "Return JSON only."},
+            {"role": "user", "content": "hello"},
+        ]
+    )
+
+    request = captured["request"]
+    assert result == '{"message":"ok"}'
+    assert request.full_url == "https://api.anthropic.com/v1/messages"
+    assert request.headers["X-api-key"] == "anthropic-test-key"
+    assert request.headers["Anthropic-version"] == "2023-06-01"
+    assert "Authorization" not in request.headers
+    body = json.loads(request.data)
+    assert body["model"] == "claude-test"
+    assert body["system"] == "Return JSON only."
+    assert body["messages"] == [{"role": "user", "content": "hello"}]
