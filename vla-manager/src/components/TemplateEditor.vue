@@ -30,7 +30,7 @@
 
       <div class="section-heading"><div><n-text strong>Template variables</n-text><n-text depth="3">Add only the values a user must provide when this template is used.</n-text></div><n-button size="small" @click="addVariable">Add variable</n-button></div>
       <div v-if="variableRows.length" class="variable-table">
-        <div v-for="row in variableRows" :key="row.name" class="variable-row">
+        <div v-for="row in variableRows" :key="row.key" class="variable-row">
           <n-input :value="row.name" placeholder="Name" @update:value="value => renameVariable(row.name, value)" />
           <n-select :value="row.definition.type || 'string'" :options="variableTypeOptions" @update:value="value => updateVariable(row.name, { type: value })" />
           <n-input :value="row.definition.description" placeholder="Description" @update:value="value => updateVariable(row.name, { description: value })" />
@@ -64,6 +64,7 @@ import TemplatePreview from './TemplatePreview.vue'
 import TemplateAssistant from './TemplateAssistant.vue'
 import { applyTemplateProposal } from '../api/assistant.js'
 import { createTemplate, renderTemplate, updateTemplate } from '../api/templates.js'
+import { createVariableKeyStore, removeTemplateVariable, renameTemplateVariable, updateTemplateVariable } from '../api/templateVariables.js'
 
 const props = defineProps({ template: { type: Object, default: null } })
 const emit = defineEmits(['saved', 'cancel'])
@@ -86,7 +87,8 @@ function blankTemplate () {
 function clone (value) { return JSON.parse(JSON.stringify(value)) }
 const form = ref(blankTemplate())
 const isEditing = computed(() => Boolean(props.template?.id))
-const variableRows = computed(() => Object.entries(form.value.evaluationMethod.variableSchema.properties || {}).map(([name, definition]) => ({ name, definition: definition || {} })))
+const variableKeys = createVariableKeyStore()
+const variableRows = computed(() => Object.entries(form.value.evaluationMethod.variableSchema.properties || {}).map(([name, definition]) => ({ name, key: variableKeys.keyFor(name), definition: definition || {} })))
 const canRender = computed(() => Boolean(form.value.id && Object.keys(errors.value).length === 0))
 
 watch(() => props.template, value => { form.value = value ? clone(value) : blankTemplate(); previewValue.value = '' }, { immediate: true })
@@ -104,25 +106,20 @@ function addVariable () {
   updateVariable(name, { type: 'string', description: '' }, true)
 }
 function updateVariable (name, patch, create = false) {
-  const properties = { ...form.value.evaluationMethod.variableSchema.properties }
-  properties[name] = { ...(properties[name] || {}), ...patch }
-  form.value.evaluationMethod.variableSchema.properties = properties
+  form.value.evaluationMethod.variableSchema = updateTemplateVariable(form.value.evaluationMethod.variableSchema, name, patch)
   if (create) toggleRequired(name, true)
 }
 function renameVariable (oldName, nextName) {
   const name = nextName.trim()
-  if (!name || name === oldName || form.value.evaluationMethod.variableSchema.properties[name]) return
-  const properties = { ...form.value.evaluationMethod.variableSchema.properties }
-  properties[name] = properties[oldName]
-  delete properties[oldName]
-  form.value.evaluationMethod.variableSchema.properties = properties
-  form.value.evaluationMethod.variableSchema.required = (form.value.evaluationMethod.variableSchema.required || []).map(item => item === oldName ? name : item)
+  const schema = form.value.evaluationMethod.variableSchema
+  const nextSchema = renameTemplateVariable(schema, oldName, name)
+  if (nextSchema === schema) return
+  variableKeys.rename(oldName, name)
+  form.value.evaluationMethod.variableSchema = nextSchema
 }
 function removeVariable (name) {
-  const properties = { ...form.value.evaluationMethod.variableSchema.properties }
-  delete properties[name]
-  form.value.evaluationMethod.variableSchema.properties = properties
-  toggleRequired(name, false)
+  variableKeys.remove(name)
+  form.value.evaluationMethod.variableSchema = removeTemplateVariable(form.value.evaluationMethod.variableSchema, name)
 }
 function toggleRequired (name, checked) {
   const current = new Set(form.value.evaluationMethod.variableSchema.required || [])
