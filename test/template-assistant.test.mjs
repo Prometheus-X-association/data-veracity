@@ -7,6 +7,36 @@ import {
   normaliseAssistantExamples,
   tokeniseAssistantJson
 } from '../vla-manager/src/api/assistantPresentation.js'
+import { createVariableKeyStore, renameTemplateVariable } from '../vla-manager/src/api/templateVariables.js'
+
+test('renames one template variable without disturbing siblings or focus identity', () => {
+  const schema = {
+    type: 'object',
+    properties: {
+      first: { type: 'string', description: 'First value' },
+      second: { type: 'number', description: 'Second value' }
+    },
+    required: ['first', 'second']
+  }
+  const keys = createVariableKeyStore()
+  const firstKey = keys.keyFor('first')
+  const secondKey = keys.keyFor('second')
+
+  const next = renameTemplateVariable(schema, 'first', 'firs')
+  keys.rename('first', 'firs')
+
+  assert.deepEqual(next.properties, {
+    firs: { type: 'string', description: 'First value' },
+    second: { type: 'number', description: 'Second value' }
+  })
+  assert.deepEqual(next.required, ['firs', 'second'])
+  assert.deepEqual(schema.properties, {
+    first: { type: 'string', description: 'First value' },
+    second: { type: 'number', description: 'Second value' }
+  })
+  assert.equal(keys.keyFor('firs'), firstKey)
+  assert.equal(keys.keyFor('second'), secondKey)
+})
 
 test('normalises assistant examples into passing and failing lists', () => {
   assert.deepEqual(
