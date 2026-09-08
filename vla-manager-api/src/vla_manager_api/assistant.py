@@ -11,6 +11,13 @@ from urllib.request import Request, urlopen
 from .config import cfg
 from .models import TemplateNew
 
+_DEFAULT_URLS = {
+    "openai": "https://api.openai.com/v1",
+    "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/",
+    "anthropic": "https://api.anthropic.com/v1",
+}
+_DEFAULT_MODELS = {"gemini": "gemini-3.1-flash-lite"}
+
 
 class AssistantUnavailable(RuntimeError):
     """The configured assistant service cannot be reached or is disabled."""
@@ -41,9 +48,13 @@ def build_assistant_messages(
         "VLA Manager template fields name, description, criterionType, "
         "targetAspect, and evaluationMethod. evaluationMethod must contain "
         "engine, variableSchema, and implementationTemplate. Supported "
-        "engines are SCHEMA, JQ, and GREAT_EXPECTATIONS. Never save data, "
-        "invent unsupported engines, or claim that a generated proposal is "
-        "validated. examples may contain passing and failing JSON samples. "
+        "engines are SCHEMA, JQ, and GREAT_EXPECTATIONS. criterionType must "
+        "be one of VALID_INVALID, IN_RANGE, GREATER_THAN, LESS_THAN. "
+        "targetAspect must be one of SYNTAX, TIMELINESS, ACCURACY, "
+        "COMPLETENESS, CONSISTENCY. Never save data, invent unsupported "
+        "engines, or claim that a generated proposal is validated. examples "
+        'must be an object with "passing" and "failing" values, never an '
+        "array. Return plain JSON without markdown fences. "
         f"Available templates: {json.dumps(template_context)}. "
         f"Current draft: {json.dumps(current_template or {})}."
     )
@@ -53,32 +64,45 @@ def build_assistant_messages(
     return messages
 
 
-def _completion_url() -> str:
-    base = cfg.ai_url.rstrip("/")
+def _provider_config() -> tuple[str, str, str, str]:
+    provider = cfg.ai_provider
+    if provider not in _DEFAULT_URLS:
+        raise AssistantUnavailable(
+            "The configured assistant provider is not supported."
+        )
+
+    api_key = cfg.ai_api_key.strip()
+    base_url = cfg.ai_url.strip() or _DEFAULT_URLS[provider]
+    model = cfg.ai_model.strip() or _DEFAULT_MODELS.get(provider, "")
+    if not api_key or not model:
+        raise AssistantUnavailable("The template assistant is not configured.")
+    return provider, base_url, model, api_key
+
+
+def _completion_url(base_url: str) -> str:
+    base = base_url.rstrip("/")
     if base.endswith("/chat/completions"):
         return base
     return f"{base}/chat/completions"
 
 
-def _complete_sync(messages: list[dict[str, str]]) -> str:
-    if not cfg.ai_url or not cfg.ai_api_key or not cfg.ai_model:
-        raise AssistantUnavailable("The template assistant is not configured.")
+def _messages_url(base_url: str) -> str:
+    base = base_url.rstrip("/")
+    if base.endswith("/messages"):
+        return base
+    return f"{base}/messages"
 
-    body = json.dumps(
-        {
-            "model": cfg.ai_model,
-            "messages": messages,
-            "temperature": 0.2,
-            "response_format": {"type": "json_object"},
-        }
-    ).encode()
+
+def _post_json(
+    url: str,
+    body: dict[str, Any],
+    headers: dict[str, str],
+) -> dict[str, Any]:
+    headers = {**headers, "Content-Type": "application/json"}
     request = Request(
-        _completion_url(),
-        data=body,
-        headers={
-            "Authorization": f"Bearer {cfg.ai_api_key}",
-            "Content-Type": "application/json",
-        },
+        url,
+        data=json.dumps(body).encode(),
+        headers=headers,
         method="POST",
     )
     try:
@@ -88,6 +112,34 @@ def _complete_sync(messages: list[dict[str, str]]) -> str:
         raise AssistantUnavailable(
             "The template assistant could not be reached."
         ) from exc
+    except (json.JSONDecodeError, TypeError, UnicodeDecodeError) as exc:
+        raise AssistantResponseError("The assistant returned invalid JSON.") from exc
+
+    if not isinstance(payload, dict):
+        raise AssistantResponseError("The assistant response had an unexpected shape.")
+    return payload
+
+
+def _complete_openai_compatible(
+    messages: list[dict[str, str]],
+    base_url: str,
+    model: str,
+    api_key: str,
+    provider: str,
+) -> str:
+    headers = {"Authorization": f"Bearer {api_key}"}
+    if provider == "gemini":
+        headers["x-goog-api-client"] = "prometheus-x-data-veracity/0.1"
+    payload = _post_json(
+        _completion_url(base_url),
+        {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.2,
+            "response_format": {"type": "json_object"},
+        },
+        headers,
+    )
 
     try:
         content = payload["choices"][0]["message"]["content"]
@@ -98,6 +150,49 @@ def _complete_sync(messages: list[dict[str, str]]) -> str:
     if not isinstance(content, str):
         raise AssistantResponseError("The assistant response was not text.")
     return content
+
+
+def _complete_anthropic(
+    messages: list[dict[str, str]],
+    base_url: str,
+    model: str,
+    api_key: str,
+) -> str:
+    system_messages = [item["content"] for item in messages if item["role"] == "system"]
+    chat_messages = [item for item in messages if item["role"] in {"user", "assistant"}]
+    body: dict[str, Any] = {
+        "model": model,
+        "max_tokens": 2048,
+        "temperature": 0.2,
+        "messages": chat_messages,
+    }
+    if system_messages:
+        body["system"] = "\n\n".join(system_messages)
+    payload = _post_json(
+        _messages_url(base_url),
+        body,
+        {"x-api-key": api_key, "anthropic-version": "2023-06-01"},
+    )
+    blocks = payload.get("content")
+    if not isinstance(blocks, list):
+        raise AssistantResponseError("The assistant response had an unexpected shape.")
+    content = "".join(
+        block["text"]
+        for block in blocks
+        if isinstance(block, dict)
+        and block.get("type") == "text"
+        and isinstance(block.get("text"), str)
+    )
+    if not content:
+        raise AssistantResponseError("The assistant response was not text.")
+    return content
+
+
+def _complete_sync(messages: list[dict[str, str]]) -> str:
+    provider, base_url, model, api_key = _provider_config()
+    if provider == "anthropic":
+        return _complete_anthropic(messages, base_url, model, api_key)
+    return _complete_openai_compatible(messages, base_url, model, api_key, provider)
 
 
 async def complete_assistant(messages: list[dict[str, str]]) -> str:
