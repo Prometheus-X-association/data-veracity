@@ -103,6 +103,39 @@ def test_assistant_rejects_a_proposal_outside_the_template_schema(
     assert response.json()["type"] == "ASSISTANT_INVALID_RESPONSE"
 
 
+def test_assistant_rejects_prose_where_a_schema_implementation_is_required(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_complete(_messages: list[dict[str, str]]) -> str:
+        return json.dumps(
+            {
+                "message": "Prepared a draft.",
+                "proposal": {
+                    "name": "Production schema",
+                    "description": "Checks production records.",
+                    "criterionType": "VALID_INVALID",
+                    "targetAspect": "SYNTAX",
+                    "evaluationMethod": {
+                        "engine": "SCHEMA",
+                        "variableSchema": {"type": "object"},
+                        "implementationTemplate": "Check that production_kwh is present.",
+                    },
+                },
+            }
+        )
+
+    monkeypatch.setattr(
+        "vla_manager_api.assistant_routes.complete_assistant", fake_complete
+    )
+
+    response = client.post(
+        "/assistant/template", json={"message": "Create a production schema."}
+    )
+
+    assert response.status_code == 502
+    assert response.json()["type"] == "ASSISTANT_INVALID_RESPONSE"
+
+
 def test_assistant_reports_missing_model_configuration(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -134,6 +167,18 @@ def test_assistant_prompt_describes_the_template_enums_and_examples_shape() -> N
         in system_prompt
     )
     assert "at least two representative examples" in system_prompt
+    assert (
+        "SCHEMA implementationTemplate must be a string containing valid JSON Schema"
+        in system_prompt
+    )
+    assert (
+        "JQ implementationTemplate must be the executable jq expression"
+        in system_prompt
+    )
+    assert (
+        "GREAT_EXPECTATIONS implementationTemplate must be a string containing valid YAML"
+        in system_prompt
+    )
 
 
 def test_gemini_uses_its_openai_compatible_defaults(

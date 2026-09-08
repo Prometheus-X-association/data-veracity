@@ -56,7 +56,17 @@ def build_assistant_messages(
         'must be an object with "passing" and "failing" values. Each value '
         "should contain at least two representative examples when possible; "
         "use an array for multiple examples, never a top-level array. Return "
-        "plain JSON without markdown fences. "
+        "plain JSON without markdown fences. The implementationTemplate is "
+        "executed directly by the selected evaluator, so it must be code, "
+        "not an explanation. SCHEMA implementationTemplate must be a string "
+        "containing valid JSON Schema JSON, for example "
+        "'{\"type\":\"object\",\"properties\":{}}'. "
+        "JQ implementationTemplate must be the executable jq expression "
+        "that returns an object with a boolean success field and optional "
+        "details string. GREAT_EXPECTATIONS implementationTemplate must be "
+        "a string containing valid YAML expectation configuration with type, "
+        "kwargs, and optional meta fields. Never put prose such as 'check "
+        "that...' in implementationTemplate. "
         f"Available templates: {json.dumps(template_context)}. "
         f"Current draft: {json.dumps(current_template or {})}."
     )
@@ -214,6 +224,7 @@ def parse_assistant_response(content: str) -> dict[str, Any]:
     if proposal is not None and not isinstance(proposal, dict):
         raise AssistantResponseError("The assistant proposal is not an object.")
     if proposal is not None:
+        _validate_implementation_template(proposal)
         try:
             proposal = TemplateNew.model_validate(proposal).model_dump(
                 by_alias=True, exclude_none=True
@@ -226,3 +237,34 @@ def parse_assistant_response(content: str) -> dict[str, Any]:
     if examples is not None and not isinstance(examples, dict):
         raise AssistantResponseError("The assistant examples are not an object.")
     return {"message": response["message"], "proposal": proposal, "examples": examples}
+
+
+def _validate_implementation_template(proposal: dict[str, Any]) -> None:
+    """Reject assistant prose before it reaches the template editor.
+
+    Templates may contain Mustache placeholders, so static validation is only
+    applied when the implementation is self-contained. The selected evaluator
+    will validate rendered templates again when they are used.
+    """
+    evaluation_method = proposal.get("evaluationMethod")
+    if not isinstance(evaluation_method, dict):
+        return
+
+    engine = evaluation_method.get("engine")
+    implementation = evaluation_method.get("implementationTemplate")
+    if not isinstance(implementation, str) or not implementation.strip():
+        return
+    if "{{" in implementation or "}}" in implementation:
+        return
+
+    if engine == "SCHEMA":
+        try:
+            parsed = json.loads(implementation)
+        except json.JSONDecodeError as exc:
+            raise AssistantResponseError(
+                "The assistant returned a SCHEMA implementation that is not valid JSON Schema JSON."
+            ) from exc
+        if not isinstance(parsed, (dict, bool)):
+            raise AssistantResponseError(
+                "The assistant returned a SCHEMA implementation that is not a JSON Schema object."
+            )

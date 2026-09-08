@@ -76,6 +76,10 @@ export function tokeniseAssistantJson (value) {
   return tokens
 }
 
+export function assistantTextChunks (value) {
+  return String(value ?? '').match(/\s+|\S+\s*/g) || []
+}
+
 function toList (value) {
   if (value === undefined || value === null) return []
   return Array.isArray(value) ? value : [value]

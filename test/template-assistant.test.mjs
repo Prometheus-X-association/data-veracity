@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import { applyTemplateProposal, assistantErrorMessage } from '../vla-manager/src/api/assistant.js'
 import {
+  assistantTextChunks,
   formatAssistantJson,
   normaliseAssistantExamples,
   tokeniseAssistantJson
@@ -69,6 +70,13 @@ test('tokenises JSON for readable syntax colouring', () => {
   assert.ok(tokens.some(token => token.type === 'boolean' && token.text === 'true'))
   assert.ok(tokens.some(token => token.type === 'number' && token.text === '2'))
   assert.ok(tokens.some(token => token.type === 'string' && token.text === '"ok"'))
+})
+
+test('splits assistant text into whitespace-preserving word chunks', () => {
+  assert.deepEqual(
+    assistantTextChunks('Template ready. Review the draft.'),
+    ['Template ', 'ready. ', 'Review ', 'the ', 'draft.']
+  )
 })
 
 test('applies only template fields from an assistant proposal', () => {
