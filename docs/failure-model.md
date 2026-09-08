@@ -87,6 +87,7 @@ flowchart TD
 ### `DATA_REQUIREMENT_NOT_MET`
 
 - **Stage:** Evaluation
+- **Component:** DVA Processing
 - **Category:** Expected negative outcome
 - **Outcome:** `FAIL`
 - **Meaning:** Evaluation completed correctly, but at least one requirement was not satisfied. For example, the VLA requires 100 records and the data contains 50.
@@ -98,6 +99,7 @@ flowchart TD
 ### `EVALUATION_OPERATIONAL_FAULT`
 
 - **Stage:** Evaluation
+- **Component:** DVA Processing
 - **Category:** Execution fault
 - **Outcome:** `INDETERMINATE`
 - **Meaning:** The evaluation could not run because its engine, dependency, process, memory, permissions, or environment failed. This says nothing about whether the data satisfies the requirement.
@@ -109,6 +111,7 @@ flowchart TD
 ### `EVALUATION_TRANSIENT_FAULT`
 
 - **Stage:** Evaluation
+- **Component:** DVA Processing
 - **Category:** Execution fault
 - **Parent:** `EVALUATION_OPERATIONAL_FAULT`
 - **Outcome:** `INDETERMINATE`
@@ -121,6 +124,7 @@ flowchart TD
 ### `EVALUATION_LOGIC_SYNTAX_INVALID`
 
 - **Stage:** VLA creation
+- **Component:** VLA Manager
 - **Category:** Requirement-definition fault
 - **Outcome:** `ERROR`
 - **Meaning:** A rendered JQ expression, JSON Schema, or Great Expectations definition cannot be parsed or compiled.
@@ -133,6 +137,7 @@ flowchart TD
 ### `EVALUATION_LOGIC_INCORRECT`
 
 - **Stage:** VLA creation and review
+- **Component:** VLA Manager
 - **Category:** Requirement-definition fault
 - **Outcome:** `TRUST_LIMITATION`
 - **Meaning:** The implementation is syntactically valid but checks the wrong condition. For example, it uses the wrong relational operator.
@@ -144,6 +149,7 @@ flowchart TD
 ### `REQUIREMENT_MISUNDERSTOOD`
 
 - **Stage:** VLA creation and agreement review
+- **Component:** VLA Manager
 - **Category:** Requirement-definition fault
 - **Outcome:** `TRUST_LIMITATION`
 - **Meaning:** The implementation correctly represents one interpretation, but that interpretation is not the business requirement the parties intended.
@@ -155,6 +161,7 @@ flowchart TD
 ### `AOV_ISSUANCE_OPERATIONAL_FAULT`
 
 - **Stage:** AoV issuance
+- **Component:** VC Manager
 - **Category:** Issuance fault
 - **Outcome:** `ERROR`
 - **Meaning:** Evaluation may have completed, but the VC Manager could not create, sign, or persist the AoV. Possible causes include unavailable key material, an unsupported cryptographic operation, or service failure.
@@ -166,6 +173,7 @@ flowchart TD
 ### `AOV_MALFORMED`
 
 - **Stage:** AoV verification
+- **Component:** VC Manager
 - **Category:** Structural fault
 - **Outcome:** `ERROR`
 - **Meaning:** The received AoV cannot be parsed or is missing required structure. Examples include a damaged compact JWS or invalid JSON payload.
@@ -177,6 +185,7 @@ flowchart TD
 ### `AOV_SIGNATURE_INVALID`
 
 - **Stage:** AoV verification
+- **Component:** VC Manager
 - **Category:** Cryptographic fault
 - **Outcome:** `ERROR`
 - **Meaning:** The AoV signature is not valid for the asserted issuer or accepted key. The cause may be corruption, an untrusted key, an unsupported algorithm, or forgery.
@@ -189,6 +198,7 @@ flowchart TD
 ### `SIGNATURE_VERIFICATION_FAILED`
 
 - **Stage:** AoV verification
+- **Component:** VC Manager
 - **Category:** Cryptographic verification event
 - **Outcome:** `ERROR`
 - **Meaning:** The consumer's signature verification step returned a negative result.
@@ -201,6 +211,7 @@ flowchart TD
 ### `DATA_COMMITMENT_MISMATCH`
 
 - **Stage:** AoV verification
+- **Component:** VC Manager
 - **Category:** Commitment fault
 - **Outcome:** `ERROR`
 - **Meaning:** The hash committed in the AoV does not match the received data. The data may have changed, been mixed with another exchange, or been maliciously replaced.
@@ -212,6 +223,7 @@ flowchart TD
 ### `VLA_COMMITMENT_MISMATCH`
 
 - **Stage:** AoV verification
+- **Component:** VC Manager
 - **Category:** Commitment fault
 - **Outcome:** `ERROR`
 - **Meaning:** The quality claims in the AoV do not correspond to the VLA version referenced by the credential.
@@ -223,6 +235,7 @@ flowchart TD
 ### `AOV_CLAIMS_FORGED`
 
 - **Stage:** Trust boundary
+- **Component:** Consumer verification flow
 - **Category:** Trust limitation
 - **Outcome:** `TRUST_LIMITATION`
 - **Meaning:** A trusted signer may sign false evaluation claims. A valid signature proves who made the statement and that it was not changed, not that the statement is true.
@@ -283,33 +296,35 @@ Not by default. The normal flow relies on trust in the signer, which is the reas
 
 Requirement failures belong to the provider. VLA-definition problems belong to the VLA author. Operational failures belong to service operators. Verification failures belong to the consumer and operator. Repeated cryptographic failures or detected false claims should also reach a security operator.
 
-## Proposed Feedback Record
+## RFC 9457 Problem Details
 
-Components need the same structured information even when they present it differently. The following shape is a proposed contract for implementation work. It is not a claim that every field is already returned by the APIs.
+The failure catalog is a design reference, not a universal DTO shared by every service. HTTP services should expose errors using the `application/problem+json` media type defined by [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html).
+
+The standard members have these meanings:
+
+- **`type`:** URI identifying the general problem type. Use a stable DVA problem URI when the service can identify the cause.
+- **`title`:** Short, human-readable summary of the problem type.
+- **`status`:** HTTP status code generated for this response.
+- **`detail`:** Human-readable explanation of this occurrence. It may contain safe diagnostic details.
+- **`instance`:** URI identifying this particular occurrence, request, or validation attempt. It is not the catalog identifier for the problem type.
+
+Example:
 
 ```json
 {
-  "code": "DATA_COMMITMENT_MISMATCH",
-  "outcome": "ERROR",
-  "stage": "AOV_VERIFICATION",
-  "category": "COMMITMENT_FAULT",
-  "parentCode": "AOV_VERIFICATION_FAULT",
-  "message": "The attestation refers to different data.",
-  "evidence": {
-    "algorithm": "sha-256",
-    "expected": "...",
-    "actual": "..."
-  },
-  "detectability": "AUTOMATIC",
-  "recipients": ["DATA_CONSUMER", "OPERATOR"],
-  "retryable": false,
-  "suggestedAction": "Reject the attestation and investigate the exchanged data."
+  "type": "https://docs.prometheus-x.org/dva/problems/invalid-evaluation-logic",
+  "title": "Evaluation logic is invalid",
+  "status": 422,
+  "detail": "The rendered JQ expression could not be compiled.",
+  "instance": "/template-validations/7f5c1f4a"
 }
 ```
 
-`code`, `outcome`, `stage`, and `category` are stable machine-readable values. `message` and `suggestedAction` are user-facing text. `evidence` contains safe structured details returned by the component that detected the problem. It must not expose private keys, credentials, raw secrets, or unnecessary personal data.
+The frontend should display `title` as the main message and `detail` as the explanation. It may offer `type` as a documentation link and show a short reference derived from `instance` for support. It should not expose internal taxonomy identifiers as the primary user-facing text.
 
-The backend should provide the most specific code it can justify. If it cannot identify the cause, it should return an explicit unknown code for the stage rather than asking the frontend to infer a cause from exception text.
+Each service owns the problem types it can detect. The VLA Manager owns template and requirement-definition problems, DVA Processing owns evaluation execution problems, and the VC Manager owns issuance and verification problems. The dashboards present the returned problem details in the interface appropriate to the provider or consumer.
+
+When a service cannot identify a more specific cause, it should return a documented generic problem type for that operation. The frontend must not infer a failure category from exception text.
 
 ## Relationships Between Failures
 
