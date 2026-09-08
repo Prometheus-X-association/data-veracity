@@ -23,9 +23,51 @@ tags:
     description: Endpoints related to the management of VLA templates.
   - name: Dev
     description: Development-only bulk deletion endpoints.
+  - name: Assistant
+    description: Endpoints for the optional VLA template design assistant.
 
 
 paths:
+  /assistant/template:
+    post:
+      tags: [Assistant]
+      summary: Generate a VLA template draft
+      description: >-
+        Sends a natural-language template request to the configured assistant
+        service and returns a structured draft. The draft is never persisted
+        by this endpoint.
+      operationId: assistTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssistantRequest'
+      responses:
+        '200':
+          description: Assistant response containing an optional template draft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssistantResponse'
+        '422':
+          description: Empty or invalid assistant request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '502':
+          description: Assistant returned an invalid response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Assistant service is not configured or unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /template:
     get:
       tags: [Templates]
@@ -583,6 +625,47 @@ components:
         implementation:
           type: string
           description: The rendered data-quality fragment.
+    AssistantRequest:
+      type: object
+      required: [message]
+      additionalProperties: false
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: Natural-language description of the desired requirement.
+        conversation:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            required: [role, content]
+            additionalProperties: false
+            properties:
+              role:
+                type: string
+                enum: [user, assistant]
+              content:
+                type: string
+        currentTemplate:
+          type: object
+          additionalProperties: true
+    AssistantResponse:
+      type: object
+      required: [message]
+      additionalProperties: false
+      properties:
+        message:
+          type: string
+        proposal:
+          allOf:
+            - $ref: '#/components/schemas/TemplateCreate'
+          nullable: true
+        examples:
+          type: object
+          nullable: true
+          additionalProperties: true
     QualityEngine:
       type: string
       enum: [SCHEMA, GREAT_EXPECTATIONS, JQ]

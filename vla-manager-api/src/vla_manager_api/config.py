@@ -40,6 +40,15 @@ class Config(BaseSettings):
         "/app/openapi.yaml", validation_alias="VLA_MANAGER_OPENAPI_FILE"
     )
 
+    # Optional OpenAI-compatible chat completion service used by the
+    # template assistant. Empty URL disables the assistant cleanly.
+    ai_url: str = Field("", validation_alias="VLA_MANAGER_AI_URL")
+    ai_api_key: str = Field("", validation_alias="VLA_MANAGER_AI_API_KEY")
+    ai_model: str = Field("", validation_alias="VLA_MANAGER_AI_MODEL")
+    ai_timeout_seconds: float = Field(
+        30.0, validation_alias="VLA_MANAGER_AI_TIMEOUT_SECONDS"
+    )
+
     @field_validator("log_level", mode="before")
     @classmethod
     def _normalise_log_level(cls, value: object) -> object:
