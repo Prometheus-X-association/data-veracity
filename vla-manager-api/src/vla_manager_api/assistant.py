@@ -53,8 +53,10 @@ def build_assistant_messages(
         "targetAspect must be one of SYNTAX, TIMELINESS, ACCURACY, "
         "COMPLETENESS, CONSISTENCY. Never save data, invent unsupported "
         "engines, or claim that a generated proposal is validated. examples "
-        'must be an object with "passing" and "failing" values, never an '
-        "array. Return plain JSON without markdown fences. "
+        'must be an object with "passing" and "failing" values. Each value '
+        "should contain at least two representative examples when possible; "
+        "use an array for multiple examples, never a top-level array. Return "
+        "plain JSON without markdown fences. "
         f"Available templates: {json.dumps(template_context)}. "
         f"Current draft: {json.dumps(current_template or {})}."
     )
