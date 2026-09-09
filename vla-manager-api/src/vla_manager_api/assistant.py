@@ -7,6 +7,7 @@ import json
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from uuid import UUID
 
 from .config import cfg
 from .models import TemplateNew
@@ -17,6 +18,7 @@ _DEFAULT_URLS = {
     "anthropic": "https://api.anthropic.com/v1",
 }
 _DEFAULT_MODELS = {"gemini": "gemini-3.1-flash-lite"}
+_MAX_SAMPLE_BYTES = 32 * 1024
 
 
 class AssistantUnavailable(RuntimeError):
@@ -74,6 +76,106 @@ def build_assistant_messages(
     messages.extend(conversation[-10:])
     messages.append({"role": "user", "content": message.strip()})
     return messages
+
+
+def build_vla_assistant_messages(
+    message: str,
+    builder_context: dict[str, Any],
+    templates: list[dict[str, Any]],
+    conversation: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    """Build the bounded catalog context for VLA assembly requests."""
+    catalog = []
+    for item in templates:
+        evaluation = item.get("evaluationMethod") or {}
+        catalog.append(
+            {
+                "id": str(item.get("id", "")),
+                "name": item.get("name"),
+                "description": item.get("description"),
+                "engine": evaluation.get("engine"),
+                "criterionType": item.get("criterionType"),
+                "targetAspect": item.get("targetAspect"),
+                "variableSchema": evaluation.get("variableSchema", {}),
+            }
+        )
+
+    context = dict(builder_context or {})
+    sample = context.get("sampleData")
+    sample_json = json.dumps(sample, ensure_ascii=False, separators=(",", ":"))
+    sample_truncated = len(sample_json.encode("utf-8")) > _MAX_SAMPLE_BYTES
+    if sample_truncated:
+        encoded = sample_json.encode("utf-8")[:_MAX_SAMPLE_BYTES]
+        sample_json = encoded.decode("utf-8", errors="ignore")
+    context["sampleData"] = sample_json
+    context["sampleDataTruncated"] = sample_truncated
+
+    system = (
+        "You are the VLA builder assistant. Return JSON only with the shape "
+        "{message, metadata, requirements, missingTemplates}; return template IDs "
+        "from the catalog. Use only template IDs "
+        "from the supplied catalog. Return requirements as templateId plus model "
+        "values and a short reason. Do not return raw engine code or prose as an "
+        "implementation. If no catalog template can satisfy a requested rule, "
+        "leave requirements empty and describe it in missingTemplates. Metadata is "
+        "a suggestion for review, not an instruction to save anything. Match the "
+        "sample data when filling variables, and do not invent template IDs. "
+        f"Available templates: {json.dumps(catalog, ensure_ascii=False)}. "
+        f"Builder context: {json.dumps(context, ensure_ascii=False)}."
+    )
+    messages = [{"role": "system", "content": system}]
+    messages.extend(conversation[-10:])
+    messages.append({"role": "user", "content": message.strip()})
+    return messages
+
+
+def parse_vla_assistant_response(
+    content: str, catalog_ids: set[UUID]
+) -> dict[str, Any]:
+    """Parse and validate a catalog-backed VLA assistant response."""
+    try:
+        response = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise AssistantResponseError("The assistant returned invalid JSON.") from exc
+    if not isinstance(response, dict) or not isinstance(response.get("message"), str):
+        raise AssistantResponseError("The assistant response is missing its message.")
+
+    metadata = response.get("metadata")
+    if metadata is not None and not isinstance(metadata, dict):
+        raise AssistantResponseError("The assistant metadata is not an object.")
+
+    requirements = response.get("requirements", [])
+    if not isinstance(requirements, list):
+        raise AssistantResponseError("The assistant requirements are not a list.")
+    validated_requirements = []
+    for item in requirements:
+        if not isinstance(item, dict):
+            raise AssistantResponseError("The assistant requirement is not an object.")
+        try:
+            template_id = UUID(str(item.get("templateId")))
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise AssistantResponseError("The assistant returned an invalid template ID.") from exc
+        if template_id not in catalog_ids:
+            raise AssistantResponseError("The assistant selected a template that is not available.")
+        model = item.get("model")
+        reason = item.get("reason")
+        if not isinstance(model, dict) or not isinstance(reason, str):
+            raise AssistantResponseError("The assistant requirement is incomplete.")
+        validated_requirements.append(
+            {"templateId": str(template_id), "model": model, "reason": reason}
+        )
+
+    missing_templates = response.get("missingTemplates", [])
+    if not isinstance(missing_templates, list) or not all(
+        isinstance(item, dict) for item in missing_templates
+    ):
+        raise AssistantResponseError("The assistant missing-template list is invalid.")
+    return {
+        "message": response["message"],
+        "metadata": metadata,
+        "requirements": validated_requirements,
+        "missingTemplates": missing_templates,
+    }
 
 
 def _provider_config() -> tuple[str, str, str, str]:

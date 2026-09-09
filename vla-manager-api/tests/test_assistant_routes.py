@@ -149,6 +149,113 @@ def test_assistant_reports_missing_model_configuration(
     assert response.json()["type"] == "ASSISTANT_UNAVAILABLE"
 
 
+def test_vla_assistant_returns_catalog_backed_requirements(
+    client: TestClient,
+    fake_template_repo: FakeTemplateRepo,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    template_id = "11111111-1111-1111-1111-111111111111"
+
+    async def seed() -> None:
+        await fake_template_repo.add(
+            {
+                "id": template_id,
+                "name": "JSON schema",
+                "description": "Checks the record shape",
+                "criterionType": "VALID_INVALID",
+                "targetAspect": "SYNTAX",
+                "evaluationMethod": {
+                    "engine": "SCHEMA",
+                    "variableSchema": {
+                        "type": "object",
+                        "properties": {"schema": {"type": "object"}},
+                        "required": ["schema"],
+                    },
+                    "implementationTemplate": "{{ schema }}",
+                },
+            }
+        )
+
+    import asyncio
+
+    asyncio.run(seed())
+
+    async def fake_complete(_messages: list[dict[str, str]]) -> str:
+        return json.dumps(
+            {
+                "message": "I found a schema template for this sample.",
+                "metadata": {"name": "Energy records", "tags": ["energy"]},
+                "requirements": [
+                    {
+                        "templateId": template_id,
+                        "model": {"schema": {"type": "object"}},
+                        "reason": "The sample shape is a JSON object.",
+                    }
+                ],
+                "missingTemplates": [],
+            }
+        )
+
+    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    response = client.post(
+        "/assistant/vla",
+        json={
+            "message": "Use the sample schema.",
+            "builderContext": {"sampleData": {"timestamp": "now"}},
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["requirements"][0]["templateId"] == template_id
+    assert response.json()["metadata"]["name"] == "Energy records"
+
+
+def test_vla_assistant_rejects_unknown_template_ids(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_complete(_messages: list[dict[str, str]]) -> str:
+        return json.dumps(
+            {
+                "message": "Draft",
+                "requirements": [
+                    {
+                        "templateId": "22222222-2222-2222-2222-222222222222",
+                        "model": {},
+                        "reason": "match",
+                    }
+                ],
+            }
+        )
+
+    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    response = client.post("/assistant/vla", json={"message": "Use a schema template."})
+
+    assert response.status_code == 502
+    assert response.json()["type"] == "ASSISTANT_INVALID_RESPONSE"
+
+
+def test_vla_assistant_prompt_contains_catalog_and_bounded_sample() -> None:
+    from vla_manager_api.assistant import build_vla_assistant_messages
+
+    messages = build_vla_assistant_messages(
+        "Match the uploaded sample.",
+        {"metadata": {}, "sampleData": {"field": "value"}, "selectedPath": None, "fragments": []},
+        [
+            {
+                "id": "template-1",
+                "name": "JSON schema",
+                "evaluationMethod": {"engine": "SCHEMA", "variableSchema": {"type": "object"}},
+            }
+        ],
+        [],
+    )
+
+    prompt = messages[0]["content"]
+    assert "template-1" in prompt
+    assert "variableSchema" in prompt
+    assert "return template IDs from the catalog" in prompt
+
+
 def test_assistant_prompt_describes_the_template_enums_and_examples_shape() -> None:
     from vla_manager_api.assistant import build_assistant_messages
 
