@@ -17,7 +17,7 @@ _DEFAULT_URLS = {
     "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/",
     "anthropic": "https://api.anthropic.com/v1",
 }
-_DEFAULT_MODELS = {"gemini": "gemini-3.1-flash-lite"}
+_DEFAULT_MODELS = {"gemini": "gemini-3.5-flash-lite"}
 _MAX_SAMPLE_BYTES = 32 * 1024
 
 

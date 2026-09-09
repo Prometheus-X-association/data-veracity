@@ -342,7 +342,7 @@ def test_gemini_uses_its_openai_compatible_defaults(
     assert request.headers["Authorization"] == "Bearer gemini-test-key"
     assert request.headers["X-goog-api-client"] == "prometheus-x-data-veracity/0.1"
     body = json.loads(request.data)
-    assert body["model"] == "gemini-3.1-flash-lite"
+    assert body["model"] == "gemini-3.5-flash-lite"
 
 
 def test_anthropic_uses_messages_api_headers_and_system_prompt(

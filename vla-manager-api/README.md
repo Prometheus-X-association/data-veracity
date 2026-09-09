@@ -73,7 +73,7 @@ The service is wired into `test-env/compose.yml`. The `Dockerfile` expects the s
 | `VLA_MANAGER_AI_PROVIDER` | `openai` | `openai` for OpenAI-compatible services, `gemini` for Gemini's compatibility endpoint, or `anthropic` for the native Messages API |
 | `VLA_MANAGER_AI_URL` | *(empty)* | Provider base URL or complete endpoint URL. Defaults to the provider's public endpoint. Empty credentials disable the assistant. |
 | `VLA_MANAGER_AI_API_KEY` | *(empty)* | API key used only by the VLA Manager API. |
-| `VLA_MANAGER_AI_MODEL` | *(empty)* | Model name sent to the assistant service. Gemini defaults to `gemini-3.1-flash-lite`; other providers require an explicit model. |
+| `VLA_MANAGER_AI_MODEL` | *(empty)* | Model name sent to the assistant service. Gemini defaults to `gemini-3.5-flash-lite`; other providers require an explicit model. |
 | `VLA_MANAGER_AI_TIMEOUT_SECONDS` | `30` | Maximum assistant request duration. |
 
 The assistant returns a structured draft and never saves a template. The UI must show the
