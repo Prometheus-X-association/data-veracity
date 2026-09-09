@@ -779,8 +779,7 @@ components:
       type: string
       enum: [SYNTAX, TIMELINESS, ACCURACY, COMPLETENESS, CONSISTENCY]
     QualityEngine:
-      type: string
-      enum: [SCHEMA, GREAT_EXPECTATIONS, JQ]
+      $ref: './components.yaml#/schemas/QualityEngine'
     VeracityRequest:
       type: object
       required: [exchangeID, contract, data, vlaID]
@@ -945,26 +944,7 @@ components:
           action: read
           object: course_materials/lecturenotes/1
     EvaluationResult:
-      type: object
-      required: [timestamp, success]
-      additionalProperties: false
-      properties:
-        engine:
-          type: QualityEngine
-        timestamp:
-          type: string
-          format: datetime
-        success:
-          type: bool
-        details:
-          type: string
-        error:
-          type: string
-      example:
-        engine: JQ
-        timestamp: '2026-01-31T17:48:10.904264Z'
-        success: true
-        details: Actor name is correct
+      $ref: './components.yaml#/schemas/EvaluationResult'
     Error:
       type: object
       required: [message]
