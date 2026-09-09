@@ -260,6 +260,14 @@ def test_vla_assistant_keeps_string_missing_template_reasons_actionable(
     assert response.json()["missingTemplates"] == [{"reason": "No freshness template is available."}]
 
 
+def test_assistant_accepts_json_wrapped_in_a_markdown_fence() -> None:
+    from vla_manager_api.assistant import parse_assistant_response
+
+    response = parse_assistant_response('```json\n{"message":"Draft ready."}\n```')
+
+    assert response == {"message": "Draft ready.", "proposal": None, "examples": None}
+
+
 def test_vla_assistant_prompt_contains_catalog_and_bounded_sample() -> None:
     from vla_manager_api.assistant import build_vla_assistant_messages
 

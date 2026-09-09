@@ -137,7 +137,7 @@ def parse_vla_assistant_response(
 ) -> dict[str, Any]:
     """Parse and validate a catalog-backed VLA assistant response."""
     try:
-        response = json.loads(content)
+        response = _load_json_object(content)
     except json.JSONDecodeError as exc:
         raise AssistantResponseError("The assistant returned invalid JSON.") from exc
     if not isinstance(response, dict) or not isinstance(response.get("message"), str):
@@ -338,7 +338,7 @@ async def complete_assistant(messages: list[dict[str, str]]) -> str:
 def parse_assistant_response(content: str) -> dict[str, Any]:
     """Parse model JSON and require the top-level fields used by the UI."""
     try:
-        response = json.loads(content)
+        response = _load_json_object(content)
     except json.JSONDecodeError as exc:
         raise AssistantResponseError("The assistant returned invalid JSON.") from exc
     if not isinstance(response, dict) or not isinstance(response.get("message"), str):
@@ -391,3 +391,19 @@ def _validate_implementation_template(proposal: dict[str, Any]) -> None:
             raise AssistantResponseError(
                 "The assistant returned a SCHEMA implementation that is not a JSON Schema object."
             )
+
+
+def _load_json_object(content: str) -> Any:
+    """Decode an object when a provider wraps JSON in a fence or short prose."""
+    text = content.strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        text = "\n".join(lines[1:-1]).strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start < 0 or end <= start:
+            raise
+        return json.loads(text[start : end + 1])
