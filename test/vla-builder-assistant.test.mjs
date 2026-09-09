@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import {
   applyVlaAssistantDraft,
   createBuilderAssistantContext,
+  normaliseAssistantRequest,
   normaliseVlaAssistantReply
 } from '../vla-manager/src/api/vlaBuilderAssistant.js'
 
@@ -36,6 +37,12 @@ test('bounds builder context and keeps the selected JSON path', () => {
   assert.deepEqual(context.metadata, { name: 'Energy' })
   assert.equal(context.fragments.length, 1)
   assert.deepEqual(context.sampleData, { value: 'x' })
+})
+
+test('accepts text requests and ignores browser events', () => {
+  assert.equal(normaliseAssistantRequest('  Check the sample schema  '), 'Check the sample schema')
+  assert.equal(normaliseAssistantRequest({ type: 'click', isTrusted: true }), '')
+  assert.equal(normaliseAssistantRequest(undefined), '')
 })
 
 test('normalises a catalog-backed assistant reply', () => {

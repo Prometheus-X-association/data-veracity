@@ -42,6 +42,10 @@ function hasValue (value) {
   return value !== undefined && value !== null && value !== ''
 }
 
+export function normaliseAssistantRequest (value) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
 export function normaliseVlaAssistantReply (reply = {}, templates = []) {
   const byId = new Map((templates || []).map(template => [String(template.id), template]))
   const missingTemplates = Array.isArray(reply.missingTemplates) ? clone(reply.missingTemplates) : []

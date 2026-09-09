@@ -99,11 +99,11 @@
             :disabled="busy"
             placeholder="For example: every record must have a UTC timestamp and production_kwh between 0 and 100000."
             aria-label="Describe the VLA requirement"
-            @keydown.enter.exact.prevent="send"
+            @keydown.enter.exact.prevent="send()"
           />
           <div class="composer-footer">
             <span>Enter to send · Shift + Enter for a new line</span>
-            <n-button type="primary" :loading="loading" :disabled="busy || !input.trim()" @click="send">Generate draft</n-button>
+            <n-button type="primary" :loading="loading" :disabled="busy || !input.trim()" @click="send()">Generate draft</n-button>
           </div>
         </section>
       </div>
@@ -115,7 +115,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { NAlert, NButton, NDrawer, NDrawerContent, NInput } from 'naive-ui'
 import { askVlaBuilderAssistant, assistantErrorMessage } from '../api/assistant.js'
-import { createBuilderAssistantContext, normaliseVlaAssistantReply } from '../api/vlaBuilderAssistant.js'
+import { createBuilderAssistantContext, normaliseAssistantRequest, normaliseVlaAssistantReply } from '../api/vlaBuilderAssistant.js'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -156,7 +156,8 @@ async function reveal (message, content) {
   message.revealing = false
 }
 
-async function send (request = input.value.trim()) {
+async function send (value) {
+  const request = normaliseAssistantRequest(value ?? input.value)
   if (!request || busy.value) return
   input.value = ''
   lastRequest.value = request
