@@ -144,27 +144,6 @@ def parse_vla_assistant_response(
     if metadata is not None and not isinstance(metadata, dict):
         raise AssistantResponseError("The assistant metadata is not an object.")
 
-    requirements = response.get("requirements", [])
-    if not isinstance(requirements, list):
-        raise AssistantResponseError("The assistant requirements are not a list.")
-    validated_requirements = []
-    for item in requirements:
-        if not isinstance(item, dict):
-            raise AssistantResponseError("The assistant requirement is not an object.")
-        try:
-            template_id = UUID(str(item.get("templateId")))
-        except (ValueError, TypeError, AttributeError) as exc:
-            raise AssistantResponseError("The assistant returned an invalid template ID.") from exc
-        if template_id not in catalog_ids:
-            raise AssistantResponseError("The assistant selected a template that is not available.")
-        model = item.get("model")
-        reason = item.get("reason")
-        if not isinstance(model, dict) or not isinstance(reason, str):
-            raise AssistantResponseError("The assistant requirement is incomplete.")
-        validated_requirements.append(
-            {"templateId": str(template_id), "model": model, "reason": reason}
-        )
-
     missing_templates = response.get("missingTemplates", [])
     if missing_templates is None:
         missing_templates = []
@@ -181,6 +160,34 @@ def parse_vla_assistant_response(
         isinstance(item, dict) for item in missing_templates
     ):
         raise AssistantResponseError("The assistant missing-template list is invalid.")
+
+    requirements = response.get("requirements", [])
+    if not isinstance(requirements, list):
+        raise AssistantResponseError("The assistant requirements are not a list.")
+    validated_requirements = []
+    for item in requirements:
+        if not isinstance(item, dict):
+            raise AssistantResponseError("The assistant requirement is not an object.")
+        try:
+            template_id = UUID(str(item.get("templateId")))
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise AssistantResponseError("The assistant returned an invalid template ID.") from exc
+        if template_id not in catalog_ids:
+            raise AssistantResponseError("The assistant selected a template that is not available.")
+        model = item.get("model")
+        reason = item.get("reason")
+        if not isinstance(model, dict) or not isinstance(reason, str):
+            missing_templates.append(
+                {
+                    "templateId": str(template_id),
+                    "reason": "The assistant did not provide all values for this template.",
+                }
+            )
+            continue
+        validated_requirements.append(
+            {"templateId": str(template_id), "model": model, "reason": reason}
+        )
+
     return {
         "message": response["message"],
         "metadata": metadata,
