@@ -166,6 +166,10 @@ def parse_vla_assistant_response(
         )
 
     missing_templates = response.get("missingTemplates", [])
+    if missing_templates is None:
+        missing_templates = []
+    elif isinstance(missing_templates, dict):
+        missing_templates = [] if not missing_templates else [missing_templates]
     if not isinstance(missing_templates, list) or not all(
         isinstance(item, dict) for item in missing_templates
     ):
