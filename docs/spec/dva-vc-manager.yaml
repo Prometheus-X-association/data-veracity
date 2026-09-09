@@ -241,41 +241,11 @@ paths:
 components:
   schemas:
     QualityEngine:
-      type: string
-      enum: [SCHEMA, GREAT_EXPECTATIONS, JQ]
-      description: The evaluation engine that produced a veracity result.
+      $ref: './components.yaml#/schemas/QualityEngine'
+    # Embedded in `AovIssueRequest.evaluationResults`, exactly as the DVA API
+    # relays it from the processing service.
     EvaluationResult:
-      type: object
-      description: >-
-        Outcome of one VLA requirement evaluation, embedded in
-        `AovIssueRequest.evaluationResults`.
-      required: [timestamp, success]
-      additionalProperties: false
-      properties:
-        engine:
-          $ref: '#/components/schemas/QualityEngine'
-        timestamp:
-          type: string
-          format: date-time
-          description: RFC 3339 timestamp marking when the evaluation ran.
-        success:
-          type: boolean
-          description: Whether the evaluation passed.
-        details:
-          type: string
-          nullable: true
-          description: >-
-            Human-readable success explanation when `success` is true.
-        error:
-          type: string
-          nullable: true
-          description: >-
-            Human-readable failure explanation when `success` is false.
-      example:
-        engine: JQ
-        timestamp: '2026-01-31T17:48:10.904264Z'
-        success: true
-        details: Actor name is correct
+      $ref: './components.yaml#/schemas/EvaluationResult'
     AovIssueRequest:
       type: object
       description: Body of POST /aov/issue.
@@ -439,7 +409,7 @@ components:
           format: date-time
     Error:
       type: object
-      description: RFC 7807-style problem object emitted on all error responses.
+      description: RFC 9457-style problem object emitted on all error responses.
       additionalProperties: false
       required: [type, title]
       properties:

@@ -584,8 +584,7 @@ components:
           type: string
           description: The rendered data-quality fragment.
     QualityEngine:
-      type: string
-      enum: [SCHEMA, GREAT_EXPECTATIONS, JQ]
+      $ref: './components.yaml#/schemas/QualityEngine'
     CriterionType:
       type: string
       enum: [VALID_INVALID, IN_RANGE, GREATER_THAN, LESS_THAN]
