@@ -12,6 +12,13 @@
     ref="reqModal"
     @req-added="handleReqAdded"
   />
+  <VlaBuilderAssistant
+    v-model:show="assistantOpen"
+    :context="assistantContext"
+    :templates="availableTemplates"
+    @apply="handleAssistantApply"
+    @create-template="handleCreateTemplate"
+  />
 
   <div class="page-container builder-container">
     <n-page-header
@@ -22,6 +29,10 @@
     >
       <template #extra>
         <n-space>
+          <n-button secondary @click="assistantOpen = true">
+            <template #icon><span aria-hidden="true">✦</span></template>
+            Design with AI
+          </n-button>
           <n-button secondary @click="router.push('/templates')">
             Template workspace
           </n-button>
@@ -218,6 +229,9 @@
 
   import SampleModal from './SampleModal.vue'
   import ReqModal from './ReqModal.vue'
+  import VlaBuilderAssistant from './VlaBuilderAssistant.vue'
+  import { listTemplates } from '../api/templates.js'
+  import { applyVlaAssistantDraft, createBuilderAssistantContext } from '../api/vlaBuilderAssistant.js'
 
   // Basic SVG Icons
   const RefreshIcon = defineComponent({
@@ -252,6 +266,8 @@
   const sampleModal = ref(null)
   const testModal = ref(null)
   const reqModal = ref(null)
+  const assistantOpen = ref(false)
+  const availableTemplates = ref([])
 
   const sampleData = ref(null)
   const testData = ref(null)
@@ -353,9 +369,39 @@
 
   const onNodeClick = (node) => lastPath.value = node.path
 
+  const assistantContext = computed(() => createBuilderAssistantContext({
+    metadata: metadata.value,
+    sampleData: sampleData.value,
+    selectedPath: lastPath.value,
+    fragments: fragments.value
+  }))
+
   const handleReqAdded = (req) => {
     fragments.value.push(req)
     message.success(`Attached requirement: ${req.requirement.name}`)
+  }
+
+  const handleAssistantApply = (draft) => {
+    try {
+      const next = applyVlaAssistantDraft(
+        { metadata: metadata.value, fragments: fragments.value },
+        draft,
+        availableTemplates.value
+      )
+      const attached = next.fragments.length - fragments.value.length
+      metadata.value = next.metadata
+      fragments.value = next.fragments
+      assistantOpen.value = false
+      message.success(`Attached ${attached} assistant requirement${attached === 1 ? '' : 's'}`)
+    } catch (cause) {
+      message.error(cause.message || 'The assistant draft could not be applied.')
+    }
+  }
+
+  const handleCreateTemplate = () => {
+    assistantOpen.value = false
+    router.push({ path: '/templates', query: { mode: 'create' } })
+    message.info('Create the missing template, then return here to attach it.')
   }
 
   const handleTestDataSelected = async () => {
@@ -403,15 +449,17 @@
 
   onMounted(async () => {
     try {
-      const response = await axios.get('/api/vla')
+      const [response, templates] = await Promise.all([axios.get('/api/vla'), listTemplates()])
       const participants = response.data.flatMap(vla => Array.isArray(vla.participants) ? vla.participants : [])
       const tags = response.data.flatMap(vla => Array.isArray(vla.tags) ? vla.tags : [])
       knownParticipants.value = new Set(participants)
       participantSuggestions.value = [...knownParticipants.value].map(value => ({ label: value, value }))
       knownTags.value = new Set(tags)
       tagSuggestions.value = [...knownTags.value].map(value => ({ label: value, value }))
+      availableTemplates.value = Array.isArray(templates) ? templates : []
     } catch {
       // Suggestions are optional; participants can still be entered manually.
+      try { availableTemplates.value = await listTemplates() } catch { availableTemplates.value = [] }
     }
   })
 </script>
