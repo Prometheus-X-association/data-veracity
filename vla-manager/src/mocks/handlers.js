@@ -149,6 +149,25 @@ export const handlers = [
     return HttpResponse.json(templates)
   }),
 
+  http.post('/api/assistant/vla', async ({ request }) => {
+    const body = await request.json()
+    const template = templates[0]
+    return HttpResponse.json({
+      message: `I found ${template.name} and prepared it from the builder context. Review the draft before applying it.`,
+      metadata: {
+        name: 'Sample data VLA',
+        description: 'Checks the uploaded sample data against the selected requirement.',
+        tags: ['sample']
+      },
+      requirements: [{
+        templateId: template.id,
+        model: { schemaURL: 'sample://schema' },
+        reason: 'This is the closest reusable template in the current catalog.'
+      }],
+      missingTemplates: []
+    })
+  }),
+
   http.get('/api/template/:id', ({ params }) => {
     const template = findTemplate(params.id)
     return template ? responseForTemplate(template) : responseForFixture(templateFailureFixtures.missingTemplate)

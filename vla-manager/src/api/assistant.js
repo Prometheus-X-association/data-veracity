@@ -27,3 +27,12 @@ export async function askTemplateAssistant (payload, client = axios) {
     throw normaliseError(error)
   }
 }
+
+export async function askVlaBuilderAssistant (payload, client = axios) {
+  try {
+    const response = await client.post('/api/assistant/vla', payload)
+    return response.data
+  } catch (error) {
+    throw normaliseError(error)
+  }
+}

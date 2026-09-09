@@ -13,6 +13,7 @@ from structlog.typing import EventDict
 
 from vla_manager_api.dependencies import get_repo, get_template_repo
 from vla_manager_api.main import create_app
+from vla_manager_api.models import TemplateNew
 from vla_manager_api.template_repo import FakeTemplateRepo
 from vla_manager_api.vla_repo import FakeVLARepo
 
@@ -172,6 +173,150 @@ def test_assistant_reports_missing_model_configuration(
     assert response.json()["type"] == "ASSISTANT_UNAVAILABLE"
 
 
+def test_vla_assistant_returns_catalog_backed_requirements(
+    client: TestClient,
+    fake_template_repo: FakeTemplateRepo,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import asyncio
+
+    # The repo mints the id, so the seeded template is referred to by what
+    # `add` hands back rather than by one fixed here.
+    template_id = str(
+        asyncio.run(
+            fake_template_repo.add(
+                TemplateNew.model_validate(
+                    {
+                        "name": "JSON schema",
+                        "description": "Checks the record shape",
+                        "criterionType": "VALID_INVALID",
+                        "targetAspect": "SYNTAX",
+                        "evaluationMethod": {
+                            "engine": "SCHEMA",
+                            "variableSchema": {
+                                "type": "object",
+                                "properties": {"schema": {"type": "object"}},
+                                "required": ["schema"],
+                            },
+                            "implementationTemplate": "{{ schema }}",
+                        },
+                    }
+                )
+            )
+        )
+    )
+
+    async def fake_complete(_messages: list[dict[str, str]]) -> str:
+        return json.dumps(
+            {
+                "message": "I found a schema template for this sample.",
+                "metadata": {"name": "Energy records", "tags": ["energy"]},
+                "requirements": [
+                    {
+                        "templateId": template_id,
+                        "model": {"schema": {"type": "object"}},
+                        "reason": "The sample shape is a JSON object.",
+                    }
+                ],
+                "missingTemplates": [],
+            }
+        )
+
+    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    response = client.post(
+        "/assistant/vla",
+        json={
+            "message": "Use the sample schema.",
+            "builderContext": {"sampleData": {"timestamp": "now"}},
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["requirements"][0]["templateId"] == template_id
+    assert response.json()["metadata"]["name"] == "Energy records"
+
+
+def test_vla_assistant_rejects_unknown_template_ids(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_complete(_messages: list[dict[str, str]]) -> str:
+        return json.dumps(
+            {
+                "message": "Draft",
+                "requirements": [
+                    {
+                        "templateId": "22222222-2222-2222-2222-222222222222",
+                        "model": {},
+                        "reason": "match",
+                    }
+                ],
+            }
+        )
+
+    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    response = client.post("/assistant/vla", json={"message": "Use a schema template."})
+
+    assert response.status_code == 502
+    assert response.json()["type"] == "ASSISTANT_INVALID_RESPONSE"
+
+
+def test_vla_assistant_treats_empty_missing_template_object_as_empty_list(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_complete(_messages: list[dict[str, str]]) -> str:
+        return '{"message":"No matching template is available.","requirements":[],"missingTemplates":{}}'
+
+    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    response = client.post("/assistant/vla", json={"message": "Check freshness."})
+
+    assert response.status_code == 200
+    assert response.json()["missingTemplates"] == []
+
+
+def test_vla_assistant_keeps_string_missing_template_reasons_actionable(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_complete(_messages: list[dict[str, str]]) -> str:
+        return '{"message":"A template is needed.","requirements":[],"missingTemplates":["No freshness template is available."]}'
+
+    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    response = client.post("/assistant/vla", json={"message": "Check freshness."})
+
+    assert response.status_code == 200
+    assert response.json()["missingTemplates"] == [{"reason": "No freshness template is available."}]
+
+
+def test_assistant_accepts_json_wrapped_in_a_markdown_fence() -> None:
+    from vla_manager_api.assistant import parse_assistant_response
+
+    response = parse_assistant_response('```json\n{"message":"Draft ready."}\n```')
+
+    assert response == {"message": "Draft ready.", "proposal": None, "examples": None}
+
+
+def test_vla_assistant_prompt_contains_catalog_and_bounded_sample() -> None:
+    from vla_manager_api.assistant import build_vla_assistant_messages
+
+    messages = build_vla_assistant_messages(
+        "Match the uploaded sample.",
+        {"metadata": {}, "sampleData": {"field": "value"}, "selectedPath": None, "fragments": []},
+        [
+            {
+                "id": "template-1",
+                "name": "JSON schema",
+                "evaluationMethod": {"engine": "SCHEMA", "variableSchema": {"type": "object"}},
+            }
+        ],
+        [],
+    )
+
+    prompt = messages[0]["content"]
+    assert "template-1" in prompt
+    assert "variableSchema" in prompt
+    assert "return template IDs from the catalog" in prompt
+    assert "Every required variable" in prompt
+
+
 def test_assistant_prompt_describes_the_template_enums_and_examples_shape() -> None:
     from vla_manager_api.assistant import build_assistant_messages
 
@@ -232,7 +377,7 @@ def test_gemini_uses_its_openai_compatible_defaults(
     assert request.headers["Authorization"] == "Bearer gemini-test-key"
     assert request.headers["X-goog-api-client"] == "prometheus-x-data-veracity/0.1"
     body = json.loads(request.data)
-    assert body["model"] == "gemini-3.1-flash-lite"
+    assert body["model"] == "gemini-3.5-flash-lite"
 
 
 def test_openrouter_uses_its_openai_compatible_endpoint(
