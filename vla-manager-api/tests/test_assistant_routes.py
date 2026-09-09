@@ -247,6 +247,19 @@ def test_vla_assistant_treats_empty_missing_template_object_as_empty_list(
     assert response.json()["missingTemplates"] == []
 
 
+def test_vla_assistant_keeps_string_missing_template_reasons_actionable(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_complete(_messages: list[dict[str, str]]) -> str:
+        return '{"message":"A template is needed.","requirements":[],"missingTemplates":["No freshness template is available."]}'
+
+    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    response = client.post("/assistant/vla", json={"message": "Check freshness."})
+
+    assert response.status_code == 200
+    assert response.json()["missingTemplates"] == [{"reason": "No freshness template is available."}]
+
+
 def test_vla_assistant_prompt_contains_catalog_and_bounded_sample() -> None:
     from vla_manager_api.assistant import build_vla_assistant_messages
 

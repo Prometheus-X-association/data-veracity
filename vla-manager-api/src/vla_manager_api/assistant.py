@@ -170,6 +170,13 @@ def parse_vla_assistant_response(
         missing_templates = []
     elif isinstance(missing_templates, dict):
         missing_templates = [] if not missing_templates else [missing_templates]
+    elif isinstance(missing_templates, str):
+        missing_templates = [] if not missing_templates.strip() or missing_templates.strip() == "[]" else [{"reason": missing_templates}]
+    elif isinstance(missing_templates, list):
+        missing_templates = [
+            item if isinstance(item, dict) else {"reason": str(item)}
+            for item in missing_templates
+        ]
     if not isinstance(missing_templates, list) or not all(
         isinstance(item, dict) for item in missing_templates
     ):
