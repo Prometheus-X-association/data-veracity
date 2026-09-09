@@ -280,6 +280,7 @@ def test_vla_assistant_prompt_contains_catalog_and_bounded_sample() -> None:
     assert "template-1" in prompt
     assert "variableSchema" in prompt
     assert "return template IDs from the catalog" in prompt
+    assert "Every required variable" in prompt
 
 
 def test_assistant_prompt_describes_the_template_enums_and_examples_shape() -> None:
