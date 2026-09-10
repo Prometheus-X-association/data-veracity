@@ -3,7 +3,7 @@ package hu.bme.mit.ftsrg.dva.dto.api
 import kotlinx.serialization.Serializable
 
 /**
- * An RFC 7807 problem detail response DTO.
+ * An RFC 9457 problem detail response DTO.
  */
 @Serializable
 data class ErrDTO(
