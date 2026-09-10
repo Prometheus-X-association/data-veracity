@@ -196,6 +196,7 @@ class AoVRoutesTest {
             assertNull(body.jws)
             assertFalse(body.evaluationPassing)
             assertEquals(listOf(failingEvalResult), body.evaluationResults)
+            assertFalse(bodyAsText().contains("jws"), "unissued JWS should be omitted, not null")
         }
 
         // Assert upstream requests
