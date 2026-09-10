@@ -6,7 +6,9 @@ ktor:
       - hu.bme.mit.ftsrg.dva.api.ApplicationKt.module
 
 swagger:
-  openapiFile: "$DVA_OPENAPI_FILE:../docs/spec/openapi.yaml"
+  # Sibling files this spec `$ref`s (eg components.yaml) are served from the same
+  # directory; see docRoutes.
+  openapiFile: "$DVA_OPENAPI_FILE:../docs/spec/dva-api.yaml"
 
 postgres:
   url: "$DVA_POSTGRES_URL:postgresql://localhost:5432/dva"
