@@ -25,9 +25,12 @@ import io.ktor.client.engine.mock.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.content.*
+import io.ktor.http.*
 import io.ktor.http.HttpStatusCode.Companion.BadGateway
 import io.ktor.http.HttpStatusCode.Companion.NotFound
 import io.ktor.http.HttpStatusCode.Companion.OK
+import io.ktor.http.HttpStatusCode.Companion.UnprocessableEntity
+import io.ktor.http.HttpStatusCode.Companion.UnsupportedMediaType
 import io.ktor.server.application.*
 import io.ktor.server.testing.*
 import io.ktor.util.network.*
@@ -112,6 +115,12 @@ private suspend fun HttpClient.postAttestation(request: AttestationRequest = att
 private suspend fun HttpClient.postVerification(request: AttestationVerificationRequest = verificationRequest): HttpResponse =
     post("/attestation/verify") { setBody(request) }
 
+private suspend fun HttpClient.postRaw(
+    path: String,
+    body: String,
+    contentType: ContentType = ContentType.Application.Json,
+): HttpResponse = post(path) { setBody(TextContent(body, contentType)) }
+
 private fun upstreams(
     vla: MockResponder = { jsonResponse(emptyVLA) },
     evaluate: MockResponder = { jsonResponse(listOf(passingEvalResult)) },
@@ -141,7 +150,7 @@ class AoVRoutesTest {
     private val sentRequests = mutableListOf<HttpRequestData>()
 
     @BeforeEach
-    fun setupReqsRepoMocking() {
+    fun setup() {
         coEvery { reqsRepo.add(any()) } answers { firstArg() }
     }
 
@@ -220,12 +229,7 @@ class AoVRoutesTest {
 
             // Act
             // Assert response payload
-            client.postAttestation().apply {
-                assertEquals(BadGateway, status)
-                val body: ErrDTO = body()
-                assertEquals(ErrType.BAD_GATEWAY.uri.toString(), body.type)
-                assertEquals(ErrType.BAD_GATEWAY.title, body.title)
-            }
+            client.postAttestation().assertIsError(BadGateway, ErrType.BAD_GATEWAY)
 
             // Assert upstream requests
             assertUpstreamEndpoints(*callOrder.take(callOrder.indexOf(failing) + 1).toTypedArray())
@@ -345,8 +349,73 @@ class AoVRoutesTest {
         // TODO: assert logged
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("bodyAcceptingPaths")
+    fun `malformed JSON body is rejected`(path: String) = testApplication {
+        // Arrange
+        setupApplication(upstreams())
+        val client = createTestClient()
+
+        // Act
+        // Assert response payload
+        client.postRaw(path, """{"exchangeID": """).assertIsError(UnprocessableEntity, ErrType.BAD_REQUEST)
+
+        // Assert upstream requests
+        assertUpstreamEndpoints()
+
+        // Assert db logging
+        assertNothingLogged()
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("bodyAcceptingPaths")
+    fun `body missing required fields is rejected`(path: String) = testApplication {
+        // Arrange
+        setupApplication(upstreams())
+        val client = createTestClient()
+
+        // Act
+        // Assert response payload
+        client.postRaw(path, "{}").assertIsError(UnprocessableEntity, ErrType.BAD_REQUEST)
+
+        // Assert upstream requests
+        assertUpstreamEndpoints()
+
+        // Assert db logging
+        assertNothingLogged()
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("bodyAcceptingPaths")
+    fun `body of an unsupported content type is rejected`(path: String) = testApplication {
+        // Arrange
+        setupApplication(upstreams())
+        val client = createTestClient()
+
+        // Act
+        // Assert response payload
+        client.postRaw(path, "not json at all", ContentType.Text.Plain)
+            .assertIsError(UnsupportedMediaType, ErrType.UNSUPPORTED_MEDIA_TYPE)
+
+        // Assert upstream requests
+        assertUpstreamEndpoints()
+
+        // Assert db logging
+        assertNothingLogged()
+    }
+
     // TODO: handle potential invalid results from VC manager
     // TODO: handle potential other errors from processing
+
+    private suspend fun HttpResponse.assertIsError(expectedStatus: HttpStatusCode, expectedType: ErrType) {
+        assertEquals(expectedStatus, status)
+        val err: ErrDTO = body()
+        assertEquals(expectedType.uri.toString(), err.type)
+        assertEquals(expectedType.title, err.title)
+        assertNotNull(err.detail, "error response should explain what was wrong with the request")
+    }
+
+    private fun assertNothingLogged() = coVerify(exactly = 0) { reqsRepo.add(any()) }
 
     private fun assertLogged(expected: RequestLog) {
         assertEquals(expected, capturedLog().copy(id = expected.id))
@@ -394,6 +463,9 @@ class AoVRoutesTest {
     }
 
     companion object {
+        @JvmStatic
+        fun bodyAcceptingPaths() = listOf("/attestation", "/attestation/verify")
+
         @JvmStatic
         fun attestationUpstreamTransportFailures() = listOf(
             Arguments.of("VLA manager unreachable", Endpoint.vla(vlaUUID), { ConnectException() }),
