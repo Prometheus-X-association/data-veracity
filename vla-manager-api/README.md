@@ -59,13 +59,17 @@ runs without a Postgres; state is lost on restart, so set the DSN for any deploy
 
 Not yet wired into `test-env/compose.yml`. The `Dockerfile` builds and runs standalone,
 and expects the spec mounted at `/app/openapi.yaml` (see `VLA_MANAGER_OPENAPI_FILE`).
+The spec `$ref`s the schemas shared across the DVA components, so mount
+`docs/spec/components.yaml` alongside it at `/app/components.yaml`; it is served at
+`/swagger/components.yaml`, which is where those references resolve to.  Without it the
+spec is still served and `/swagger/components.yaml` answers `404`.
 
 ## Configuration (.env)
 
 | Var | Default | Purpose |
 |---|---|---|
 | `VLA_MANAGER_DB_URL` | *(empty)* | Postgres DSN, e.g. `postgresql://vla:vla@postgres:5432/vla`. Empty → non-persistent in-memory repositories. |
-| `VLA_MANAGER_OPENAPI_FILE` | `/app/openapi.yaml` | Hand-written spec served at `/swagger`. Missing → FastAPI's generated schema. |
+| `VLA_MANAGER_OPENAPI_FILE` | `/app/openapi.yaml` | Hand-written spec served at `/swagger`. Missing → FastAPI's generated schema. `components.yaml` next to it is served at `/swagger/components.yaml`, where the spec's `$ref`s point. |
 | `VLA_MANAGER_API_HOST` | `0.0.0.0` | Listen address |
 | `VLA_MANAGER_API_PORT` | `8000` | Listen port |
 | `VLA_MANAGER_API_LOG_LEVEL` | `info` | One of `critical`, `error`, `warning`, `info`, `debug` |
