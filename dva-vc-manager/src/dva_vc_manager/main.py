@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, AsyncIterator
 
 import uvicorn
 import yaml
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import FileResponse
 
 from .config import cfg
 from .dependencies import build_audit, build_key_store, build_whitelist
@@ -71,6 +73,23 @@ def create_app() -> FastAPI:
     )
     app.include_router(router)
     app.include_router(admin_router)
+
+    @app.get("/swagger/components.yaml", include_in_schema=False)
+    async def shared_schemas() -> FileResponse:
+        """Serve the schemas the spec shares with the other DVA components.
+
+        The spec refers to them as ``./components.yaml#/schemas/...``, which the
+        docs page resolves against the URL it loaded the spec from, ie next to
+        ``openapi_url``.  Keeping the reference external means the shared
+        document stays the single definition rather than being copied in.
+        """
+        shared = Path(cfg.openapi_file).parent / "components.yaml"
+        if not shared.is_file():
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND, "No shared schemas available"
+            )
+        return FileResponse(shared, media_type="application/yaml")
+
     # Populating openapi_schema is what app.openapi() consults first, so
     # Swagger UI and ReDoc both render the hand-written spec.
     app.openapi_schema = _load_openapi_schema(app)

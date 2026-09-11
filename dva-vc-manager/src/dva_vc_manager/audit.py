@@ -79,7 +79,10 @@ class FakeAudit:
         self, credential_id: str, jws: str, request: dict[str, Any]
     ) -> CredentialAudit:
         entry = CredentialAudit(
-            id=uuid4(), credential_id=credential_id, jws=jws, request=request,
+            id=uuid4(),
+            credential_id=credential_id,
+            jws=jws,
+            request=request,
             created_at=datetime.now(timezone.utc),
         )
         self._credentials.append(entry)
@@ -89,7 +92,9 @@ class FakeAudit:
         self, request: dict[str, Any], response: dict[str, Any]
     ) -> VerificationAudit:
         entry = VerificationAudit(
-            id=uuid4(), request=request, response=response,
+            id=uuid4(),
+            request=request,
+            response=response,
             created_at=datetime.now(timezone.utc),
         )
         self._verifications.append(entry)
@@ -142,7 +147,10 @@ class PgAudit:
                 """INSERT INTO issued_credentials (id, credential_id, jws, request)
                    VALUES ($1, $2, $3, $4::jsonb)
                    RETURNING id, credential_id, jws, request, created_at""",
-                entry_id, credential_id, jws, json.dumps(request),
+                entry_id,
+                credential_id,
+                jws,
+                json.dumps(request),
             )
         return CredentialAudit.from_row(row)
 
@@ -155,7 +163,9 @@ class PgAudit:
                 """INSERT INTO verification_audit_log (id, request, response)
                    VALUES ($1, $2::jsonb, $3::jsonb)
                    RETURNING id, request, response, created_at""",
-                entry_id, json.dumps(request), json.dumps(response),
+                entry_id,
+                json.dumps(request),
+                json.dumps(response),
             )
         return VerificationAudit.from_row(row)
 

@@ -43,8 +43,8 @@ RUN apt-get update && \
 # Copy built project
 COPY --from=build /app/.venv/ /app/.venv/
 
-# Hand-written OpenAPI spec -- served at /swagger/openapi.json
 COPY ./docs/spec/vla-manager-api.yaml /app/openapi.yaml
+COPY ./docs/spec/components.yaml /app/components.yaml
 
 ENV VLA_MANAGER_OPENAPI_FILE=/app/openapi.yaml \
     PYTHONUNBUFFERED=1

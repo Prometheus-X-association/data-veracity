@@ -116,7 +116,9 @@ async def aov_verify(
             request=request,
             response={
                 "status_code": status_code,
-                **(body if body is not None else response.model_dump(exclude_none=True)),
+                **(
+                    body if body is not None else response.model_dump(exclude_none=True)
+                ),
             },
         )
         return response
