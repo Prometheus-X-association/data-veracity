@@ -6,7 +6,6 @@ import uvicorn
 import dva_processing.config
 import dva_processing.http
 import dva_processing.log
-import dva_processing.rmq_consumer
 
 
 @plac.flg(
@@ -24,22 +23,13 @@ import dva_processing.rmq_consumer
     help="Do not start the HTTP server",
     abbrev="H",
 )
-@plac.flg(
-    "no_rmq",
-    help="Do not start the RabbitMQ consumer",
-    abbrev="R",
-)
-def main(verbose=False, debug=False, no_http=False, no_rmq=False):
+def main(verbose=False, debug=False, no_http=False):
     if debug:
         dva_processing.config.cfg.log_level = "debug"
     elif verbose:
         dva_processing.config.cfg.log_level = "info"
     dva_processing.log.setup_logging()
     logger = dva_processing.log.get_logger()
-
-    if no_http and no_rmq:
-        logger.error("Both HTTP and RMQ are disabled; nothing to run. Exiting.")
-        return
 
     threads = []
 
@@ -53,15 +43,6 @@ def main(verbose=False, debug=False, no_http=False, no_rmq=False):
         threads.append(http_thread)
     else:
         logger.info("HTTP server disabled in CLI options")
-
-    if not no_rmq:
-        rmq_thread = threading.Thread(
-            target=dva_processing.rmq_consumer.run,
-            daemon=True,
-        )
-        threads.append(rmq_thread)
-    else:
-        logger.info("RabbitMQ message consumer disabled in CLI options")
 
     for t in threads:
         t.start()

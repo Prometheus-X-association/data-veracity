@@ -1,15 +1,15 @@
 package hu.bme.mit.ftsrg.dva.api
 
-import com.rabbitmq.client.Connection
-import com.rabbitmq.client.ConnectionFactory
-import hu.bme.mit.ftsrg.dva.api.db.*
+import hu.bme.mit.ftsrg.dva.api.db.PgRequestLogRepo
+import hu.bme.mit.ftsrg.dva.api.db.configureDatabases
 import hu.bme.mit.ftsrg.dva.api.err.addHandlers
-import hu.bme.mit.ftsrg.dva.api.rabbit.connectWithRetry
-import hu.bme.mit.ftsrg.dva.api.route.*
-import hu.bme.mit.ftsrg.dva.log.ReqestLogRepo
-import hu.bme.mit.ftsrg.dva.log.VerifRequestLogRepo
-import hu.bme.mit.ftsrg.dva.vla.TemplateRepo
-import hu.bme.mit.ftsrg.dva.vla.VLARepo
+import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
+import hu.bme.mit.ftsrg.dva.api.route.docRoutes
+import hu.bme.mit.ftsrg.dva.api.route.infoRoutes
+import hu.bme.mit.ftsrg.dva.api.upstream.Upstream
+import hu.bme.mit.ftsrg.dva.api.upstream.UpstreamClient
+import hu.bme.mit.ftsrg.dva.api.upstream.configureForUpstreams
+import hu.bme.mit.ftsrg.dva.log.RequestLogRepo
 import io.ktor.client.*
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.*
@@ -24,7 +24,8 @@ import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import org.slf4j.event.Level
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import io.ktor.server.application.install as serverInstall
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
 
@@ -60,30 +61,15 @@ fun Application.installPlugins() {
     serverInstall(Resources)
 }
 
+@OptIn(ExperimentalTime::class)
 fun Application.configureKoin() {
-    val rabbitHost = environment.config.property("rabbitmq.host").getString()
-
+    val upstreamURLs: Map<Upstream, String> =
+        Upstream.entries.associateWith { environment.config.property(it.configKey).getString() }
     val appModule = module {
-        single<Connection> {
-            ConnectionFactory().run {
-                host = rabbitHost
-                connectWithRetry(logger = log)
-            }
-        }
-        single<HttpClient> {
-            HttpClient(CIO) {
-                install(ClientContentNegotiation) {
-                    json(Json {
-                        explicitNulls = true
-                        ignoreUnknownKeys = true
-                    })
-                }
-            }
-        }
-        single<TemplateRepo> { PgTemplateRepo() }
-        single<ReqestLogRepo> { PgRequestLogRepo() }
-        single<VerifRequestLogRepo> { PgVerifRequestLogRepo() }
-        single<VLARepo> { PgVLARepo() }
+        single<HttpClient> { HttpClient(CIO) { configureForUpstreams() } }
+        single<RequestLogRepo> { PgRequestLogRepo() }
+        single<Clock> { Clock.System }
+        single { UpstreamClient(http = get<HttpClient>(), baseURLs = upstreamURLs) }
     }
 
     serverInstall(Koin) { modules(appModule) }
@@ -91,9 +77,6 @@ fun Application.configureKoin() {
 
 fun Application.addRoutes() {
     docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
-    templateRoutes()
     aovRoutes()
-    vlaRoutes()
-    evaluationRoutes()
     infoRoutes()
 }

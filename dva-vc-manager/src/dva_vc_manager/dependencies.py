@@ -1,0 +1,72 @@
+"""FastAPI dependency providers for the DVA VC Manager."""
+
+from __future__ import annotations
+
+import asyncpg
+from fastapi import Request
+
+from .audit import AuditRepo, FakeAudit, PgAudit
+from .config import cfg
+from .keys import SigningKeyStore
+from .log import get_logger
+from .whitelist import FakeWhitelist, PgWhitelist, WhitelistRepo
+
+logger = get_logger()
+
+
+def build_key_store() -> SigningKeyStore:
+    """
+    Load the signing key, generating and persisting one if absent.
+
+    Called once, at startup, so a missing directory or bad key file fails
+    the boot rather than the first request to reach ``/aov/issue``.
+    """
+    store = SigningKeyStore(cfg.signing_key_path)
+    store.load_or_generate()
+    return store
+
+
+def get_key_store(request: Request) -> SigningKeyStore:
+    """Return the signing key store loaded during startup."""
+    return request.app.state.key_store
+
+
+async def build_whitelist() -> WhitelistRepo:
+    """
+    Construct the whitelist repo from config. Called once, at startup.
+
+    With no DSN configured this falls back to the in-memory repo so the
+    service still boots for local development.
+    """
+    if not cfg.postgres_dsn:
+        logger.warning(
+            "DVA_VC_MANAGER_DB_URL is not set, falling back to in-memory "
+            "FakeWhitelist; the whitelist will not survive a restart"
+        )
+        return FakeWhitelist()
+
+    pool = await asyncpg.create_pool(dsn=cfg.postgres_dsn, min_size=1, max_size=4)
+    repo = PgWhitelist(pool)
+    await repo.ensure_schema()
+    return repo
+
+
+async def build_audit() -> AuditRepo:
+    """Build the audit repository, using the same PostgreSQL database as the whitelist."""
+    if not cfg.postgres_dsn:
+        return FakeAudit()
+
+    pool = await asyncpg.create_pool(dsn=cfg.postgres_dsn, min_size=1, max_size=4)
+    repo = PgAudit(pool)
+    await repo.ensure_schema()
+    return repo
+
+
+def get_whitelist(request: Request) -> WhitelistRepo:
+    """Return the whitelist repo built during startup."""
+    return request.app.state.whitelist
+
+
+def get_audit(request: Request) -> AuditRepo:
+    """Return the audit repository built during startup."""
+    return request.app.state.audit

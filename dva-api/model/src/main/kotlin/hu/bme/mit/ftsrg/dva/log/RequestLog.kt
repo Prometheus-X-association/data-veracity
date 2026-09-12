@@ -3,6 +3,7 @@
 
 package hu.bme.mit.ftsrg.dva.log
 
+import hu.bme.mit.ftsrg.dva.dto.processing.EvaluationResult
 import hu.bme.mit.ftsrg.serialization.URLSerializer
 import hu.bme.mit.ftsrg.serialization.UuidSerializer
 import kotlinx.serialization.Serializable
@@ -15,38 +16,21 @@ import kotlin.uuid.Uuid
 
 @Serializable
 data class RequestLog(
-    val id: Uuid,
+    val id: Uuid = Uuid.random(),
     val type: RequestType,
-    val requestID: Uuid,
-    val exchangeID: String,
-    val contractID: String,
-    val vlaID: Uuid?,
+    val exchangeID: Uuid,
+    val contractID: Uuid,
+    val vlaID: Uuid,
     val data: JsonElement,
-    val attesterID: String,
-    val evaluationPassing: Boolean? = null,
-    val evaluationResults: String? = null,
+    val evaluationPassing: Boolean,
+    val evaluationResults: List<EvaluationResult>,
     val receivedDate: Instant,
-    val evaluationDate: Instant? = null,
-    val vcIssuedDate: Instant? = null,
-    val vcID: String? = null,
+    val vcID: Uuid? = null,
+    val error: RequestLogError? = null
 )
 
 @Serializable
 enum class RequestType { ATTESTATION_REQUEST, PROOF_REQUEST }
 
 @Serializable
-data class RequestLogNew(
-    val type: RequestType,
-    val requestID: Uuid,
-    val exchangeID: String,
-    val contractID: String,
-    val vlaID: Uuid,
-    val data: JsonElement,
-    val attesterID: String,
-    val evaluationPassing: Boolean? = null,
-    val evaluationResults: String? = null,
-    val receivedDate: Instant,
-    val evaluationDate: Instant? = null,
-    val vcIssuedDate: Instant? = null,
-    val vcID: String? = null,
-)
+data class RequestLogError(val title: String, val detail: String? = null)

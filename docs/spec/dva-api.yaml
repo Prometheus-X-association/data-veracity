@@ -1,0 +1,485 @@
+---
+openapi: 3.1.1
+
+
+info:
+  title: Data Veracity Assurance Gateway
+  version: 0.1.0
+  description: >-
+    This is the API specification of the
+    [data veracity assurance building block (DVA)](https://github.com/Prometheus-X-association/data-veracity).
+
+
+    Operations tagged `Future` are part of the intended contract but are
+    not served by the current implementation yet; see the note on each.
+  contact:
+    email: bpeter@edu.bme.hu
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+
+
+# The service performs no authentication or authorisation of its own; an
+# empty root-level requirement says so explicitly.
+security: []
+
+
+servers:
+  - url: http://localhost:9091
+    description: Test environment – Provider side
+  - url: http://localhost:9092
+    description: Test environment – Consumer side
+  - url: http://localhost:9090
+    description: Local development server on default port
+  - url: '{server}'
+    description: Custom
+    variables:
+      server:
+        default: http://localhost:9090
+        description: Custom server URL
+
+
+tags:
+  - name: AoV
+    description: Attestation generation and verification
+  - name: Info
+    description: Retrieve information about the running instance
+  - name: Future
+    description: >-
+      Endpoints that are not available yet but will be implemented in
+      the future
+
+
+paths:
+  /attestation:
+    post:
+      tags: [AoV]
+      summary: Request an Attestation of Veracity (AoV)
+      description: >-
+        Create a new **Attestation of Veracity** for a given data
+        exchange.  The associated VLA is obtained by ID from the VLA
+        Manager and its veracity requirements are evaluated by the
+        processing service.  Only if *every* requirement passes is an
+        AoV verifiable credential issued by the VC Manager and returned
+        by this endpoint as a compact JWS.
+
+
+        The request is handled synchronously, and both successful and
+        failed attempts are logged; see `GET /info/requests`.
+      operationId: requestAov
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttestationRequest'
+            examples:
+              simple:
+                summary: An exchange carrying a small JSON payload
+                value:
+                  exchangeID: 5287a608-36c1-40f1-8430-5eaad60c5eca
+                  contractID: a37532aa-5e41-4a27-a6c8-a7b4089779a8
+                  vlaID: 6c92b868-49d2-4bcc-a5e7-bacb0f5b858a
+                  data:
+                    foo: bar
+                    baz: [qux, quux]
+      responses:
+        '200':
+          $ref: '#/components/responses/AoVGenerated'
+        '404':
+          $ref: '#/components/responses/VLANotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/MalformedRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/UpstreamError'
+
+
+  /attestation/verify:
+    post:
+      tags: [AoV]
+      summary: Verify an Attestation of Veracity
+      description: >-
+        Verify an **Attestation of Veracity**.  The AoV is forwarded to
+        the VC Manager, which checks the JWS both cryptographically and
+        content-wise; this endpoint relays that verdict.
+
+
+        A `200 OK` only means that the verification itself ran; consult
+        `verified` in the body for the outcome.
+      operationId: verifyAov
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttestationVerificationRequest'
+            examples:
+              simple:
+                summary: A compact JWS as returned by `POST /attestation`
+                value:
+                  jws: >-
+                    eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa29iQ2c4Y2tUZU1Hekg4RWZYYnVKU2RRNng3UXZnZGVMNkZqQjdDeng1V1VZV0FteSJ9..pQYZ8ViPzZbnY3RJZUE3Gp_b2GXG3oFnu1Px5r2to-sZGNDv5Cj8Qp5sJvbE_3gwec6GjNmNJZpK7ve1r7UtCw
+      responses:
+        '200':
+          $ref: '#/components/responses/AoVVerified'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/MalformedRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/UpstreamError'
+
+
+  /info/requests:
+    get:
+      tags: [Info]
+      summary: List attestation requests received by this instance
+      description: >-
+        Returns a log entry for every request made to `/attestation`,
+        including the ones that failed.
+      operationId: getRequests
+      responses:
+        '200':
+          $ref: '#/components/responses/RequestLogs'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+
+  /info/verifications:
+    get:
+      tags: [Info, Future]
+      summary: List AoV verifications done by this instance
+      description: >-
+        Returns a list of all AoVs that were verified by this instance
+        using `/attestation/verify`.
+
+
+        **Not implemented yet.**  Verification requests are not logged
+        at present, so this path is unrouted and answers `404` like any
+        other unknown path.
+      operationId: getVerifications
+      x-implementation-status: planned
+      responses:
+        '200':
+          $ref: '#/components/responses/VerificationLogs'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+
+  /info/credentials:
+    get:
+      tags: [Info, Future]
+      summary: List VCs held at this instance
+      description: >-
+        Returns a list of all verifiable credentials held locally,
+        as reported by the ACA-Py agent.
+
+
+        **Not implemented yet.**  This path is unrouted and answers
+        `404` like any other unknown path.
+      operationId: getCredentials
+      x-implementation-status: planned
+      responses:
+        '200':
+          $ref: '#/components/responses/Credentials'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/UpstreamError'
+
+
+components:
+  responses:
+    AoVGenerated:
+      description: >-
+        The attestation request was processed
+        (the evaluation itself may still have failed, in which case no
+        JWS is returned).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AttestationResponse'
+    AoVVerified:
+      description: >-
+        AoV successfully verified
+        (the verification process itself was successful but the AoV itself
+        might still be invalid).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AttestationVerificationResponse'
+    VLANotFound:
+      description: The referenced VLA was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnsupportedMediaType:
+      description: >-
+        Body was sent with a content type other than `application/json`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    MalformedRequest:
+      description: >-
+        Body is not valid JSON, is missing required fields, or carries
+        fields the endpoint does not accept.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: >-
+        An unexpected error occurred while handling the request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UpstreamError:
+      description: >-
+        An upstream service (eg VLA Manager, processing, VC Manager)
+        was unreachable or returned an error or an unusable response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RequestLogs:
+      description: List of logged AoV generation requests.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/RequestLog'
+    VerificationLogs:
+      description: List of logged AoV verification requests.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/VerificationLog'
+    Credentials:
+      description: The verifiable credentials held by this instance.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: './components.yaml#/schemas/VerifiableCredential'
+
+
+  schemas:
+    AttestationRequest:
+      description: >-
+        A request to generate an attestation for a given data exchange.
+      type: object
+      required: [exchangeID, contractID, vlaID, data]
+      additionalProperties: false
+      properties:
+        id:
+          description: >-
+            Client-supplied identifier.  Accepted for backwards
+            compatibility but ignored; the log entry gets a
+            server-generated ID.
+          type: string
+        exchangeID:
+          description: Identifies the data exchange.
+          type: string
+          format: uuid
+          examples: [1d7e4db0-145d-4f69-8774-9e1b36a4c813]
+        contractID:
+          description: Identifies the relevant contract.
+          type: string
+          format: uuid
+          examples: [317b2ccb-d0b0-4499-bcac-c347e8192512]
+        vlaID:
+          description: Identifies the relevant VLA with the requirements.
+          type: string
+          format: uuid
+          examples: [63e2b688-c538-4b10-9276-97ee138d0c5c]
+        data:
+          description: >-
+            The data being passed.  Any JSON value – object, array or
+            scalar.
+          examples:
+            - {foo: bar, baz: [qux, quux]}
+    AttestationResponse:
+      description: AoV generation response containing an AoV as a JWS.
+      type: object
+      required: [evaluationPassing, evaluationResults]
+      properties:
+        jws:
+          description: >-
+            An AoV VC as a compact JWS string.  Absent when the
+            evaluation did not pass, as no credential is issued in that
+            case.
+          type: string
+        evaluationPassing:
+          description: >-
+            Whether every veracity requirement’s evaluation passed.
+          type: boolean
+          examples: [true]
+        evaluationResults:
+          description: >-
+            Per-requirement evaluation results.  Never empty; an empty
+            result set from the processing service is reported as a
+            `502` instead.
+          type: array
+          minItems: 1
+          items:
+            $ref: './components.yaml#/schemas/EvaluationResult'
+    AttestationVerificationRequest:
+      description: Requests the verification of an AoV.
+      type: object
+      required: [jws]
+      additionalProperties: false
+      properties:
+        jws:
+          description: The AoV as a compact JWS VC to verify.
+          type: string
+    AttestationVerificationResponse:
+      description: The results of verifying an AoV.
+      type: object
+      required: [verified]
+      properties:
+        verified:
+          description: Whether the AoV was deemed valid in all aspects.
+          type: boolean
+          examples: [true]
+        reason:
+          description: >-
+            Failure reason when `verified` is false; absent otherwise.
+          type: string
+          examples: [invalid signature]
+    RequestLog:
+      description: >-
+        An object representing a logged attestation generation request.
+      type: object
+      required:
+        - id
+        - type
+        - exchangeID
+        - contractID
+        - vlaID
+        - data
+        - evaluationPassing
+        - evaluationResults
+        - receivedDate
+      properties:
+        id:
+          description: Server-generated unique identifier for this log entry.
+          type: string
+          format: uuid
+        type:
+          description: The kind of request that was logged.
+          $ref: '#/components/schemas/RequestType'
+        exchangeID:
+          description: >-
+            Identifies the data exchange for which this attestation
+            was attempted.
+          type: string
+          format: uuid
+        contractID:
+          description: Identifies the contract the exchange was made under.
+          type: string
+          format: uuid
+        vlaID:
+          description: >-
+            Identifies the VLA that was used to generate an attestation
+            against.
+          type: string
+          format: uuid
+        data:
+          description: >-
+            The piece of data that was attested to.  Any JSON value –
+            object, array or scalar.
+        evaluationPassing:
+          description: Whether all VLA requirements passed.
+          type: boolean
+        evaluationResults:
+          description: >-
+            Per-requirement evaluation results.  Empty if the request
+            failed before the processing service was reached.
+          type: array
+          items:
+            $ref: './components.yaml#/schemas/EvaluationResult'
+        receivedDate:
+          description: ISO-8601 timestamp at which the request was received.
+          type: string
+          format: date-time
+          examples: ['2025-03-16T03:25:00Z']
+        vcID:
+          description: >-
+            Identifies the issued credential; absent if none was issued.
+          type: string
+          format: uuid
+        error:
+          description: >-
+            What went wrong while handling the request; absent if it
+            succeeded.
+          $ref: '#/components/schemas/RequestLogError'
+    VerificationLog:
+      description: >-
+        An object representing a logged attestation verification.
+
+
+        **Not specified yet**, pending the logging of verification
+        requests; see `GET /info/verifications`.
+      type: object
+      x-implementation-status: planned
+    RequestType:
+      description: Describes a type of veracity attestation request.
+      type: string
+      enum: [ATTESTATION_REQUEST, PROOF_REQUEST]
+    RequestLogError:
+      description: >-
+        The error that terminated a logged request.
+      type: object
+      required: [title]
+      properties:
+        title:
+          description: Short summary of the problem type.
+          type: string
+          examples: [Upstream service error]
+        detail:
+          description: >-
+            Human-readable explanation specific to this occurrence.
+          type: string
+    Error:
+      description: >-
+        RFC 9457-like error object.  Note that it is served as
+        `application/json` rather than `application/problem+json`.
+      type: object
+      required: [type, title]
+      properties:
+        type:
+          description: >-
+            A URI reference identifying the problem type.  One of
+            `/errors/exists`, `/errors/not_found`, `/errors/bad_request`,
+            `/errors/unsupported_media_type`, `/errors/bad_gateway`,
+            `/errors/unimplemented` or `/errors/unknown`.
+          type: string
+          examples: ['/errors/not_found']
+        title:
+          description: Short summary of the problem type.
+          type: string
+          examples: [Upstream service error]
+        detail:
+          description: >-
+            Human-readable explanation specific to this occurrence.
+          type: string
+          examples: [vlaId must be a valid UUID]
+        instance:
+          description: >-
+            URI reference identifying the specific occurrence of the
+            problem.  The request path, when known.
+          type: string
+          examples: ['/attestation']

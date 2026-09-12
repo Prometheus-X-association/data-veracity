@@ -1,0 +1,60 @@
+---
+name: Build and Test VLA Manager API
+
+
+on:
+  push:
+    paths:
+      - vla-manager-api/src/**
+      - vla-manager-api/tests/**
+      - vla-manager-api/pyproject.toml
+      - vla-manager-api/uv.lock
+      - .github/workflows/build-vla-manager-api.yml
+  pull_request:
+    paths:
+      - vla-manager-api/src/**
+      - vla-manager-api/tests/**
+      - vla-manager-api/pyproject.toml
+      - vla-manager-api/uv.lock
+      - .github/workflows/build-vla-manager-api.yml
+
+
+permissions:
+  contents: read
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+
+defaults:
+  run:
+    working-directory: ./vla-manager-api
+
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          working-directory: ./vla-manager-api
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: Check formatting
+        run: uv run --no-sync ruff format --check src tests
+      - name: Lint
+        run: uv run --no-sync ruff check src tests
+      - name: Run Pytest
+        run: uv run --no-sync pytest --junitxml=junit.xml
+      - name: Upload test artefacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: pytest-results
+          path: vla-manager-api/junit.xml

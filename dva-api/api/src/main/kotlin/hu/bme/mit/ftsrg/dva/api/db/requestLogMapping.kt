@@ -20,52 +20,43 @@ import kotlin.uuid.toKotlinUuid
 
 object RequestLogsTable : UUIDTable("request_logs") {
     val type = varchar("type", 255)
-    val requestID = varchar("request_id", 255)
     val exchangeID = varchar("exchange_id", 255)
     val contractID = varchar("contract_id", 255)
     val vlaID = varchar("vla_id", 255)
     val data = text("data")
-    val attesterID = varchar("attester_id", 255)
-    val evaluationPassing = bool("evaluation_passing").nullable()
-    val evaluationResults = text("evaluation_results").nullable()
+    val evaluationPassing = bool("evaluation_passing")
+    val evaluationResults = text("evaluation_results")
     val receivedDate = datetime("received_date")
-    val evaluationDate = datetime("evaluation_date").nullable()
-    val vcIssuedDate = datetime("vc_issued_date").nullable()
     val vcID = varchar("vc_id", 255).nullable()
+    val error = text("error").nullable()
 }
 
 class RequestLogEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     companion object : UUIDEntityClass<RequestLogEntity>(RequestLogsTable)
 
     var type by RequestLogsTable.type
-    var requestID by RequestLogsTable.requestID
     var exchangeID by RequestLogsTable.exchangeID
     var contractID by RequestLogsTable.contractID
     var vlaID by RequestLogsTable.vlaID
     var data by RequestLogsTable.data
-    var attesterID by RequestLogsTable.attesterID
     var evaluationPassing by RequestLogsTable.evaluationPassing
     var evaluationResults by RequestLogsTable.evaluationResults
     var receivedDate by RequestLogsTable.receivedDate
-    var evaluationDate by RequestLogsTable.evaluationDate
-    var vcIssuedDate by RequestLogsTable.vcIssuedDate
     var vcID by RequestLogsTable.vcID
+    var error by RequestLogsTable.error
 }
 
 @OptIn(ExperimentalTime::class)
 fun RequestLogEntity.toModel() = RequestLog(
     id = id.value.toKotlinUuid(),
     type = RequestType.valueOf(type),
-    requestID = Uuid.parse(requestID),
-    exchangeID = exchangeID,
-    contractID = contractID,
+    exchangeID = Uuid.parse(exchangeID),
+    contractID = Uuid.parse(contractID),
     vlaID = Uuid.parse(vlaID),
     data = Json.decodeFromString(data),
-    attesterID = attesterID,
     evaluationPassing = evaluationPassing,
-    evaluationResults = evaluationResults,
+    evaluationResults = Json.decodeFromString(evaluationResults),
     receivedDate = receivedDate.toInstant(UTC),
-    evaluationDate = evaluationDate?.toInstant(UTC),
-    vcIssuedDate = vcIssuedDate?.toInstant(UTC),
-    vcID = vcID,
+    vcID = vcID?.let { Uuid.parse(it) },
+    error = error?.let { Json.decodeFromString(it) },
 )
