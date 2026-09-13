@@ -46,6 +46,10 @@ jobs:
           working-directory: ./dva-processing
       - name: Install dependencies
         run: uv sync --locked
+      - name: Check formatting
+        run: uv run --no-sync ruff format --check src tests
+      - name: Lint
+        run: uv run --no-sync ruff check src tests
       - name: Run Pytest
         run: uv run --no-sync pytest --junitxml=junit.xml
       - name: Upload test artefacts
