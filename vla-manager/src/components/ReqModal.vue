@@ -81,6 +81,13 @@
         
         <footer>
           <button
+            @click="validateRequirement"
+            class="validate-button"
+            :disabled="chosenFragment === null || validating"
+          >
+            Validate
+          </button>
+          <button
             @click="addRequirement"
             class="add-button"
             :disabled="chosenFragment === null || validating"
@@ -171,7 +178,7 @@
   const props = defineProps(['element'])
   defineExpose({ show: showModal })
 
-  const addRequirement = async () => {
+  const currentModel = () => {
     const rawValues = toRaw(values)
     const model = {}
 
@@ -179,6 +186,12 @@
       model[key] = rawValues[key]
     }
 
+    return model
+  }
+
+  // Validating and adding both go through here, so the author can check a
+  // requirement as many times as they like before committing to it.
+  const runValidation = async (model) => {
     validating.value = true
     validationResult.value = null
     try {
@@ -189,7 +202,17 @@
       validating.value = false
     }
 
-    if (!validationResult.value.valid) return
+    return validationResult.value
+  }
+
+  const validateRequirement = async () => {
+    await runValidation(currentModel())
+  }
+
+  const addRequirement = async () => {
+    const model = currentModel()
+
+    if (!(await runValidation(model)).valid) return
 
     const req = {
       data: {
@@ -317,6 +340,12 @@
   .add-button {
     background: #08c41e;
     font-weight: bold;
+  }
+
+  /* Secondary to the add button: checking is the optional step. */
+  .validate-button {
+    background: #fff;
+    border: 1px solid #9ca3af;
   }
   
   /* Animations */
