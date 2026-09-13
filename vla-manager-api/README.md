@@ -16,8 +16,9 @@ Separating VLA ownership from the attestation gateway means:
 - VLAs are authored once and shared across participants
 - The VLA Manager Vue UI talks to a single dedicated backend
 
-The migration is not finished: `dva-api` still carries its own `PgVLARepo` and VLA
-routes, and nothing calls this service yet.
+`dva-api`'s own VLA routes and `PgVLARepo` are gone, and `dva-processing` resolves
+templates by calling `GET /template/{id}` here.  What is left of the migration is
+deployment: this service is not yet in `test-env/compose.yml`.
 
 ## Role
 
