@@ -4,7 +4,7 @@ import {
   normalizeAttestationRecord,
   normalizeEvaluationResult,
   normalizeVerificationRecord
-} from '../dva-dashboard/src/failures/failureModel.js'
+} from '../src/failures/failureModel.js'
 
 test('explains a schema evaluation failure with evidence and recovery guidance', () => {
   const failure = normalizeEvaluationResult({

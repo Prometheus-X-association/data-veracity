@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { demoCredentials, demoPresentations, demoRequests } from '../dva-dashboard/src/demoData.js'
+import { demoCredentials, demoPresentations, demoRequests } from '../src/demoData.js'
 
 test('demo attestations include passed, pending, and explained failure records', () => {
   const states = new Set(demoRequests.map(record => record.status))
