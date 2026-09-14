@@ -19,6 +19,7 @@ from fastapi.testclient import TestClient
 
 from vla_manager_api.dependencies import get_repo, get_template_repo
 from vla_manager_api.main import create_app
+from vla_manager_api.models import TemplateNew
 from vla_manager_api.template_repo import FakeTemplateRepo
 from vla_manager_api.vla_repo import FakeVLARepo
 
@@ -149,27 +150,29 @@ def test_vla_from_templates_creates_vla_with_rendered_quality(
     client: TestClient,
     fake_template_repo: FakeTemplateRepo,
 ) -> None:
-    template_id = "3c58c2fd-6d7a-4953-9f76-7c71fc3ac7e2"
-    asyncio.run(
+    # The repo mints the id, so the seeded template is referred to by what
+    # `add` hands back rather than by one fixed here.
+    template_id = asyncio.run(
         fake_template_repo.add(
-            {
-                "id": template_id,
-                "name": "JQ check",
-                "criterionType": "VALID_INVALID",
-                "targetAspect": "SYNTAX",
-                "evaluationMethod": {
-                    "engine": "JQ",
-                    "variableSchema": {"value": {"type": "string"}},
-                    "implementationTemplate": '.value == "ok"',
-                },
-            }
+            TemplateNew.model_validate(
+                {
+                    "name": "JQ check",
+                    "criterionType": "VALID_INVALID",
+                    "targetAspect": "SYNTAX",
+                    "evaluationMethod": {
+                        "engine": "JQ",
+                        "variableSchema": {"value": {"type": "string"}},
+                        "implementationTemplate": '.value == "ok"',
+                    },
+                }
+            )
         )
     )
     r = client.post(
         "/vla/from-templates",
         json={
             "description": "rendered VLA",
-            "qualityTemplates": [{"id": template_id, "model": {"value": "ok"}}],
+            "qualityTemplates": [{"id": str(template_id), "model": {"value": "ok"}}],
         },
     )
     assert r.status_code == 201

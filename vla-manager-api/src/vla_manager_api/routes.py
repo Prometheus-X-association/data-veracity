@@ -80,16 +80,18 @@ async def create_vla_from_templates(
             raise http_error(
                 status.HTTP_404_NOT_FOUND, f"No template with ID {qt.id} exists"
             )
-        em = template["evaluationMethod"]
+        em = template.evaluation_method
         try:
-            implementation = render_template(em["implementationTemplate"], qt.model)
+            implementation = render_template(em.implementation_template, qt.model)
         except Exception as exc:
             raise http_error(
                 status.HTTP_400_BAD_REQUEST,
                 f"Failed to render template {qt.id}",
             ) from exc
+        # The VLA is persisted as a plain document, so the engine goes in as
+        # its value rather than as the enum member.
         rendered_quality.append(
-            {"engine": em["engine"], "implementation": implementation}
+            {"engine": em.engine.value, "implementation": implementation}
         )
 
     existing_quality = base_vla.get("quality") or []

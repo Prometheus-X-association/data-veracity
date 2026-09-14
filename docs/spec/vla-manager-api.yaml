@@ -183,11 +183,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
-              description: >-
-                The template model – any JSON object whose keys match the
-                variables declared in the template’s `variableSchema`.
+              $ref: '#/components/schemas/TemplateModel'
             examples:
               DateModel:
                 summary: Date model
@@ -221,6 +217,43 @@ paths:
                 $ref: '#/components/schemas/Error'
         '422':
           description: Request body is not a JSON object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+  /template/{id}/validate:
+    parameters:
+      - $ref: '#/components/parameters/idParam'
+    post:
+      tags: [Templates]
+      summary: Validate a rendered template requirement
+      description: >-
+        Checks the supplied model against the template variable schema,
+        renders the implementation, and asks DVA Processing to validate the
+        resulting engine logic.  Invalid template input and unavailable
+        processing are returned as structured outcomes.
+      operationId: validateTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateModel'
+      responses:
+        '200':
+          description: Successfully performed template validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateValidationResult'
+        '404':
+          description: No template with the given ID exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Invalid request body.
           content:
             application/json:
               schema:
@@ -583,8 +616,36 @@ components:
         implementation:
           type: string
           description: The rendered data-quality fragment.
+    TemplateModel:
+      type: object
+      additionalProperties: true
+      description: >-
+        The template model – any JSON object whose keys match the
+        variables declared in the template’s `variableSchema`.
+    TemplateValidationResult:
+      type: object
+      required: [valid, engine]
+      additionalProperties: false
+      properties:
+        valid:
+          type: boolean
+          description: Whether the template is valid.
+        reason:
+          type: string
+          description: >-
+            Reason for template invalidity.
+            Absent if `valid` is `true`.
+          enum: [INVALID_IMPLEMENTATION, UNAVAILABLE_ENGINE]
+        engine:
+          $ref: '#/components/schemas/QualityEngine'
+        details:
+          type: string
+          description: Additional validation details
+        implementation:
+          type: string
+          description: Rendered implementation when rendering succeeded.
     QualityEngine:
-      $ref: './components.yaml#/schemas/QualityEngine'
+      $ref: ./components.yaml#/schemas/QualityEngine
     CriterionType:
       type: string
       enum: [VALID_INVALID, IN_RANGE, GREATER_THAN, LESS_THAN]
@@ -631,7 +692,8 @@ components:
                   oneOf:
                     - type: string
                     - type: integer
-                examples: [[body, criterionType]]
+                examples:
+                  - [body, criterionType]
               msg:
                 type: string
                 examples: [Field required]

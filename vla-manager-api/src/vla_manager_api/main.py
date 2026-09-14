@@ -1,10 +1,11 @@
 """
 FastAPI application factory and CLI entrypoint.
 
-The application is wired so the repository implementations are resolved
-through FastAPI's dependency-injection system. In production both repos
-are built once during ``lifespan`` and read off ``app.state``; in tests
-the caller swaps them via ``app.dependency_overrides[get_repo]``.
+The application is wired so its collaborators – both repositories and the
+validator client – are resolved through FastAPI's dependency-injection
+system. In production each is built once during ``lifespan`` and read off
+``app.state``; in tests the caller swaps them via
+``app.dependency_overrides[get_repo]`` and friends.
 """
 
 from __future__ import annotations
@@ -21,7 +22,12 @@ from fastapi.responses import FileResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import cfg
-from .dependencies import build_pool, build_template_repo, build_vla_repo
+from .dependencies import (
+    build_pool,
+    build_requirement_validator,
+    build_template_repo,
+    build_vla_repo,
+)
 from .errors import http_exception_handler
 from .log import get_logger, setup_logging
 from .routes import router
@@ -51,13 +57,16 @@ def _load_openapi_schema(app: FastAPI) -> dict[str, Any]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Build both repositories up front and close the pool on shutdown."""
+    """Build the repositories and the validator up front, and close both on
+    shutdown."""
     app.state.pool = await build_pool()
     app.state.vla_repo = await build_vla_repo(app.state.pool)
     app.state.template_repo = await build_template_repo(app.state.pool)
+    app.state.requirement_validator = build_requirement_validator()
     try:
         yield
     finally:
+        await app.state.requirement_validator.aclose()
         if app.state.pool is not None:
             await app.state.pool.close()
 
