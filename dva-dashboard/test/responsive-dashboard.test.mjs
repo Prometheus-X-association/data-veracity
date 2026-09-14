@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createMobileNavigationState } from '../dva-dashboard/src/utils/mobileNavigation.mjs'
+import { createMobileNavigationState } from '../src/utils/mobileNavigation.mjs'
 
 test('opens and closes the mobile drawer', () => {
   const nav = createMobileNavigationState({ isMobile: true })
