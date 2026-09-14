@@ -12,22 +12,39 @@ of testing.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional, Protocol
+from typing import Optional, Protocol
 from uuid import UUID, uuid4
+
+from .models import Template, TemplateNew, TemplatePatch
+
+
+def _apply_patch(existing: Template, patch: TemplatePatch) -> Template:
+    """
+    Return ``existing`` with the fields ``patch`` sets replaced.
+
+    Re-validated rather than copied field by field, so a patched
+    ``evaluationMethod`` comes back as the model and not the dict it was
+    dumped to.  ``exclude_none`` is what makes this a partial update: a
+    field the caller left out is not a request to clear it.
+    """
+    return Template.model_validate(
+        {
+            **existing.model_dump(),
+            **patch.model_dump(exclude_none=True, exclude={"id"}),
+        }
+    )
 
 
 class TemplateRepo(Protocol):
     """Minimal contract for Template persistence."""
 
-    async def all(self) -> list[dict[str, Any]]: ...
+    async def all(self) -> list[Template]: ...
 
-    async def by_id(self, id: UUID) -> Optional[dict[str, Any]]: ...
+    async def by_id(self, id: UUID) -> Optional[Template]: ...
 
-    async def add(self, template: dict[str, Any]) -> Optional[UUID]: ...
+    async def add(self, template: TemplateNew) -> Optional[UUID]: ...
 
-    async def update(
-        self, id: UUID, patch: dict[str, Any]
-    ) -> Optional[dict[str, Any]]: ...
+    async def update(self, id: UUID, patch: TemplatePatch) -> Optional[Template]: ...
 
     async def remove(self, id: UUID) -> bool: ...
 
@@ -38,34 +55,25 @@ class FakeTemplateRepo:
     """In-memory Template repository for tests."""
 
     def __init__(self) -> None:
-        self._templates: dict[UUID, dict[str, Any]] = {}
+        self._templates: dict[UUID, Template] = {}
 
-    async def all(self) -> list[dict[str, Any]]:
-        # Inject id into returned dict (mirror PgTemplateRepo behaviour)
-        return [{**t, "id": str(tid)} for tid, t in self._templates.items()]
+    async def all(self) -> list[Template]:
+        return list(self._templates.values())
 
-    async def by_id(self, id: UUID) -> Optional[dict[str, Any]]:
-        t = self._templates.get(id)
-        return {**t, "id": str(id)} if t is not None else None
+    async def by_id(self, id: UUID) -> Optional[Template]:
+        return self._templates.get(id)
 
-    async def add(self, template: dict[str, Any]) -> Optional[UUID]:
-        raw_id = template.get("id")
-        if raw_id is not None:
-            id = UUID(str(raw_id))
-        else:
-            id = uuid4()
-        stored = {k: v for k, v in template.items() if k != "id"}
-        self._templates[id] = stored
+    async def add(self, template: TemplateNew) -> Optional[UUID]:
+        id = uuid4()
+        self._templates[id] = Template(id=id, **template.model_dump())
         return id
 
-    async def update(self, id: UUID, patch: dict[str, Any]) -> Optional[dict[str, Any]]:
+    async def update(self, id: UUID, patch: TemplatePatch) -> Optional[Template]:
         existing = self._templates.get(id)
         if existing is None:
             return None
-        for k, v in patch.items():
-            if v is not None:
-                existing[k] = v
-        return {**existing, "id": str(id)}
+        self._templates[id] = _apply_patch(existing, patch)
+        return self._templates[id]
 
     async def remove(self, id: UUID) -> bool:
         return self._templates.pop(id, None) is not None
@@ -112,21 +120,23 @@ class PgTemplateRepo:
                 """
             )
 
-    def _row_to_dict(self, row) -> dict[str, Any]:  # type: ignore[no-untyped-def]
-        return {
-            "id": str(row["id"]),
-            "name": row["name"],
-            "description": row["description"],
-            "criterionType": row["criterion_type"],
-            "targetAspect": row["target_aspect"],
-            "evaluationMethod": {
-                "engine": row["engine"],
-                "variableSchema": json.loads(row["variable_schema"]),
-                "implementationTemplate": row["implementation_template"],
-            },
-        }
+    def _row_to_template(self, row) -> Template:  # type: ignore[no-untyped-def]
+        return Template.model_validate(
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "description": row["description"],
+                "criterion_type": row["criterion_type"],
+                "target_aspect": row["target_aspect"],
+                "evaluation_method": {
+                    "engine": row["engine"],
+                    "variable_schema": json.loads(row["variable_schema"]),
+                    "implementation_template": row["implementation_template"],
+                },
+            }
+        )
 
-    async def all(self) -> list[dict[str, Any]]:
+    async def all(self) -> list[Template]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
                 """
@@ -137,9 +147,9 @@ class PgTemplateRepo:
                 JOIN evaluation_methods em ON t.evaluation_method_id = em.id
                 """
             )
-        return [self._row_to_dict(r) for r in rows]
+        return [self._row_to_template(r) for r in rows]
 
-    async def by_id(self, id: UUID) -> Optional[dict[str, Any]]:
+    async def by_id(self, id: UUID) -> Optional[Template]:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
@@ -152,10 +162,10 @@ class PgTemplateRepo:
                 """,
                 id,
             )
-        return self._row_to_dict(row) if row is not None else None
+        return self._row_to_template(row) if row is not None else None
 
-    async def add(self, template: dict[str, Any]) -> Optional[UUID]:
-        em = template["evaluationMethod"]
+    async def add(self, template: TemplateNew) -> Optional[UUID]:
+        em = template.evaluation_method
         em_id = uuid4()
         t_id = uuid4()
         async with self._pool.acquire() as conn, conn.transaction():
@@ -166,9 +176,11 @@ class PgTemplateRepo:
                 VALUES ($1, $2, $3, $4)
                 """,
                 em_id,
-                em["engine"],
-                json.dumps(em["variableSchema"]),
-                em["implementationTemplate"],
+                # `.value` throughout: the columns are VARCHAR, and asyncpg
+                # is handed a plain string rather than an enum member.
+                em.engine.value,
+                json.dumps(em.variable_schema),
+                em.implementation_template,
             )
             await conn.execute(
                 """
@@ -178,20 +190,20 @@ class PgTemplateRepo:
                 VALUES ($1, $2, $3, $4, $5, $6)
                 """,
                 t_id,
-                template["name"],
-                template.get("description"),
-                template["criterionType"],
-                template["targetAspect"],
+                template.name,
+                template.description,
+                template.criterion_type.value,
+                template.target_aspect.value,
                 em_id,
             )
         return t_id
 
-    async def update(self, id: UUID, patch: dict[str, Any]) -> Optional[dict[str, Any]]:
+    async def update(self, id: UUID, patch: TemplatePatch) -> Optional[Template]:
         """
         Apply a partial update. ``COALESCE`` leaves a column untouched when
-        its parameter is NULL, so absent patch keys need no branching.
+        its parameter is NULL, so absent patch fields need no branching.
         """
-        em_patch = patch.get("evaluationMethod")
+        em_patch = patch.evaluation_method
         async with self._pool.acquire() as conn, conn.transaction():
             row = await conn.fetchrow(
                 "SELECT evaluation_method_id FROM templates WHERE id = $1", id
@@ -209,10 +221,10 @@ class PgTemplateRepo:
                  WHERE id = $1
                 """,
                 id,
-                patch.get("name"),
-                patch.get("description"),
-                patch.get("criterionType"),
-                patch.get("targetAspect"),
+                patch.name,
+                patch.description,
+                patch.criterion_type.value if patch.criterion_type else None,
+                patch.target_aspect.value if patch.target_aspect else None,
             )
             if em_patch is not None:
                 await conn.execute(
@@ -226,11 +238,9 @@ class PgTemplateRepo:
                      WHERE id = $1
                     """,
                     row["evaluation_method_id"],
-                    em_patch.get("engine"),
-                    json.dumps(em_patch["variableSchema"])
-                    if em_patch.get("variableSchema") is not None
-                    else None,
-                    em_patch.get("implementationTemplate"),
+                    em_patch.engine.value,
+                    json.dumps(em_patch.variable_schema),
+                    em_patch.implementation_template,
                 )
         return await self.by_id(id)
 

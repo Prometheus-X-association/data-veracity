@@ -35,6 +35,7 @@ routes, and nothing calls this service yet.
 | `DELETE /template/{id}` | VLA Manager UI | Delete one template |
 | `DELETE /template` | Admin only | Wipe all templates |
 | `POST /template/{id}/render` | VLA Manager UI | Render a template's `implementationTemplate` with a model |
+| `POST /template/{id}/validate` | VLA Manager UI | Render a template with a model and have DVA Processing check that the logic compiles |
 
 This service intentionally does **not** do evaluation, attestation, or credential issuance —
 those are concerns of `dva-processing` and the `dva-vc-manager` respectively.
@@ -73,3 +74,4 @@ spec is still served and `/swagger/components.yaml` answers `404`.
 | `VLA_MANAGER_API_HOST` | `0.0.0.0` | Listen address |
 | `VLA_MANAGER_API_PORT` | `8000` | Listen port |
 | `VLA_MANAGER_API_LOG_LEVEL` | `info` | One of `critical`, `error`, `warning`, `info`, `debug` |
+| `VLA_MANAGER_API_PROCESSING_URL` | `http://localhost:5000` | URL to a DVA processing instance |

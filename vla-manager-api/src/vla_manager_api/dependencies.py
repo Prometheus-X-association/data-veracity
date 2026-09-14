@@ -8,6 +8,7 @@ from fastapi import Request
 from .config import cfg
 from .log import get_logger
 from .template_repo import FakeTemplateRepo, PgTemplateRepo, TemplateRepo
+from .validation import ProcessingRequirementValidator, RequirementValidator
 from .vla_repo import FakeVLARepo, PgVLARepo, VLARepo
 
 logger = get_logger()
@@ -40,6 +41,20 @@ async def build_vla_repo(pool: asyncpg.Pool | None) -> VLARepo:
     return repo
 
 
+def build_requirement_validator() -> ProcessingRequirementValidator:
+    """
+    Construct the validator client. Called once, at startup.
+
+    It holds a connection pool of its own, so it is built here and closed
+    on shutdown rather than being rebuilt per request.
+    """
+    logger.info(
+        "Validating rendered requirements via DVA Processing",
+        processing_url=cfg.processing_url,
+    )
+    return ProcessingRequirementValidator(cfg.processing_url)
+
+
 async def build_template_repo(pool: asyncpg.Pool | None) -> TemplateRepo:
     """
     Construct the Template repo over ``pool``. Called once, at startup.
@@ -63,3 +78,8 @@ def get_repo(request: Request) -> VLARepo:
 def get_template_repo(request: Request) -> TemplateRepo:
     """Return the Template repo built during startup."""
     return request.app.state.template_repo
+
+
+def get_requirement_validator(request: Request) -> RequirementValidator:
+    """Return the evaluation logic validator built during startup."""
+    return request.app.state.requirement_validator

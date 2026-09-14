@@ -199,3 +199,24 @@ class RenderResult(BaseModel):
 
     engine: QualityEngine
     implementation: str
+
+
+class ValidationFailureReason(str, Enum):
+    """Why a template failed validation (spec ``TemplateValidationResult``)."""
+
+    #: The logic was checked and rejected – the author's to fix.
+    invalid_implementation = "INVALID_IMPLEMENTATION"
+    #: The logic could not be checked at all, so it is not known to be wrong.
+    unavailable_engine = "UNAVAILABLE_ENGINE"
+
+
+class TemplateValidationResult(BaseModel):
+    """Rendered implementation and its processing validation result."""
+
+    model_config = _CAMEL
+
+    valid: bool
+    reason: Optional[ValidationFailureReason] = None
+    engine: QualityEngine
+    details: Optional[str] = None
+    implementation: Optional[str] = None
