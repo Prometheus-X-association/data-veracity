@@ -18,6 +18,14 @@ outcome is the VC Manager's; this service only runs the checks.
 | `POST /evaluate` | VLA Manager UI | Evaluate one requirement against data — for trying a requirement out while building a VLA |
 | `POST /evaluate-batch` | DVA API | Evaluate every requirement in a VLA against data — the veracity check of the synchronous attestation flow |
 | `POST /evaluate/from-template` | VLA Manager UI | Fetch a VLA template, render it with a model, and evaluate the result against data |
+| `POST /validate-requirement` | VLA Manager API | Check that a requirement's evaluation logic compiles, without running it against any data |
+
+`POST /validate-requirement` is the one endpoint that touches no data: it compiles the
+`implementation` and reports whether it is well formed, so a VLA author finds out that an
+expression is malformed while writing it rather than when it is first evaluated.
+Logic that does not compile is a `200` carrying an `INVALID` verdict.
+`UNAVAILABLE` is kept separate for an engine that could not be loaded at all,
+where the logic stays unchecked.
 
 Three engines back `implementation`, selected by the requirement's `engine`:
 `JQ` (a jq expression yielding `{ success, details }`), `SCHEMA` (a JSON Schema document),

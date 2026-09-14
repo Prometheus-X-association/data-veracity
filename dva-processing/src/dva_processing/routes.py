@@ -10,6 +10,7 @@ FastAPI routes for the DVA Processing module.
 """
 
 from fastapi import APIRouter, Response, status
+from open_data_contract_standard.model import DataQuality
 
 from .errors import http_error
 from .log import get_logger
@@ -18,6 +19,7 @@ from .model import (
     EvaluationFromTemplateRequest,
     EvaluationRequest,
     EvaluationResult,
+    RequirementValidationResult,
 )
 from .processing import (
     handle_eval_batch_request,
@@ -25,11 +27,26 @@ from .processing import (
     handle_eval_request,
 )
 from .templates import TemplateRenderError
+from .validation import validate_requirement
 from .vla_manager import TemplateNotFoundError, VLAManagerError
 
 logger = get_logger()
 
 router = APIRouter(tags=["Evaluation"])
+
+
+@router.post(
+    "/validate-requirement",
+    response_model=RequirementValidationResult,
+    tags=["Validation"],
+)
+def validate_requirement_route(requirement: DataQuality) -> RequirementValidationResult:
+    # Always a 200 for an engine we implement: logic that does not compile
+    # is a verdict the author asked for, not a failed request.  An engine
+    # we do not implement is the exception, and leaves as the 400 that
+    # `unknown_engine_handler` renders.
+    logger.info("Validating evaluation requirement", requirement=requirement)
+    return validate_requirement(requirement)
 
 
 @router.post("/evaluate", response_model=EvaluationResult)

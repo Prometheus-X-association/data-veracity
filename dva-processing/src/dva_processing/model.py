@@ -43,6 +43,18 @@ class EvaluationFromTemplateRequest(BaseModel):
     data: Any
 
 
+class RequirementValidationFailureReason(CapitalStrEnum):
+    invalid_implementation = auto()
+    unavailable_engine = auto()
+
+
+class RequirementValidationResult(BaseModel):
+    valid: bool
+    reason: Optional[RequirementValidationFailureReason] = None
+    engine: QualityEngine
+    details: Optional[str] = None
+
+
 class EvaluationResult(BaseModel):
     # An EvaluationResult only exists once an engine has run, so the engine
     # is always known – see `./components.yaml#/schemas/EvaluationResult`.
