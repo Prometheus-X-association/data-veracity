@@ -23,9 +23,65 @@ servers:
 tags:
   - name: Evaluation
     description: Endpoints that evaluate veracity requirements against data.
+  - name: Validation
+    description: >-
+      Endpoints that check a requirement's evaluation logic without running
+      it against any data.
 
 
 paths:
+  /validate-requirement:
+    post:
+      tags: [Validation]
+      summary: Check that a requirement’s evaluation logic compiles
+      description: >-
+        Compiles — but does not run — the `implementation` of a requirement
+        with the engine it names, so a VLA author learns that an expression
+        is malformed before there is any data to evaluate it against.
+      operationId: validateRequirement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataQuality'
+            examples:
+              jqNonEmptyActorName:
+                summary: A well-formed `jq` requirement
+                value:
+                  engine: JQ
+                  implementation: |-
+                    {
+                      success: (.actor.name | length > 0),
+                      details: "actor name non-empty"
+                    }
+              malformedJq:
+                summary: A `jq` expression that does not compile
+                value:
+                  engine: JQ
+                  implementation: .actor.name | | length
+      responses:
+        '200':
+          description: The validation was executed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequirementValidationResult'
+        '400':
+          description: >-
+            The requirement names an engine this service does not implement.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Malformed request body or missing required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+
   /evaluate:
     post:
       tags: [Evaluation]
@@ -244,7 +300,6 @@ components:
           $ref: '#/components/schemas/DataQuality'
         data:
           description: The data document to evaluate the requirement against.
-
     EvaluateBatchRequest:
       type: object
       description: Body of `POST /evaluate-batch`.
@@ -255,7 +310,6 @@ components:
           $ref: '#/components/schemas/VLA'
         data:
           description: The data document to evaluate every requirement against.
-
     EvaluationFromTemplateRequest:
       type: object
       description: Body of `POST /evaluate/from-template`.
@@ -277,7 +331,6 @@ components:
         data:
           description: >-
             The data document to evaluate the rendered requirement against.
-
     VLA:
       type: object
       description: >-
@@ -287,7 +340,6 @@ components:
         the `quality` array of each object in its `schema` array.  Validated
         as ODCS, so a document carrying fields the standard does not define
         is rejected with a `422`.
-
     DataQuality:
       type: object
       description: >-
@@ -311,13 +363,36 @@ components:
             `{ success: boolean, details: string }`; for `SCHEMA` a JSON
             Schema document; for `GREAT_EXPECTATIONS` a YAML expectation
             definition.
-
+    RequirementValidationResult:
+      type: object
+      description: >-
+        The result of validating a veracity requirement’s
+        `implementation` value without running it on any data.
+      required: [valid, engine]
+      additionalProperties: false
+      properties:
+        valid:
+          type: boolean
+          description: Whether the evaluation logic compiled.
+        reason:
+          type: string
+          description: >-
+            Reason for invalidity when `valid` is `false`.
+            `INVALID_IMPLEMENTATION` signals that the `implementation` string
+            failed to compile.
+            `UNAVAILABLE_ENGINE` signals that the engine could not be loaded
+            and the logic itself remains unchecked.
+            Absent when `valid` is `true`.
+          enum: [INVALID_IMPLEMENTATION, UNAVAILABLE_ENGINE]
+        engine:
+          $ref: '#/components/schemas/QualityEngine'
+        details:
+          type: string
+          description: Additional free-form details of success or failure.
     QualityEngine:
-      $ref: './components.yaml#/schemas/QualityEngine'
-
+      $ref: ./components.yaml#/schemas/QualityEngine
     EvaluationResult:
-      $ref: './components.yaml#/schemas/EvaluationResult'
-
+      $ref: ./components.yaml#/schemas/EvaluationResult
     Error:
       type: object
       description: >-
@@ -340,7 +415,6 @@ components:
           type: string
           description: >-
             Longer human-readable explanation specific to this occurrence.
-
     ValidationError:
       type: object
       description: >-
@@ -366,7 +440,8 @@ components:
                   oneOf:
                     - type: string
                     - type: integer
-                examples: [[body, requirement]]
+                examples:
+                  - [body, requirement]
               msg:
                 type: string
                 examples: [Field required]
