@@ -7,17 +7,19 @@ authors = [{ name = "FTSRG", email = "bpeter@edu.bme.hu" }]
 license = "Apache-2.0"
 requires-python = ">=3.10"
 dependencies = [
+	"chevron>=0.14",
 	"fastapi~=0.136.3",
 	"great-expectations>=1.3.3",
 	"jsonpath-ng>=1.7.0",
 	"jsonschema>=4.23.0",
 	"jq>=1.10.0",
 	"numpy==1.26.4",
+	"open-data-contract-standard>=3.2.0",
 	"pandas>=2.1.1",
-	"pika>=1.3.2",
 	"plac>=1.4.5",
 	"psycopg[binary]>=3.2.9",
 	"pydantic>=2.10.6",
+	"pyyaml>=6.0",
 	"requests>=2.32.3",
 	"structlog>=25.1.0",
 	"uvicorn>=0.34.3",
@@ -40,4 +42,16 @@ build-backend = "hatchling.build"
 packages = ["src/dva_processing"]
 
 [dependency-groups]
-dev = ["pytest>=8.3.5"]
+dev = ["pytest>=8.3.5", "httpx2>=2.9.1", "ruff>=0.16.7"]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+# Conservative starting set: pyflakes (F), the pycodestyle checks ruff enables
+# by default (E4 imports, E7 statements, E9 syntax), and isort (I) so import
+# blocks are ordered and grouped mechanically rather than by hand.
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["dva_processing"]

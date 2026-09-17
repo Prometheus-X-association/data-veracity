@@ -1,0 +1,88 @@
+---
+# Schemas shared between more than one DVA component.  Referenced from
+# the per-service specs as, eg,
+# `$ref: './components.yaml#/schemas/EvaluationResult'`.
+#
+# This file is not an OpenAPI document of its own; it is only a $ref
+# target, hence the bare top-level `schemas` key.
+schemas:
+  QualityEngine:
+    description: >-
+      Identifier of a veracity requirement evaluation engine invoked by
+      the processing service.
+    type: string
+    enum: [SCHEMA, GREAT_EXPECTATIONS, JQ]
+    examples: [SCHEMA]
+
+  EvaluationResult:
+    description: >-
+      The result of a single veracity requirement’s evaluation, as
+      produced by the processing service.  Relayed verbatim by the DVA
+      API and embedded in the AoV issued by the VC Manager.
+    type: object
+    required: [engine, timestamp, success]
+    properties:
+      engine:
+        description: The quality engine used to obtain this result.
+        $ref: '#/schemas/QualityEngine'
+      timestamp:
+        description: ISO-8601 timestamp at which the evaluation ran.
+        type: string
+        format: date-time
+        examples: ['2025-03-16T03:25:00Z']
+      success:
+        description: Whether the evaluated check passed.
+        type: boolean
+        examples: [true]
+      details:
+        description: >-
+          Human-readable success detail; absent on failure.
+        type: string
+      error:
+        description: >-
+          Human-readable failure detail; absent on success.
+        type: string
+
+  VerifiableCredential:
+    description: >-
+      A W3C Verifiable Credential in its JSON-LD form.
+    type: object
+    required:
+      - '@context'
+      - id
+      - type
+      - issuer
+      - validFrom
+      - credentialSubject
+    properties:
+      '@context':
+        type: array
+        items:
+          type: string
+        examples:
+          - [https://w3.org]
+      id:
+        type: string
+        format: uri
+      type:
+        type: array
+        items:
+          type: string
+      issuer:
+        type: object
+        required: [id]
+        properties:
+          id:
+            type: string
+            format: uri
+      validFrom:
+        type: string
+        format: date-time
+      credentialSubject:
+        type: object
+        required: [id]
+        properties:
+          id:
+            type: string
+            format: uri
+        additionalProperties: true

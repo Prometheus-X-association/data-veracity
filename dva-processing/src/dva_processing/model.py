@@ -1,8 +1,10 @@
 from datetime import datetime
 from enum import StrEnum, auto
 from typing import Any, Optional
+from uuid import UUID
 
-from pydantic import BaseModel, field_validator
+from open_data_contract_standard.model import DataQuality, OpenDataContractStandard
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CapitalStrEnum(StrEnum):
@@ -17,45 +19,58 @@ class QualityEngine(CapitalStrEnum):
     jq = auto()
 
 
-class Requirement(BaseModel):
-    implementation: str
-    engine: QualityEngine
-
-
 class EvaluationRequest(BaseModel):
-    requirement: Requirement
+    # ODCS types `engine` as a free-form string, so an unusable engine is
+    # only rejected once `eval.eval_requirement` gets to it.
+    requirement: DataQuality
     data: Any
 
 
+class EvaluateBatchRequest(BaseModel):
+    # A VLA is an ODCS data contract; its requirements are the DataQuality
+    # entries in the `quality` array of each of its schema objects.
+    vla: OpenDataContractStandard
+    data: Any
+
+
+class EvaluationFromTemplateRequest(BaseModel):
+    # Wire format is camelCase with the DVA's `...ID` spelling, as in the
+    # DVA API's own request bodies; snake_case stays accepted on input.
+    model_config = ConfigDict(populate_by_name=True)
+
+    template_id: UUID = Field(alias="templateID")
+    template_model: dict[str, Any] = Field(alias="templateModel")
+    data: Any
+
+
+class RequirementValidationFailureReason(CapitalStrEnum):
+    invalid_implementation = auto()
+    unavailable_engine = auto()
+
+
+class RequirementValidationResult(BaseModel):
+    valid: bool
+    reason: Optional[RequirementValidationFailureReason] = None
+    engine: QualityEngine
+    details: Optional[str] = None
+
+
 class EvaluationResult(BaseModel):
-    engine: Optional[QualityEngine]
+    # An EvaluationResult only exists once an engine has run, so the engine
+    # is always known – see `./components.yaml#/schemas/EvaluationResult`.
+    engine: QualityEngine
     timestamp: datetime
     success: bool
     details: Optional[str] = None
     error: Optional[str] = None
 
 
-class AoVRequest(BaseModel):
-    id: str
-    exchangeID: str
-    contract: dict[str, Any]
-    data: Any
-    attesterID: str
+class ErrDTO(BaseModel):
+    """Problem detail returned on error responses (spec ``Error``)."""
 
-
-class AoVGenerationRequestPayload(BaseModel):
-    success: bool
-    results: list[EvaluationResult]
-
-
-class AoVGenerationRequest(BaseModel):
-    request_id: str
-    exchange_id: str
-    contract_id: str
-    subject: str
-    issuer_id: str
-    payload: AoVGenerationRequestPayload
-    target: str
+    type: str
+    title: str
+    detail: Optional[str] = None
 
 
 class JQResult(BaseModel):
@@ -65,7 +80,9 @@ class JQResult(BaseModel):
 
 class JSONSchemaValidationResult(BaseModel):
     success: bool
-    errors: str
+    # Rendered from the jsonschema ValidationError; absent when the data
+    # conforms.
+    errors: Optional[str] = None
 
 
 class JSONToDFSchemaColumnSpec(BaseModel):

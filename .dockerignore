@@ -1,0 +1,25 @@
+# Docker reads .dockerignore from the build-context root only. The service
+# Dockerfiles reference ./<service>/... paths, so the context is this
+# directory and per-service .dockerignore files have no effect.
+
+# Generic
+.git/
+**/.gitignore
+**/Dockerfile
+
+# JVM projects
+**/.gradle/
+**/.idea/
+**/.kotlin/
+**/build/
+
+
+# Python projects
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/*.egg-info/
+
+# Node projects
+**/node_modules/

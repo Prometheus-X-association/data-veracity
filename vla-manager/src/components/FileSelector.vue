@@ -84,7 +84,7 @@
   .file-select > .select-button.uploading {
     background-color: #f39c12;
   }
-  
+
   .file-select > input[type="file"] {
     display: none;
   }

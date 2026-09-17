@@ -6,6 +6,7 @@ import './style.css'
 import ListView from './components/ListView.vue'
 import CreateView from './components/CreateView.vue'
 import FragmentsView from './components/FragmentsView.vue'
+import TemplatesView from './components/TemplatesView.vue'
 
 if (import.meta.env.VITE_USE_MOCKS === 'true') {
   console.log('Using backend mock worker in dev mode')
@@ -18,7 +19,8 @@ const router = createRouter({
   routes: [
     { path: '/', redirect: '/create' },
     { path: '/create', component: CreateView },
-    { path: '/list', component: ListView }
+    { path: '/list', component: ListView },
+    { path: '/templates', component: TemplatesView }
   ]
 })
 

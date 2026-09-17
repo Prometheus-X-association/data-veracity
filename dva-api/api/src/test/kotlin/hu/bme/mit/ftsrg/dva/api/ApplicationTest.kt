@@ -3,7 +3,7 @@ package hu.bme.mit.ftsrg.dva.api
 import hu.bme.mit.ftsrg.dva.api.err.ErrType
 import hu.bme.mit.ftsrg.dva.api.testutil.createTestClient
 import hu.bme.mit.ftsrg.dva.api.testutil.setupTestApplication
-import hu.bme.mit.ftsrg.dva.dto.ErrDTO
+import hu.bme.mit.ftsrg.dva.dto.api.ErrDTO
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*

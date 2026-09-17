@@ -1,56 +1,48 @@
 <template>
-  <section>
-    <div class="card-container">
-      <p class="placeholder" v-if="reqs.length === 0">No requests yet</p>
-      <RequestCard :req="req" v-for="req in reqs" :key="req.requestID"/>
+  <section class="records-page">
+    <div class="page-header">
+      <div><div class="eyebrow">VERACITY EVENTS</div><h2>Attestations</h2><p>Monitor attestation requests and asynchronous evaluation outcomes.</p></div>
+      <div class="header-actions"><span class="mode-chip"><i></i>{{ demoMode ? 'Demo data' : 'Live gateway' }}</span><span class="count-badge">{{ filteredReqs.length }} records</span></div>
     </div>
+    <div class="stat-grid"><div class="stat-card"><span>Total requests</span><strong>{{ reqs.length }}</strong><small>Current data source</small></div><div class="stat-card success"><span>Passed</span><strong>{{ passedCount }}</strong><small>{{ passRate }}% success rate</small></div><div class="stat-card warning"><span>Pending</span><strong>{{ pendingCount }}</strong><small>Awaiting evaluation</small></div><div class="stat-card"><span>Failed</span><strong>{{ failedCount }}</strong><small>Completed with errors</small></div></div>
+    <div class="toolbar-panel">
+      <div class="search-wrap"><v-icon name="fa-search" /><input v-model="query" placeholder="Search exchange, contract, attester…" /></div>
+      <select v-model="status"><option value="all">All states</option><option value="passed">Passed</option><option value="pending">Pending</option><option value="failed">Failed</option></select>
+      <select v-model="sortBy"><option value="received">Newest first</option><option value="received-old">Oldest first</option><option value="contract">Contract</option><option value="outcome">Outcome</option></select>
+      <button class="clear-button" v-if="query || status !== 'all' || sortBy !== 'received'" @click="resetFilters">Clear filters</button>
+      <div class="view-switch"><button :class="{ active: viewMode === 'grid' }" title="Grid view" @click="viewMode = 'grid'"><v-icon name="fa-th-large" /></button><button :class="{ active: viewMode === 'table' }" title="Table view" @click="viewMode = 'table'"><v-icon name="fa-list" /></button></div>
+    </div>
+    <div v-if="viewMode === 'grid'" class="card-container"><p class="placeholder" v-if="!pagedReqs.length">No requests match your filters.</p><RequestCard v-for="req in pagedReqs" :key="req.requestID" :req="req" /></div>
+    <div v-else class="table-shell"><table><thead><tr><th>Exchange</th><th>Contract</th><th>Attester</th><th>Received</th><th>Evaluation</th><th>Result</th><th>State</th></tr></thead><tbody><tr v-for="req in pagedReqs" :key="req.requestID"><td><strong>{{ req.exchangeID }}</strong><small>{{ req.requestID }}</small></td><td>{{ req.contractID }}</td><td>{{ req.attesterID || 'Not available' }}</td><td>{{ formatDate(req.receivedDate) }}</td><td>{{ formatDate(req.evaluationDate) }}</td><td class="failure-cell"><strong>{{ failureFor(req).title }}</strong><small>{{ failureFor(req).code || 'PASS' }}</small></td><td><span class="table-status" :class="statusOf(req)"><i></i>{{ labelOf(req) }}</span></td></tr></tbody></table><p class="placeholder" v-if="!pagedReqs.length">No requests match your filters.</p></div>
+    <div class="pagination" v-if="filteredReqs.length"><span>Showing {{ startIndex + 1 }}–{{ Math.min(startIndex + pageSize, filteredReqs.length) }} of {{ filteredReqs.length }}</span><div><button :disabled="page === 1" @click="page--"><v-icon name="fa-chevron-left" /></button><button v-for="number in pageCount" :key="number" :class="{ active: page === number }" @click="page = number">{{ number }}</button><button :disabled="page === pageCount" @click="page++"><v-icon name="fa-chevron-right" /></button></div></div>
   </section>
 </template>
 
 <script setup>
-  import { ref, onMounted } from 'vue'
-  import axios from 'axios'
-  import RequestCard from './RequestCard.vue'
-  
-  const reqs = ref([])
-  
-  onMounted(async () => {
-    try {
-      let url = '/api/info/requests'
-      const reqsFromAPI = await axios.get(url)
-      reqs.value = reqsFromAPI.data
-    } catch (err) {
-      console.error('Fetch error:', err)
-    }
-  })
+import { ref, computed, onMounted, watch } from 'vue'
+import axios from 'axios'
+import RequestCard from './RequestCard.vue'
+import { demoRequests, demoVLAs } from '../demoData'
+import { demoMode } from '../dataMode'
+import { normalizeAttestationRecord } from '../failures/failureModel.js'
+const reqs = ref([]), query = ref(''), status = ref('all'), sortBy = ref('received'), viewMode = ref('grid'), page = ref(1), pageSize = 9
+const failureFor = req => normalizeAttestationRecord(req).failure
+const statusOf = req => failureFor(req).status === 'passed' ? 'pass' : failureFor(req).status === 'pending' ? 'pending' : 'fail'
+const labelOf = req => ({ pass: 'Passed', fail: 'Failed', pending: 'Pending' })[statusOf(req)]
+const filteredReqs = computed(() => reqs.value.filter(req => { const failure = failureFor(req); const text = `${req.exchangeID || ''} ${req.contractID || ''} ${req.attesterID || ''} ${failure.title} ${failure.code || ''}`.toLowerCase(); const state = statusOf(req); return text.includes(query.value.toLowerCase()) && (status.value === 'all' || (status.value === 'passed' ? state === 'pass' : status.value === 'pending' ? state === 'pending' : state === 'fail')) }).sort((a,b) => { if (sortBy.value === 'contract') return String(a.contractID).localeCompare(String(b.contractID)); if (sortBy.value === 'outcome') return statusOf(a).localeCompare(statusOf(b)); const direction = sortBy.value === 'received-old' ? 1 : -1; return direction * (new Date(a.receivedDate || 0) - new Date(b.receivedDate || 0)) }))
+const pageCount = computed(() => Math.max(1, Math.ceil(filteredReqs.value.length / pageSize))), startIndex = computed(() => (page.value - 1) * pageSize), pagedReqs = computed(() => filteredReqs.value.slice(startIndex.value, startIndex.value + pageSize)), passedCount = computed(() => reqs.value.filter(r => statusOf(r) === 'pass').length), pendingCount = computed(() => reqs.value.filter(r => statusOf(r) === 'pending').length), failedCount = computed(() => reqs.value.filter(r => statusOf(r) === 'fail').length), passRate = computed(() => reqs.value.length ? Math.round(passedCount.value / reqs.value.length * 100) : 0)
+watch([query, status, sortBy], () => { page.value = 1 }); watch(pageCount, count => { if (page.value > count) page.value = count })
+function resetFilters () { query.value = ''; status.value = 'all'; sortBy.value = 'received' }
+function formatDate (value) { return value ? new Date(value).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Pending' }
+async function loadRequests () { if (demoMode.value) { reqs.value = demoRequests.map(req => ({ ...req, vla: demoVLAs.find(vla => vla.id === req.vlaID) })); return } try { const [requests, vlas] = await Promise.all([axios.get('/api/info/requests'), axios.get('/api/vla')]); const map = new Map(vlas.data.map(vla => [String(vla.id).toLowerCase(), vla])); reqs.value = requests.data.map(req => ({ ...req, vla: req.vlaID ? map.get(String(req.vlaID).toLowerCase()) : undefined })) } catch { reqs.value = [] } }
+onMounted(loadRequests); watch(demoMode, loadRequests)
 </script>
 
 <style scoped>
-  .card-container {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-  }
-
-  .placeholder {
-    font-style: italic;
-  }
-
-  @media (max-width: 1670px) {
-    .card-container {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  @media (max-width: 1350px) {
-    .card-container {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 980px) {
-    .card-container {
-      grid-template-columns: repeat(1, 1fr);
-    }
-  }
+.records-page{color:#334155}.page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px}.eyebrow{color:#0891b2;font-size:.68rem;font-weight:800;letter-spacing:.14em}.page-header h2{margin:6px 0 5px;color:#0f172a;font-size:1.8rem;letter-spacing:-.04em}.page-header p{margin:0;color:#64748b;font-size:.85rem}.header-actions{display:flex;align-items:center;gap:9px}.mode-chip,.count-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;font-size:.7rem;font-weight:700}.mode-chip{color:#0e7490;background:#ecfeff}.mode-chip i{width:6px;height:6px;border-radius:50%;background:#22c55e}.count-badge{color:#0e7490;background:#cffafe}.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat-card{padding:15px 16px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 4px 18px rgba(15,23,42,.035)}.stat-card span,.stat-card small{display:block;color:#64748b;font-size:.7rem}.stat-card strong{display:block;margin:5px 0 2px;color:#0f172a;font-size:1.35rem;letter-spacing:-.04em}.stat-card.success strong{color:#15803d}.stat-card.warning strong{color:#b45309}.toolbar-panel{display:flex;align-items:center;gap:9px;margin-bottom:17px;padding:10px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.search-wrap{display:flex;align-items:center;gap:8px;flex:1;min-width:210px;height:36px;box-sizing:border-box;padding:0 10px;border:1px solid #dbe3ec;border-radius:8px;background:#fff;color:#94a3b8}.search-wrap svg{flex:0 0 auto}.search-wrap input{box-sizing:border-box;min-width:0;width:100%;height:34px;margin:0;padding:0;border:0;outline:0;color:#475569;background:transparent;font:inherit;font-size:.74rem;line-height:34px}.search-wrap input::placeholder{color:#94a3b8;opacity:1}.toolbar-panel select{box-sizing:border-box;height:36px;padding:0 9px;border:1px solid #dbe3ec;border-radius:8px;outline:0;color:#475569;background:#fff;font:inherit;font-size:.74rem;line-height:34px}.clear-button{height:34px;padding:0 10px;border:0;border-radius:8px;color:#0e7490;background:#e0f2fe;font-size:.72rem;font-weight:700;cursor:pointer}.view-switch{display:flex;padding:2px;border:1px solid #dbe3ec;border-radius:8px;background:#fff}.view-switch button,.pagination button{display:grid;place-items:center;min-width:29px;height:29px;padding:0;border:0;border-radius:6px;color:#94a3b8;background:transparent;font-size:.72rem;cursor:pointer}.view-switch button.active,.view-switch button:hover,.pagination button.active{color:#0e7490;background:#cffafe}.card-container{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.table-shell{overflow:auto;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 4px 18px rgba(15,23,42,.04)}table{width:100%;border-collapse:collapse;text-align:left;font-size:.75rem}th{padding:13px 15px;color:#64748b;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:.65rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}td{padding:14px 15px;color:#475569;border-bottom:1px solid #f1f5f9;white-space:nowrap}tbody tr:hover{background:#f8fafc}td strong,td small{display:block}td strong{color:#334155}td small{margin-top:3px;color:#94a3b8;font-size:.65rem}.table-status{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-weight:700}.table-status i{width:6px;height:6px;border-radius:50%}.table-status.pass{color:#15803d;background:#f0fdf4}.table-status.pass i{background:#22c55e}.table-status.review{color:#b45309;background:#fffbeb}.table-status.review i{background:#f59e0b}.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:14px;color:#64748b;font-size:.7rem}.pagination>div{display:flex;gap:3px}.pagination button:disabled{opacity:.35;cursor:not-allowed}.placeholder{grid-column:1/-1;margin:0;padding:42px;text-align:center;color:#94a3b8;border:1px dashed #cbd5e1;border-radius:12px;background:#fff;font-style:normal}@media(max-width:1200px){.card-container{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:800px){.page-header,.toolbar-panel{align-items:stretch;flex-direction:column}.header-actions{justify-content:space-between}.stat-grid{grid-template-columns:repeat(2,1fr)}.toolbar-panel select,.search-wrap{width:100%}.card-container{grid-template-columns:1fr}}@media(max-width:480px){.stat-grid{grid-template-columns:1fr}.pagination{align-items:flex-start;gap:10px;flex-direction:column}}
+.table-status.fail{color:#991b1b;background:#fee2e2}.table-status.fail i{background:#ef4444}.table-status.pending{color:#92400e;background:#fef3c7}.table-status.pending i{background:#f59e0b}
+@media(max-width:820px){.page-header{align-items:flex-start;flex-direction:column}.header-actions{width:100%;flex-wrap:wrap;justify-content:flex-start}}
+@media(max-width:760px){.toolbar-panel{gap:8px}.toolbar-panel select,.search-wrap{width:100%;height:44px}.search-wrap input{height:42px;line-height:42px}.clear-button{min-height:44px}.view-switch button,.pagination button{min-width:40px;height:40px}.table-shell{box-shadow:none}.table-shell table{min-width:720px}td{white-space:normal;overflow-wrap:anywhere}}
+@media(max-width:560px){.stat-grid{grid-template-columns:1fr}.pagination{align-items:flex-start;gap:10px;flex-direction:column}}
+.failure-cell{max-width:230px;white-space:normal}.failure-cell strong{font-size:.7rem}
 </style>
