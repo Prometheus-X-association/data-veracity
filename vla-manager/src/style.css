@@ -1,35 +1,66 @@
-body {
-  font-family: sans-serif;
-  display: flex;
+html, body {
   margin: 0;
-  min-width: 100vw;
+  padding: 0;
+  font-family: v-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f3f4f6;
+  width: 100%;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 #app {
-  flex-grow: 1;
+  width: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-button {
-  border: none;
-  background: #118c82;
-  border-radius: 5px;
-  cursor: pointer;
-  color: white;
-  padding: .75rem;
-  height: min-content;
-  width: fit-content;
-  transition: all .2s ease-in-out;
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
 }
 
-button:hover {
-  transform: translate(-.2em,-.2em);
-  box-shadow: .8rem .8rem .8rem rgba(0, 0, 0, .5);
+/* Custom Scrollbar for better UX */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
-button:disabled {
-  cursor: not-allowed;
-  opacity: .25;
+/* Base utility classes */
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 32px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+  .page-container {
+    padding: 20px 16px 28px;
+  }
+}
+
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
 }

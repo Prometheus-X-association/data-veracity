@@ -1,0 +1,14 @@
+package hu.bme.mit.ftsrg.dva.dto.api
+
+import kotlinx.serialization.Serializable
+
+/**
+ * An RFC 9457 problem detail response DTO.
+ */
+@Serializable
+data class ErrDTO(
+    var type: String? = null,
+    var title: String? = null,
+    var detail: String? = null,
+    var instance: String? = null
+)

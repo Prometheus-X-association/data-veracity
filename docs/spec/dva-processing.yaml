@@ -1,0 +1,449 @@
+---
+openapi: 3.1.0
+
+
+info:
+  title: DVA Processing
+  version: 0.1.0
+  description: >-
+    Stateless veracity-check engine.
+    Evaluates data-quality requirements — expressed as ODCS `DataQuality`
+    entries, the same form they take inside a
+    **Veracity Level Agreement (VLA)** — against supplied data,
+    and returns one `EvaluationResult` per requirement.
+  contact:
+    email: bpeter@edu.bme.hu
+
+
+servers:
+  - url: http://localhost:5007
+    description: Provider
+  - url: http://localhost:5008
+    description: Consumer
+tags:
+  - name: Evaluation
+    description: Endpoints that evaluate veracity requirements against data.
+  - name: Validation
+    description: >-
+      Endpoints that check a requirement's evaluation logic without running
+      it against any data.
+
+
+paths:
+  /validate-requirement:
+    post:
+      tags: [Validation]
+      summary: Check that a requirement’s evaluation logic compiles
+      description: >-
+        Compiles — but does not run — the `implementation` of a requirement
+        with the engine it names, so a VLA author learns that an expression
+        is malformed before there is any data to evaluate it against.
+      operationId: validateRequirement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataQuality'
+            examples:
+              jqNonEmptyActorName:
+                summary: A well-formed `jq` requirement
+                value:
+                  engine: JQ
+                  implementation: |-
+                    {
+                      success: (.actor.name | length > 0),
+                      details: "actor name non-empty"
+                    }
+              malformedJq:
+                summary: A `jq` expression that does not compile
+                value:
+                  engine: JQ
+                  implementation: .actor.name | | length
+      responses:
+        '200':
+          description: The validation was executed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequirementValidationResult'
+        '400':
+          description: >-
+            The requirement names an engine this service does not implement.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Malformed request body or missing required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+
+  /evaluate:
+    post:
+      tags: [Evaluation]
+      summary: Evaluate a single requirement against data
+      description: >-
+        Runs one requirement's implementation on the supplied data with the
+        engine it names.  Useful for trying a requirement out while building
+        a VLA.
+      operationId: evaluate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationRequest'
+            examples:
+              jqNonEmptyActorName:
+                summary: jq requirement checking that the actor name is non-empty
+                value:
+                  requirement:
+                    engine: JQ
+                    implementation: >-
+                      { success: (.actor.name | length > 0),
+                        details: "actor name non-empty" }
+                  data:
+                    actor:
+                      name: Jean Dupont
+                    verb:
+                      id: http://adlnet.gov/expapi/verbs/interacted
+      responses:
+        '200':
+          description: The requirement was evaluated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+        '400':
+          description: >-
+            The requirement names an engine this service does not implement.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Malformed request body or missing required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: >-
+            The engine failed while evaluating.  The body is still an
+            `EvaluationResult`, with `success` false and `error` describing
+            the failure.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+
+
+  /evaluate-batch:
+    post:
+      tags: [Evaluation]
+      summary: Evaluate every requirement in a VLA against data
+      description: >-
+        Walks the VLA's `schema[].quality` arrays and evaluates each
+        requirement in turn, returning one result per requirement in the
+        order they were found.  Called by the DVA API during the
+        synchronous attestation flow.
+      operationId: evaluateBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluateBatchRequest'
+            examples:
+              xapiStatementVla:
+                summary: VLA carrying two jq requirements on one schema object
+                value:
+                  vla:
+                    apiVersion: v3.0.2
+                    kind: DataContract
+                    version: 0.1.0
+                    status: active
+                    id: 570b22e0-2e90-4e02-8c7b-1d6d274629f3
+                    schema:
+                      - name: xapiStatement
+                        quality:
+                          - engine: JQ
+                            implementation: >-
+                              { success: (.actor.name | length > 0),
+                                details: "actor name non-empty" }
+                          - engine: JQ
+                            implementation: >-
+                              { success: (.verb.id | length > 0),
+                                details: "verb id non-empty" }
+                  data:
+                    actor:
+                      name: Jean Dupont
+                    verb:
+                      id: http://adlnet.gov/expapi/verbs/interacted
+      responses:
+        '200':
+          description: >-
+            One result per requirement, in the order the requirements appear
+            in the VLA.  A requirement the engine could not run is reported
+            as a result with `success` false and `error` set, so this stays a
+            `200`; a VLA declaring no requirements yields an empty array.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvaluationResult'
+        '400':
+          description: >-
+            A requirement names an engine this service does not implement.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: >-
+            Malformed request body, or a `vla` that is not a valid ODCS
+            document.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+
+  /evaluate/from-template:
+    post:
+      tags: [Evaluation]
+      summary: Render a VLA template and evaluate the result against data
+      description: >-
+        Fetches the template named by `templateID` from the VLA Manager,
+        renders its implementation template with `templateModel`, and
+        evaluates the requirement that comes out against `data`.  Useful for
+        trying a template out while building a VLA.
+      operationId: evaluateFromTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationFromTemplateRequest'
+            examples:
+              actorNameTemplate:
+                summary: Render an actor-name check and evaluate conforming data
+                value:
+                  templateID: a5dee716-2129-4588-a1a2-04a4c2923a79
+                  templateModel:
+                    field: actor.name
+                  data:
+                    actor:
+                      name: Jean Dupont
+                    verb:
+                      id: http://adlnet.gov/expapi/verbs/interacted
+      responses:
+        '200':
+          description: The rendered requirement was evaluated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+        '400':
+          description: >-
+            The template could not be rendered with the given model, or it
+            names an engine this service does not implement.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The VLA Manager has no template with the given ID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Malformed request body or missing required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: >-
+            The engine failed while evaluating.  The body is still an
+            `EvaluationResult`, with `success` false and `error` describing
+            the failure.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+        '502':
+          description: >-
+            The VLA Manager could not be reached, or answered with something
+            unusable as a template.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
+components:
+  schemas:
+    EvaluationRequest:
+      type: object
+      description: Body of `POST /evaluate`.
+      required: [requirement, data]
+      additionalProperties: false
+      properties:
+        requirement:
+          $ref: '#/components/schemas/DataQuality'
+        data:
+          description: The data document to evaluate the requirement against.
+    EvaluateBatchRequest:
+      type: object
+      description: Body of `POST /evaluate-batch`.
+      required: [vla, data]
+      additionalProperties: false
+      properties:
+        vla:
+          $ref: '#/components/schemas/VLA'
+        data:
+          description: The data document to evaluate every requirement against.
+    EvaluationFromTemplateRequest:
+      type: object
+      description: Body of `POST /evaluate/from-template`.
+      required: [templateID, templateModel, data]
+      additionalProperties: false
+      properties:
+        templateID:
+          type: string
+          format: uuid
+          description: ID of the VLA template to fetch and render.
+          examples: [a5dee716-2129-4588-a1a2-04a4c2923a79]
+        templateModel:
+          type: object
+          description: >-
+            The model to render the template with, per its `variableSchema`:
+            keys are the template's placeholders, values their
+            substitutions.
+          additionalProperties: true
+        data:
+          description: >-
+            The data document to evaluate the rendered requirement against.
+    VLA:
+      type: object
+      description: >-
+        A Veracity Level Agreement: an
+        [ODCS](https://bitol-io.github.io/open-data-contract-standard/)
+        v3 data contract.  Its requirements are the `DataQuality` entries in
+        the `quality` array of each object in its `schema` array.  Validated
+        as ODCS, so a document carrying fields the standard does not define
+        is rejected with a `422`.
+    DataQuality:
+      type: object
+      description: >-
+        A single veracity requirement, as an
+        [ODCS](https://bitol-io.github.io/open-data-contract-standard/)
+        `DataQuality` entry — the same object that appears in a VLA's
+        `schema[].quality` array.  Every ODCS field is accepted; the two
+        below are the ones this service reads.
+      properties:
+        engine:
+          description: >-
+            The engine to evaluate `implementation` with.  ODCS leaves this
+            a free-form string, so a value outside `QualityEngine` is only
+            rejected once evaluation reaches for it — with a `400`.
+          $ref: '#/components/schemas/QualityEngine'
+        implementation:
+          type: string
+          description: >-
+            The engine-specific check.  For `JQ` this is a jq expression
+            whose every output must be an object
+            `{ success: boolean, details: string }`; for `SCHEMA` a JSON
+            Schema document; for `GREAT_EXPECTATIONS` a YAML expectation
+            definition.
+    RequirementValidationResult:
+      type: object
+      description: >-
+        The result of validating a veracity requirement’s
+        `implementation` value without running it on any data.
+      required: [valid, engine]
+      additionalProperties: false
+      properties:
+        valid:
+          type: boolean
+          description: Whether the evaluation logic compiled.
+        reason:
+          type: string
+          description: >-
+            Reason for invalidity when `valid` is `false`.
+            `INVALID_IMPLEMENTATION` signals that the `implementation` string
+            failed to compile.
+            `UNAVAILABLE_ENGINE` signals that the engine could not be loaded
+            and the logic itself remains unchecked.
+            Absent when `valid` is `true`.
+          enum: [INVALID_IMPLEMENTATION, UNAVAILABLE_ENGINE]
+        engine:
+          $ref: '#/components/schemas/QualityEngine'
+        details:
+          type: string
+          description: Additional free-form details of success or failure.
+    QualityEngine:
+      $ref: ./components.yaml#/schemas/QualityEngine
+    EvaluationResult:
+      $ref: ./components.yaml#/schemas/EvaluationResult
+    Error:
+      type: object
+      description: >-
+        RFC 9457-style problem object emitted on every error the service
+        raises itself.
+      required: [type, title]
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          description: >-
+            Machine-readable problem type, normally the HTTP status
+            constant (e.g. `NOT_FOUND`).
+          examples: [UNKNOWN_ENGINE]
+        title:
+          type: string
+          description: Short human-readable summary of the problem.
+          examples: [Unknown quality engine]
+        detail:
+          type: string
+          description: >-
+            Longer human-readable explanation specific to this occurrence.
+    ValidationError:
+      type: object
+      description: >-
+        Request-body validation failures, reported by the framework rather
+        than by the service, and so shaped differently from `Error`.
+      required: [detail]
+      additionalProperties: false
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            required: [type, loc, msg]
+            properties:
+              type:
+                type: string
+                description: Validation failure kind, e.g. `missing`.
+                examples: [missing]
+              loc:
+                type: array
+                description: Path to the offending field.
+                items:
+                  oneOf:
+                    - type: string
+                    - type: integer
+                examples:
+                  - [body, requirement]
+              msg:
+                type: string
+                examples: [Field required]
+              input:
+                description: The value that failed validation.

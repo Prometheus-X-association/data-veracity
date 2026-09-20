@@ -1,31 +1,37 @@
-import json
 from typing import Any
 
-import psycopg as pg
+from open_data_contract_standard.model import DataQuality
 
-from .config import PG_PASS, PG_URL, PG_USER
-from .eval import eval_requirement
+from .eval import eval_requirement, parse_engine
 from .log import get_logger
 from .model import (
-    AoVGenerationRequest,
-    AoVGenerationRequestPayload,
-    AoVRequest,
+    EvaluateBatchRequest,
+    EvaluationFromTemplateRequest,
     EvaluationRequest,
     EvaluationResult,
-    Requirement,
 )
+from .templates import render_template
 from .util import now
+from .vla_manager import VLAManagerError, fetch_template
 
 logger = get_logger()
 
 
-def handle_eval_request(request: EvaluationRequest) -> EvaluationResult:
-    logger.debug("Handling an evaluation request", request=request)
+def _evaluate(data: Any, requirement: DataQuality) -> EvaluationResult:
+    """
+    Evaluate one requirement, reporting an engine failure as a result.
+
+    An unusable engine is deliberately *not* caught here: there would be no
+    engine to report, and the fault is the request's, so it surfaces as a
+    ``400`` rather than as a failed check.
+    """
+    engine = parse_engine(requirement.engine)
     try:
-        return eval_requirement(request.data, request.requirement)
+        return eval_requirement(data, requirement)
     except Exception as e:
+        logger.warning("Requirement evaluation failed", error=e)
         return EvaluationResult(
-            engine=request.requirement.engine,
+            engine=engine,
             timestamp=now(),
             success=False,
             details=None,
@@ -33,84 +39,41 @@ def handle_eval_request(request: EvaluationRequest) -> EvaluationResult:
         )
 
 
-def handle_aov_request(request: AoVRequest) -> AoVGenerationRequest:
-    logger.debug("Handling an AoV request", request=request)
-    contract: dict[str, Any] = request.contract
+def handle_eval_request(request: EvaluationRequest) -> EvaluationResult:
+    logger.debug("Handling an evaluation request", request=request)
+    return _evaluate(request.data, request.requirement)
 
-    if "vla" not in contract or "schema" not in contract["vla"]:
-        logger.warning("No VLA in contract or no requirements in VLA; ignoring")
-        return None
 
-    # Evaluate all requirements
-    results: list[EvaluationResult] = []
-    any_evaluations = False
-    if len(contract["vla"]["schema"]) == 0:
-        logger.warning("No schema items found in VLA")
-    for schema_item in contract["vla"]["schema"]:
-        if "quality" not in schema_item:
-            continue
-
-        requirement_dict: dict
-        for requirement_dict in schema_item["quality"]:
-            any_evaluations = True
-            try:
-                requirement = Requirement(**requirement_dict)
-                result: EvaluationResult = eval_requirement(request.data, requirement)
-            except Exception as e:
-                logger.warning(
-                    "An error was thrown the evaluation of a requirement; tolerating",
-                    error=e,
-                )
-                result = EvaluationResult(
-                    engine=None, timestamp=now(), success=False, error=str(e)
-                )
-            finally:
-                results.append(result)
-
-    if not any_evaluations:
+def handle_eval_batch_request(request: EvaluateBatchRequest) -> list[EvaluationResult]:
+    logger.debug("Handling a batch evaluation request", request=request)
+    results = [
+        _evaluate(request.data, requirement)
+        for schema_object in request.vla.schema_ or []
+        for requirement in schema_object.quality or []
+    ]
+    if not results:
         logger.warning("Nothing was evaluated from this VLA")
+    return results
 
-    all_success: bool = all(x.success for x in results)
 
-    # Log evaluation results to psql database
-    try:
-        with pg.connect(f"{PG_URL}?user={PG_USER}&password={PG_PASS}") as conn:
-            conn.execute(
-                """
-            UPDATE request_logs
-            SET
-              evaluation_passing = %s,
-              evaluation_date = %s,
-              evaluation_results = %s
-            WHERE request_id = %s
-            """,
-                (
-                    all_success,
-                    now().isoformat(),
-                    json.dumps([r.model_dump_json() for r in results]),
-                    request.id,
-                ),
-            )
-        logger.info(
-            f"Successfully updated PostgreSQL entry for request {request.id}",
-            overall_result=all_success,
-            request_id=request.id,
-        )
-    except Exception as e:
-        logger.error(
-            f"Failed to update request log entry for request {request.id}", error=e
+def handle_eval_from_template_request(
+    request: EvaluationFromTemplateRequest,
+) -> EvaluationResult:
+    logger.debug("Handling an evaluate-from-template request", request=request)
+    template = fetch_template(request.template_id)
+
+    method: dict[str, Any] = template.get("evaluationMethod") or {}
+    missing = {"engine", "implementationTemplate"} - method.keys()
+    if missing:
+        raise VLAManagerError(
+            f"Template {request.template_id} has no "
+            f"{', '.join(sorted(missing))} to evaluate with"
         )
 
-    # Return AoV generation request for ACA-Py
-    return AoVGenerationRequest(
-        request_id=request.id,
-        exchange_id=request.exchangeID,
-        contract_id=contract["id"],
-        subject=contract["dataProvider"],
-        issuer_id=request.attesterID,
-        payload=AoVGenerationRequestPayload(
-            success=all_success,
-            results=results,
+    requirement = DataQuality(
+        engine=method["engine"],
+        implementation=render_template(
+            method["implementationTemplate"], request.template_model
         ),
-        target="self",
     )
+    return _evaluate(request.data, requirement)

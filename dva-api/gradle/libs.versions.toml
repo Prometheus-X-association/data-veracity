@@ -3,7 +3,6 @@ datetime = "0.6.2"
 dependency-license-report = "2.9"
 exposed = "1.0.0-beta-5"
 handlebars-java = "4.5.0"
-json-kotlin-schema = "0.57"
 koin = "4.0.3"
 kotlin = "2.2.0"
 kotlin-gradle-plugin = "2.2.0"
@@ -12,12 +11,10 @@ kotlinx-serialization-json = "1.9.0"
 kover = "0.9.1"
 ktor = "3.3.1"
 logevents = "0.5.6"
+mockk = "1.14.11"
 postgresql = "42.7.3"
-rabbitmq-amqp-client = "5.24.0"
-rabbitmq-kotlin = "0.7.0"
 shadow = "9.0.2"
 slf4j = "2.0.14"
-testcontainers = "1.20.4"
 
 [libraries]
 dependency-license-report-gradle-plugin = { module = "com.github.jk1.dependency-license-report:com.github.jk1.dependency-license-report.gradle.plugin", version.ref = "dependency-license-report" }
@@ -26,7 +23,6 @@ exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exp
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
 exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
 handlebars-java = { module = "com.github.jknack:handlebars", version.ref = "handlebars-java" }
-json-kotlin-schema = { module = "net.pwall.json:json-kotlin-schema", version.ref = "json-kotlin-schema" }
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
 koin-core = { module = "io.insert-koin:koin-core" }
 koin-ktor = { module = "io.insert-koin:koin-ktor" }
@@ -39,6 +35,7 @@ ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging", version.ref = "ktor" }
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
@@ -51,14 +48,10 @@ ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages", versio
 ktor-server-swagger = { module = "io.ktor:ktor-server-swagger", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 logevents = { module = "org.logevents:logevents", version.ref = "logevents" }
+mockk = { module = "io.mockk:mockk-jvm", version.ref = "mockk" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
-rabbitmq-amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "rabbitmq-amqp-client" }
-rabbitmq-kotlin = { module = "com.github.viartemev:rabbitmq-kotlin", version.ref = "rabbitmq-kotlin" }
 shadow-gradle-plugin = { module = "com.gradleup.shadow:com.gradleup.shadow.gradle.plugin", version.ref = "shadow" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
-testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
-testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
-testcontainers-rabbitmq = { module = "org.testcontainers:rabbitmq", version.ref = "testcontainers" }
 
 [bundles]
 ktor-client = [
@@ -83,11 +76,6 @@ ktor-server = [
 ]
 ktor-koin = ["koin-core", "koin-ktor"]
 logging = ["kotlin-logging", "slf4j-api"]
-testcontainers-rabbitmq = [
-    "testcontainers",
-    "testcontainers-junit-jupiter",
-    "testcontainers-rabbitmq",
-]
 postgres = [
     "exposed-core",
     "exposed-dao",

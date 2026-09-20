@@ -486,7 +486,6 @@ paths:
                           - engine: JQ
                             implementation: >-
                               { success: .actor.name | contains('Dupont') }
-                  attesterID: attester-0000
                   data:
                     actor:
                       name: Jean Dupont
@@ -780,11 +779,10 @@ components:
       type: string
       enum: [SYNTAX, TIMELINESS, ACCURACY, COMPLETENESS, CONSISTENCY]
     QualityEngine:
-      type: string
-      enum: [SCHEMA, GREAT_EXPECTATIONS, JQ]
+      $ref: './components.yaml#/schemas/QualityEngine'
     VeracityRequest:
       type: object
-      required: [exchangeID, contract, data]
+      required: [exchangeID, contract, data, vlaID]
       properties:
         exchangeID:
           type: string
@@ -800,6 +798,9 @@ components:
               $ref: https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-latest.json
         data:
           $ref: '#/components/schemas/AnyValue'
+        vlaID:
+          type: string
+          example: 14bd2062-0ffc-4b83-830b-aaa9aa1a1ca3
       example:
         exchangeID: xchg-0001
         contract:
@@ -866,14 +867,9 @@ components:
           result:
             success: true
           timestamp: '2025-03-16T03:25:00Z'
-        attesterID: attester-0000
     AttestationRequest:
       allOf:
         - $ref: '#/components/schemas/VeracityRequest'
-      required: [attesterID]
-      properties:
-        attesterID:
-          type: string
     ProofRequest:
       allOf:
         - $ref: '#/components/schemas/VeracityRequest'
@@ -948,26 +944,7 @@ components:
           action: read
           object: course_materials/lecturenotes/1
     EvaluationResult:
-      type: object
-      required: [timestamp, success]
-      additionalProperties: false
-      properties:
-        engine:
-          type: QualityEngine
-        timestamp:
-          type: string
-          format: datetime
-        success:
-          type: bool
-        details:
-          type: string
-        error:
-          type: string
-      example:
-        engine: JQ
-        timestamp: '2026-01-31T17:48:10.904264Z'
-        success: true
-        details: Actor name is correct
+      $ref: './components.yaml#/schemas/EvaluationResult'
     Error:
       type: object
       required: [message]
