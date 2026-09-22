@@ -30,7 +30,7 @@ class PgRequestLogRepo : RequestLogRepo {
             evaluationPassing = request.evaluationPassing
             evaluationResults = Json.encodeToString(request.evaluationResults)
             receivedDate = request.receivedDate.toLocalDateTime(UTC)
-            vcID = request.vcID.toString()
+            vcID = request.vcID?.toString()
             error = request.error?.let { Json.encodeToString(it) }
         }.toModel()
     }
