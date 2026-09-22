@@ -13,10 +13,14 @@ services:
     build:
       context: ../
       dockerfile: ./vla-manager-api/Dockerfile
+  vla-manager:
+    build: ../vla-manager/
   dva-vc-manager:
     build:
       context: ../
       dockerfile: ./dva-vc-manager/Dockerfile
+  dva-dashboard:
+    build: ../dva-dashboard/
   postgres:
     image: postgres:17-alpine
     environment:
@@ -36,7 +40,3 @@ services:
       - ./karate-configs:/app/classpath:ro
       - ./karate-logs:/app/target/karate-logs
     command: ./features/
-  dva-dashboard:
-    build: ../dva-dashboard/
-  vla-manager:
-    build: ../vla-manager/

@@ -1,49 +1,41 @@
 ---
 services:
+
+
   dva-api-provider:
     extends:
       file: common-services.yml
       service: dva-api
-    environment: &gateway-upstreams
+    environment:
       DVA_PROCESSING_URL: http://dva-processing-provider:5000
-      DVA_VLA_MANAGER_URL: http://vla-manager-api:8000
-      DVA_VC_MANAGER_URL: http://dva-vc-manager:8000
+      DVA_VC_MANAGER_URL: http://dva-vc-manager-provider:8000
       DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
+      DVA_VLA_MANAGER_URL: http://vlamanager-backend:8000
     ports: [9091:9090]
     depends_on:
-      # Anchored on its own so each gateway keeps its own processing and
-      # postgres, and only the shared upstreams are merged in.
-      <<: &shared-upstream-deps
-        vla-manager-api: {condition: service_healthy}
-        dva-vc-manager: {condition: service_healthy}
+      vlamanager-backend: {condition: service_healthy}
+      dva-vc-manager-provider: {condition: service_healthy}
       dva-processing-provider: {condition: service_healthy}
       postgres-provider: {condition: service_healthy}
+
+
   dva-api-consumer:
     extends:
       file: common-services.yml
       service: dva-api
     environment:
-      <<: *gateway-upstreams
       DVA_PROCESSING_URL: http://dva-processing-consumer:5000
+      DVA_VC_MANAGER_URL: http://dva-vc-manager-consumer:8000
       DVA_POSTGRES_URL: postgresql://postgres-consumer:5432/dva
+      DVA_VLA_MANAGER_URL: http://vlamanager-backend:8000
     ports: [9092:9090]
     depends_on:
-      <<: *shared-upstream-deps
+      vlamanager-backend: {condition: service_healthy}
+      dva-vc-manager-consumer: {condition: service_healthy}
       dva-processing-consumer: {condition: service_healthy}
       postgres-consumer: {condition: service_healthy}
-  dva-api-vla-manager:
-    extends:
-      file: common-services.yml
-      service: dva-api
-    environment:
-      <<: *gateway-upstreams
-      DVA_PROCESSING_URL: http://dva-processing-vla-manager:5000
-      DVA_POSTGRES_URL: postgresql://postgres-vla-manager:5432/dva
-    ports: [9099:9090]
-    depends_on:
-      <<: *shared-upstream-deps
-      dva-processing-vla-manager: {condition: service_healthy}
-      postgres-vla-manager: {condition: service_healthy}
+
+
   dva-processing-provider:
     extends:
       file: common-services.yml
@@ -54,6 +46,8 @@ services:
     ports: [5007:5000]
     depends_on:
       postgres-provider: {condition: service_healthy}
+
+
   dva-processing-consumer:
     extends:
       file: common-services.yml
@@ -64,20 +58,23 @@ services:
     ports: [5008:5000]
     depends_on:
       postgres-consumer: {condition: service_healthy}
-  dva-processing-vla-manager:
+
+
+  dva-processing-vlamanager:
     extends:
       file: common-services.yml
       service: dva-processing
     environment:
       DVA_LOG_LEVEL: debug
-  vla-manager-api:
+
+
+  vlamanager-backend:
     extends:
       file: common-services.yml
       service: vla-manager-api
     environment:
-      VLA_MANAGER_DB_URL: postgresql://postgres:postgres@postgres-vla-manager:5432/dva
-      # Rendered requirements are validated by asking processing to compile them.
-      VLA_MANAGER_API_PROCESSING_URL: http://dva-processing-vla-manager:5000
+      VLA_MANAGER_DB_URL: postgresql://postgres:postgres@postgres-vlamanager:5432/dva
+      VLA_MANAGER_API_PROCESSING_URL: http://dva-processing-vlamanager:5000
       VLA_MANAGER_AI_PROVIDER: ${VLA_MANAGER_AI_PROVIDER:-openai}
       VLA_MANAGER_AI_URL: ${VLA_MANAGER_AI_URL:-}
       VLA_MANAGER_AI_API_KEY: ${VLA_MANAGER_AI_API_KEY:-}
@@ -85,37 +82,88 @@ services:
       VLA_MANAGER_AI_TIMEOUT_SECONDS: ${VLA_MANAGER_AI_TIMEOUT_SECONDS:-30}
     ports: [8000:8000]
     depends_on:
-      postgres-vla-manager: {condition: service_healthy}
-      dva-processing-vla-manager: {condition: service_healthy}
-  dva-vc-manager:
+      postgres-vlamanager: {condition: service_healthy}
+      dva-processing-vlamanager: {condition: service_healthy}
+
+
+  vlamanager-frontend:
+    extends:
+      file: common-services.yml
+      service: vla-manager
+    environment:
+      VLA_MANAGER_BACKEND_URL: http://vlamanager-backend:8000
+    ports: [3020:80]
+    depends_on:
+      vlamanager-backend: {condition: service_healthy}
+
+
+  dva-vc-manager-provider:
     extends:
       file: common-services.yml
       service: dva-vc-manager
     environment:
-      DVA_VC_MANAGER_DB_URL: postgresql://postgres:postgres@postgres-vc-manager:5432/dva
+      DVA_VC_MANAGER_DB_URL: postgresql://postgres:postgres@postgres-provider:5432/dva
     ports: [8001:8000]
     depends_on:
-      postgres-vc-manager: {condition: service_healthy}
+      postgres-provider: {condition: service_healthy}
+
+
+  dva-vc-manager-consumer:
+    extends:
+      file: common-services.yml
+      service: dva-vc-manager
+    environment:
+      DVA_VC_MANAGER_DB_URL: postgresql://postgres:postgres@postgres-consumer:5432/dva
+    ports: [8002:8000]
+    depends_on:
+      postgres-consumer: {condition: service_healthy}
+
+
   postgres-provider:
     extends:
       file: common-services.yml
       service: postgres
     ports: [5401:5432]
+
+
   postgres-consumer:
     extends:
       file: common-services.yml
       service: postgres
     ports: [5402:5432]
-  postgres-vla-manager:
+
+
+  postgres-vlamanager:
     extends:
       file: common-services.yml
       service: postgres
     ports: [5409:5432]
-  postgres-vc-manager:
+
+
+  dva-dashboard-provider:
     extends:
       file: common-services.yml
-      service: postgres
-    ports: [5410:5432]
+      service: dva-dashboard
+    environment:
+      DVA_API_URL: http://dva-api-provider:9090
+      DVA_VLA_MANAGER_URL: http://vlamanager-backend:8000
+    ports: [3011:80]
+    depends_on:
+      dva-api-provider: {condition: service_healthy}
+
+
+  dva-dashboard-consumer:
+    extends:
+      file: common-services.yml
+      service: dva-dashboard
+    environment:
+      DVA_API_URL: http://dva-api-consumer:9090
+      DVA_VLA_MANAGER_URL: http://vlamanager-backend:8000
+    ports: [3012:80]
+    depends_on:
+      dva-api-consumer: {condition: service_healthy}
+
+
   karate:
     profiles: [karate]
     extends:
@@ -126,30 +174,3 @@ services:
       dva-api-consumer: {condition: service_healthy}
       dva-processing-provider: {condition: service_started}
       dva-processing-consumer: {condition: service_started}
-  dva-dashboard-provider:
-    extends:
-      file: common-services.yml
-      service: dva-dashboard
-    environment:
-      DVA_API_URL: http://dva-api-provider:9090
-    ports: [3011:80]
-    depends_on:
-      dva-api-provider: {condition: service_healthy}
-  dva-dashboard-consumer:
-    extends:
-      file: common-services.yml
-      service: dva-dashboard
-    environment:
-      DVA_API_URL: http://dva-api-consumer:9090
-    ports: [3012:80]
-    depends_on:
-      dva-api-consumer: {condition: service_healthy}
-  vla-manager:
-    extends:
-      file: common-services.yml
-      service: vla-manager
-    environment:
-      VLA_MANAGER_BACKEND_URL: http://dva-api-vla-manager:9090
-    ports: [3020:80]
-    depends_on:
-      dva-api-vla-manager: {condition: service_healthy}
