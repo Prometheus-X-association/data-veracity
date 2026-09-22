@@ -7,6 +7,12 @@ server {
         try_files $uri @index;
     }
 
+    # Health (docs/health-checks.md); serving files needs nothing to be ready.
+    location ~ ^/(livez|readyz)$ {
+        default_type application/health+json;
+        return 200 '{"status":"pass"}';
+    }
+
     location /api/ {
         proxy_pass ${VLA_MANAGER_BACKEND_URL}/;
         proxy_set_header Host $http_host;

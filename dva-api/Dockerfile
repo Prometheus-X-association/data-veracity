@@ -23,4 +23,5 @@ COPY --chmod=755 ./dva-api/docker/docker-entrypoint /app/
 COPY ./docs/spec/dva-api.yaml ./docs/spec/components.yaml /app/spec/
 ENV DVA_OPENAPI_FILE=/app/spec/dva-api.yaml
 ENTRYPOINT ["/app/docker-entrypoint"]
-HEALTHCHECK --interval=5s --timeout=5s CMD nc -z localhost 9090
+HEALTHCHECK --interval=5s --timeout=5s \
+    CMD wget -q -O /dev/null http://localhost:9090/livez

@@ -25,6 +25,8 @@ tags:
     description: Development-only bulk deletion endpoints.
   - name: Assistant
     description: Endpoints for the optional VLA template design assistant.
+  - name: Health
+    description: Health checks
 
 
 paths:
@@ -434,6 +436,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationError'
+  /livez:
+    get:
+      tags: [Health]
+      summary: Report whether the service is alive
+      description: >-
+        Answers as long as the process serves HTTP; probes no dependency.
+        Meant for the container healthcheck, so an outage elsewhere never
+        gets this service restarted.
+      operationId: livez
+      responses:
+        '200':
+          description: Always `pass`.
+          content:
+            application/health+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /readyz:
+    get:
+      tags: [Health]
+      summary: Report whether the service can do its work
+      description: >-
+        `fail`s when Postgres does not answer within 2s, and `warn`s when
+        no `VLA_MANAGER_DB_URL` is configured, as VLAs and templates are then
+        kept in memory.
+      operationId: readyz
+      responses:
+        '200':
+          description: The service is ready (`pass`) or degraded (`warn`).
+          content:
+            application/health+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: The service is not ready (`fail`).
+          content:
+            application/health+json:
+              schema:
+                $ref: '#/components/schemas/Health'
 components:
   parameters:
     idParam:
@@ -729,6 +769,8 @@ components:
           additionalProperties: true
     QualityEngine:
       $ref: ./components.yaml#/schemas/QualityEngine
+    Health:
+      $ref: ./components.yaml#/schemas/Health
     CriterionType:
       type: string
       enum: [VALID_INVALID, IN_RANGE, GREATER_THAN, LESS_THAN]

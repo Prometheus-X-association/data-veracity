@@ -30,6 +30,7 @@ from .dependencies import (
     build_vla_repo,
 )
 from .errors import http_exception_handler
+from .health import router as health_router
 from .log import get_logger, setup_logging
 from .routes import router
 from .template_routes import router as template_router
@@ -93,6 +94,7 @@ def create_app() -> FastAPI:
     app.include_router(router)
     app.include_router(template_router)
     app.include_router(assistant_router)
+    app.include_router(health_router)
 
     @app.get("/swagger/components.yaml", include_in_schema=False)
     async def shared_schemas() -> FileResponse:

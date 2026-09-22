@@ -33,13 +33,6 @@ RUN \
 # ----------------------------------------------------------------
 FROM python:3.12-slim
 
-# Install netcat for healthcheck
-RUN apt-get update && \
-    apt-get install -y \
-        --no-install-recommends \
-    netcat-openbsd=1.* \
-    && rm -rf /var/lib/apt/lists/
-
 # Copy built project
 COPY --from=build /app/.venv/ /app/.venv/
 
@@ -53,3 +46,6 @@ ENV DVA_VC_MANAGER_OPENAPI_FILE=/app/openapi.yaml \
 ENTRYPOINT ["/app/.venv/bin/dva-vc-manager"]
 
 EXPOSE 8000/tcp
+
+HEALTHCHECK --interval=5s --timeout=5s --retries=5 \
+    CMD python3 -c "import os, urllib.request as r; r.urlopen('http://localhost:%s/livez' % os.environ.get('DVA_VC_MANAGER_PORT', '8000'), timeout=4)"

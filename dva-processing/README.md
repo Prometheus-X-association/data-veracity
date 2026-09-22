@@ -49,6 +49,12 @@ Everything the service reads comes from the environment.
 | `DVA_LOG_LEVEL` | `warn` | Log verbosity (any level `structlog` accepts) |
 
 
+## Health
+
+`GET /livez` and `GET /readyz` both always pass: evaluation is stateless and needs no other service.
+See [`docs/health-checks.md`](../docs/health-checks.md).
+
+
 ## How to run
 
 ```console

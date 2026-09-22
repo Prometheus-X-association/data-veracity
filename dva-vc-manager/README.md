@@ -61,3 +61,8 @@ uv run dva-vc-manager         # boot the service on :8000
 | ``DVA_VC_MANAGER_PORT`` | ``8000`` | Listen port |
 | ``DVA_VC_MANAGER_LOG_LEVEL`` | ``info`` | One of ``critical``, ``error``, ``warning``, ``info``, ``debug`` |
 | ``DVA_VC_MANAGER_OPENAPI_FILE`` | ``/app/openapi.yaml`` | Hand-written spec served at ``/swagger``. Missing → FastAPI's generated schema. ``components.yaml`` next to it is served at ``/swagger/components.yaml``, where the spec's ``$ref``s point. |
+
+## Health
+
+``GET /livez`` always passes; ``GET /readyz`` fails when Postgres does not answer, and warns when ``DVA_VC_MANAGER_DB_URL`` is not set.
+See [`docs/health-checks.md`](../docs/health-checks.md).

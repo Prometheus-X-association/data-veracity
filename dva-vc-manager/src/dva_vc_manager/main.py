@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse
 
 from .config import cfg
 from .dependencies import build_audit, build_key_store, build_whitelist
+from .health import router as health_router
 from .log import get_logger, setup_logging
 from .routes import admin_router, router
 
@@ -73,6 +74,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(router)
     app.include_router(admin_router)
+    app.include_router(health_router)
 
     @app.get("/swagger/components.yaml", include_in_schema=False)
     async def shared_schemas() -> FileResponse:

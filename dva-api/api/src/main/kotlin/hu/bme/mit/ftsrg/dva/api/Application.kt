@@ -3,8 +3,12 @@ package hu.bme.mit.ftsrg.dva.api
 import hu.bme.mit.ftsrg.dva.api.db.PgRequestLogRepo
 import hu.bme.mit.ftsrg.dva.api.db.configureDatabases
 import hu.bme.mit.ftsrg.dva.api.err.addHandlers
+import hu.bme.mit.ftsrg.dva.api.health.Readiness
+import hu.bme.mit.ftsrg.dva.api.health.ServiceHealth
+import hu.bme.mit.ftsrg.dva.api.health.gatewayDependencies
 import hu.bme.mit.ftsrg.dva.api.route.aovRoutes
 import hu.bme.mit.ftsrg.dva.api.route.docRoutes
+import hu.bme.mit.ftsrg.dva.api.route.healthRoutes
 import hu.bme.mit.ftsrg.dva.api.route.infoRoutes
 import hu.bme.mit.ftsrg.dva.api.upstream.Upstream
 import hu.bme.mit.ftsrg.dva.api.upstream.UpstreamClient
@@ -70,6 +74,8 @@ fun Application.configureKoin() {
         single<RequestLogRepo> { PgRequestLogRepo() }
         single<Clock> { Clock.System }
         single { UpstreamClient(http = get<HttpClient>(), baseURLs = upstreamURLs) }
+        single { Readiness(gatewayDependencies(upstreams = get<UpstreamClient>())) }
+        single { ServiceHealth(readiness = get(), upstreams = get()) }
     }
 
     serverInstall(Koin) { modules(appModule) }
@@ -79,4 +85,5 @@ fun Application.addRoutes() {
     docRoutes(openapiPath = environment.config.property("swagger.openapiFile").getString())
     aovRoutes()
     infoRoutes()
+    healthRoutes()
 }

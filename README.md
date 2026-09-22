@@ -54,6 +54,15 @@ The following additional Docker Compose profiles are available:
    Use `docker compose --profile karate up --detach` to start a test environment and run all Karate tests.
    Check the `karate` container’s logs and/or the [`karate-reports/`](test-env/karate-reports/) subdirectory inside [`test-env/`](test-env/) to analyze the results.
 
+### Health checks
+
+Every service answers `GET /livez` (the process is up) and `GET /readyz` (it can do its work) with `{"status": "pass" | "warn" | "fail", "output": "<reason>"}`.
+The API module collects the readiness of every service:
+```console
+curl -s localhost:9091/info/health
+```
+See [`docs/health-checks.md`](docs/health-checks.md) for what each service checks.
+
 
 ## Example usage
 

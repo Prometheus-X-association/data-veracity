@@ -27,6 +27,8 @@ tags:
     description: >-
       Endpoints that check a requirement's evaluation logic without running
       it against any data.
+  - name: Health
+    description: Health checks
 
 
 paths:
@@ -288,6 +290,41 @@ paths:
                 $ref: '#/components/schemas/Error'
 
 
+  /livez:
+    get:
+      tags: [Health]
+      summary: Report whether the service is alive
+      description: >-
+        Answers as long as the process serves HTTP; probes no dependency.
+        Meant for the container healthcheck, so an outage elsewhere never
+        gets this service restarted.
+      operationId: livez
+      responses:
+        '200':
+          description: Always `pass`.
+          content:
+            application/health+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
+
+  /readyz:
+    get:
+      tags: [Health]
+      summary: Report whether the service can do its work
+      description: >-
+        Evaluation is stateless and needs no other service, so this is the
+        same as `/livez`.
+      operationId: readyz
+      responses:
+        '200':
+          description: Always `pass`.
+          content:
+            application/health+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
+
 components:
   schemas:
     EvaluationRequest:
@@ -393,6 +430,8 @@ components:
       $ref: ./components.yaml#/schemas/QualityEngine
     EvaluationResult:
       $ref: ./components.yaml#/schemas/EvaluationResult
+    Health:
+      $ref: ./components.yaml#/schemas/Health
     Error:
       type: object
       description: >-

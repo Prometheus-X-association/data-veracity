@@ -58,6 +58,11 @@ uv run vla-manager-api       # boot the service on :8000
 With `VLA_MANAGER_DB_URL` unset the service boots against in-memory repositories so it
 runs without a Postgres; state is lost on restart, so set the DSN for any deployment.
 
+## Health
+
+`GET /livez` always passes; `GET /readyz` fails when Postgres does not answer, and warns when `VLA_MANAGER_DB_URL` is not set.
+See [`docs/health-checks.md`](../docs/health-checks.md).
+
 ## Run in docker-compose
 
 Not yet wired into `test-env/compose.yml`. The `Dockerfile` builds and runs standalone,

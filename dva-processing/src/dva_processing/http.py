@@ -12,6 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from .config import cfg
 from .errors import http_exception_handler, unknown_engine_handler
 from .eval import UnknownEngineError
+from .health import router as health_router
 from .log import get_logger
 from .routes import router
 
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
         openapi_url="/swagger/openapi.json",
     )
     app.include_router(router)
+    app.include_router(health_router)
 
     # Render errors as the spec's {type, title} rather than FastAPI's
     # {detail}. Body validation keeps FastAPI's own 422, which the spec

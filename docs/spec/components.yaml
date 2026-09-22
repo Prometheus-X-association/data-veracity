@@ -13,7 +13,6 @@ schemas:
     type: string
     enum: [SCHEMA, GREAT_EXPECTATIONS, JQ]
     examples: [SCHEMA]
-
   EvaluationResult:
     description: >-
       The result of a single veracity requirement’s evaluation, as
@@ -42,7 +41,6 @@ schemas:
         description: >-
           Human-readable failure detail; absent on success.
         type: string
-
   VerifiableCredential:
     description: >-
       A W3C Verifiable Credential in its JSON-LD form.
@@ -86,3 +84,23 @@ schemas:
             type: string
             format: uri
         additionalProperties: true
+  HealthStatus:
+    description: >-
+      `pass` – healthy;
+      `warn` – healthy, but degraded functionality;
+      `fail` – unhealthy.
+    type: string
+    enum: [pass, warn, fail]
+  Health:
+    description: >-
+      Answer for `/livez` and `/readyz` health checks, served as
+      `application/health+json` with 503 on `fail` and 200 otherwise.
+    type: object
+    required: [status]
+    properties:
+      status:
+        $ref: '#/schemas/HealthStatus'
+      output:
+        description: Why the status is not `pass`; absent on `pass`.
+        type: string
+        examples: ['postgres: connection refused']

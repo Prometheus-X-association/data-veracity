@@ -19,6 +19,9 @@ servers:
     description: Provider
   - url: http://localhost:8002
     description: Consumer
+tags:
+  - name: Health
+    description: Health checks
 
 
 paths:
@@ -236,12 +239,52 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/VerificationAudit'
+  /livez:
+    get:
+      tags: [Health]
+      summary: Report whether the service is alive
+      description: >-
+        Answers as long as the process serves HTTP; probes no dependency.
+        Meant for the container healthcheck, so an outage elsewhere never
+        gets this service restarted.
+      operationId: livez
+      responses:
+        '200':
+          description: Always `pass`.
+          content:
+            application/health+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /readyz:
+    get:
+      tags: [Health]
+      summary: Report whether the service can do its work
+      description: >-
+        `fail`s when Postgres does not answer within 2s, and `warn`s when
+        no `DVA_VC_MANAGER_DB_URL` is configured, as the whitelist and the
+        audit are then kept in memory.
+      operationId: readyz
+      responses:
+        '200':
+          description: The service is ready (`pass`) or degraded (`warn`).
+          content:
+            application/health+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: The service is not ready (`fail`).
+          content:
+            application/health+json:
+              schema:
+                $ref: '#/components/schemas/Health'
 
 
 components:
   schemas:
     QualityEngine:
       $ref: './components.yaml#/schemas/QualityEngine'
+    Health:
+      $ref: ./components.yaml#/schemas/Health
     # Embedded in `AovIssueRequest.evaluationResults`, exactly as the DVA API
     # relays it from the processing service.
     EvaluationResult:

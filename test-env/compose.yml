@@ -51,11 +51,6 @@ services:
     environment:
       DVA_LOG_LEVEL: debug
       DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
-    healthcheck: &processing-health
-      test: nc -z localhost 5000
-      interval: 5s
-      timeout: 5s
-      retries: 3
     ports: [5007:5000]
     depends_on:
       postgres-provider: {condition: service_healthy}
@@ -66,7 +61,6 @@ services:
     environment:
       DVA_LOG_LEVEL: debug
       DVA_POSTGRES_URL: postgresql://postgres-consumer:5432/dva
-    healthcheck: *processing-health
     ports: [5008:5000]
     depends_on:
       postgres-consumer: {condition: service_healthy}
@@ -76,7 +70,6 @@ services:
       service: dva-processing
     environment:
       DVA_LOG_LEVEL: debug
-    healthcheck: *processing-health
   vla-manager-api:
     extends:
       file: common-services.yml
@@ -91,11 +84,6 @@ services:
       VLA_MANAGER_AI_MODEL: ${VLA_MANAGER_AI_MODEL:-}
       VLA_MANAGER_AI_TIMEOUT_SECONDS: ${VLA_MANAGER_AI_TIMEOUT_SECONDS:-30}
     ports: [8000:8000]
-    healthcheck: &api-health
-      test: nc -z localhost 8000
-      interval: 5s
-      timeout: 5s
-      retries: 5
     depends_on:
       postgres-vla-manager: {condition: service_healthy}
       dva-processing-vla-manager: {condition: service_healthy}
@@ -106,7 +94,6 @@ services:
     environment:
       DVA_VC_MANAGER_DB_URL: postgresql://postgres:postgres@postgres-vc-manager:5432/dva
     ports: [8001:8000]
-    healthcheck: *api-health
     depends_on:
       postgres-vc-manager: {condition: service_healthy}
   postgres-provider:

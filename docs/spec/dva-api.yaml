@@ -44,6 +44,8 @@ tags:
     description: Attestation generation and verification
   - name: Info
     description: Retrieve information about the running instance
+  - name: Health
+    description: Health checks
   - name: Future
     description: >-
       Endpoints that are not available yet but will be implemented in
@@ -151,6 +153,33 @@ paths:
           $ref: '#/components/responses/InternalError'
 
 
+  /info/health:
+    get:
+      tags: [Info, Health]
+      summary: Report the readiness of every DVA service
+      description: >-
+        The `/readyz` answer of this gateway and of every service it calls,
+        keyed by service.  A service that does not answer with one within
+        2s is reported as `fail`.  Always `200`; the verdicts are in the
+        body.
+      operationId: getHealth
+      responses:
+        '200':
+          description: One health answer per service.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [gateway, vla-manager, processing, vc-manager]
+                additionalProperties:
+                  $ref: '#/components/schemas/Health'
+              example:
+                gateway: {status: pass}
+                vla-manager: {status: warn, output: VLA_MANAGER_DB_URL is not set; data is kept in memory}
+                processing: {status: pass}
+                vc-manager: {status: fail, output: 'postgres: timed out'}
+
+
   /info/verifications:
     get:
       tags: [Info, Future]
@@ -192,6 +221,49 @@ paths:
           $ref: '#/components/responses/InternalError'
         '502':
           $ref: '#/components/responses/UpstreamError'
+
+
+  /livez:
+    get:
+      tags: [Health]
+      summary: Report whether the gateway is alive
+      description: >-
+        Answers as long as the process serves HTTP; probes no dependency.
+        Meant for the container healthcheck, so an outage elsewhere never
+        gets the gateway restarted.
+      operationId: livez
+      responses:
+        '200':
+          description: Always `pass`.
+          content:
+            application/health+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
+
+  /readyz:
+    get:
+      tags: [Health]
+      summary: Report whether the gateway can do its work
+      description: >-
+        `fail`s when, within 2s, the gateway's Postgres or the `/livez` of
+        the VLA Manager, processing or the VC Manager does not answer.
+      operationId: readyz
+      responses:
+        '200':
+          description: The gateway is ready (`pass`).
+          content:
+            application/health+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: >-
+            The gateway is not ready (`fail`); `output` says which
+            dependencies did not answer.
+          content:
+            application/health+json:
+              schema:
+                $ref: '#/components/schemas/Health'
 
 
 components:
@@ -453,6 +525,8 @@ components:
           description: >-
             Human-readable explanation specific to this occurrence.
           type: string
+    Health:
+      $ref: './components.yaml#/schemas/Health'
     Error:
       description: >-
         RFC 9457-like error object.  Note that it is served as

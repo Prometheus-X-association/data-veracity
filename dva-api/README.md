@@ -7,6 +7,14 @@ Execute from the parent directory (root of the repository)
 docker buildx build -t dva-api:latest -f dva-api/Dockerfile ./
 ```
 
+
+## Health
+
+`GET /livez` always passes; `GET /readyz` fails when Postgres or the `/livez` of the VLA Manager, processing or the VC Manager does not answer.
+`GET /info/health` collects the `/readyz` of the gateway and of each of those services, for the dashboard.
+See [`docs/health-checks.md`](../docs/health-checks.md).
+
+
 ## How to run unit tests
 
 ```console
