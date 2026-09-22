@@ -34,7 +34,7 @@ const pageCount = computed(() => Math.max(1, Math.ceil(filteredReqs.value.length
 watch([query, status, sortBy], () => { page.value = 1 }); watch(pageCount, count => { if (page.value > count) page.value = count })
 function resetFilters () { query.value = ''; status.value = 'all'; sortBy.value = 'received' }
 function formatDate (value) { return value ? new Date(value).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Pending' }
-async function loadRequests () { if (demoMode.value) { reqs.value = demoRequests.map(req => ({ ...req, vla: demoVLAs.find(vla => vla.id === req.vlaID) })); return } try { const [requests, vlas] = await Promise.all([axios.get('/api/info/requests'), axios.get('/api/vla')]); const map = new Map(vlas.data.map(vla => [String(vla.id).toLowerCase(), vla])); reqs.value = requests.data.map(req => ({ ...req, vla: req.vlaID ? map.get(String(req.vlaID).toLowerCase()) : undefined })) } catch { reqs.value = [] } }
+async function loadRequests () { if (demoMode.value) { reqs.value = demoRequests.map(req => ({ ...req, vla: demoVLAs.find(vla => vla.id === req.vlaID) })); return } try { const [requests, vlas] = await Promise.all([axios.get('/api/info/requests'), axios.get('/api/vla').catch(() => ({ data: [] }))]); const map = new Map(vlas.data.map(vla => [String(vla.id).toLowerCase(), vla])); reqs.value = requests.data.map(req => ({ ...req, vla: req.vlaID ? map.get(String(req.vlaID).toLowerCase()) : undefined })) } catch { reqs.value = [] } }
 onMounted(loadRequests); watch(demoMode, loadRequests)
 </script>
 

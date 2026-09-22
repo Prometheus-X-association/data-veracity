@@ -67,7 +67,7 @@ async function loadRequests () {
     return
   }
   try {
-    const [response, vlaResponse] = await Promise.all([axios.get('/api/info/requests'), axios.get('/api/vla')])
+    const [response, vlaResponse] = await Promise.all([axios.get('/api/info/requests'), axios.get('/api/vla').catch(() => ({ data: [] }))])
     requests.value = Array.isArray(response.data) ? response.data : []
     contracts.value = Array.isArray(vlaResponse.data) ? vlaResponse.data : []
     lastUpdated.value = new Date()
