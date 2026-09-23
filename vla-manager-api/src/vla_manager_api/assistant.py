@@ -15,6 +15,7 @@ _DEFAULT_URLS = {
     "openai": "https://api.openai.com/v1",
     "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/",
     "anthropic": "https://api.anthropic.com/v1",
+    "openrouter": "https://openrouter.ai/api/v1",
 }
 _DEFAULT_MODELS = {"gemini": "gemini-3.1-flash-lite"}
 

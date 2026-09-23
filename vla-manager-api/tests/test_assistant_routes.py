@@ -212,6 +212,32 @@ def test_gemini_uses_its_openai_compatible_defaults(
     assert body["model"] == "gemini-3.1-flash-lite"
 
 
+def test_openrouter_uses_its_openai_compatible_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from vla_manager_api import assistant
+
+    monkeypatch.setattr(assistant.cfg, "ai_provider", "openrouter")
+    monkeypatch.setattr(assistant.cfg, "ai_url", "")
+    monkeypatch.setattr(assistant.cfg, "ai_model", "vendor/model")
+    monkeypatch.setattr(assistant.cfg, "ai_api_key", "openrouter-test-key")
+    captured: dict[str, object] = {}
+
+    def fake_urlopen(request: object, timeout: float) -> FakeResponse:
+        captured["request"] = request
+        return FakeResponse({"choices": [{"message": {"content": '{"message":"ok"}'}}]})
+
+    monkeypatch.setattr(assistant, "urlopen", fake_urlopen)
+
+    result = assistant._complete_sync([{"role": "user", "content": "hello"}])
+
+    request = captured["request"]
+    assert result == '{"message":"ok"}'
+    assert request.full_url == "https://openrouter.ai/api/v1/chat/completions"
+    assert request.headers["Authorization"] == "Bearer openrouter-test-key"
+    assert json.loads(request.data)["model"] == "vendor/model"
+
+
 def test_anthropic_uses_messages_api_headers_and_system_prompt(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

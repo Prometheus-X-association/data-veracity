@@ -82,7 +82,7 @@ spec is still served and `/swagger/components.yaml` answers `404`.
 | `VLA_MANAGER_API_PORT` | `8000` | Listen port |
 | `VLA_MANAGER_API_LOG_LEVEL` | `info` | One of `critical`, `error`, `warning`, `info`, `debug` |
 | `VLA_MANAGER_API_PROCESSING_URL` | `http://localhost:5000` | URL to a DVA processing instance |
-| `VLA_MANAGER_AI_PROVIDER` | `openai` | `openai` for OpenAI-compatible services, `gemini` for Gemini's compatibility endpoint, or `anthropic` for the native Messages API |
+| `VLA_MANAGER_AI_PROVIDER` | `openai` | `openai` for OpenAI-compatible services, `gemini` for Gemini's compatibility endpoint, `openrouter` for OpenRouter, or `anthropic` for the native Messages API |
 | `VLA_MANAGER_AI_URL` | *(empty)* | Provider base URL or complete endpoint URL. Defaults to the provider's public endpoint. Empty credentials disable the assistant. |
 | `VLA_MANAGER_AI_API_KEY` | *(empty)* | API key used only by the VLA Manager API. |
 | `VLA_MANAGER_AI_MODEL` | *(empty)* | Model name sent to the assistant service. Gemini defaults to `gemini-3.1-flash-lite`; other providers require an explicit model. |
@@ -104,6 +104,11 @@ VLA_MANAGER_AI_PROVIDER=openai
 VLA_MANAGER_AI_URL=https://api.openai.com/v1
 VLA_MANAGER_AI_API_KEY=your-openai-key
 VLA_MANAGER_AI_MODEL=your-model
+
+# OpenRouter
+VLA_MANAGER_AI_PROVIDER=openrouter
+VLA_MANAGER_AI_API_KEY=your-openrouter-key
+VLA_MANAGER_AI_MODEL=vendor/model
 
 # Anthropic
 VLA_MANAGER_AI_PROVIDER=anthropic

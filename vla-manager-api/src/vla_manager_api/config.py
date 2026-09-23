@@ -8,7 +8,7 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LogLevel = Literal["critical", "error", "warning", "info", "debug"]
-AIProvider = Literal["openai", "gemini", "anthropic"]
+AIProvider = Literal["openai", "gemini", "anthropic", "openrouter"]
 
 
 class Config(BaseSettings):

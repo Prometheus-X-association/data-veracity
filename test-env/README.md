@@ -43,6 +43,7 @@ docker compose up -d --build
 Gemini uses Google's OpenAI-compatible endpoint and defaults to the low-cost
 `gemini-3.1-flash-lite` model. For OpenAI-compatible services, set
 `VLA_MANAGER_AI_PROVIDER=openai`, `VLA_MANAGER_AI_URL`, and `VLA_MANAGER_AI_MODEL`.
+For OpenRouter, set `VLA_MANAGER_AI_PROVIDER=openrouter` and `VLA_MANAGER_AI_MODEL`.
 For Anthropic, set `VLA_MANAGER_AI_PROVIDER=anthropic`, `VLA_MANAGER_AI_URL`, and
 `VLA_MANAGER_AI_MODEL`; its native Messages API is used automatically. `VLA_MANAGER_AI_URL`
 may be a provider base URL or the complete endpoint URL.
