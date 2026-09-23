@@ -11,7 +11,7 @@ from .template_repo import FakeTemplateRepo, PgTemplateRepo, TemplateRepo
 from .validation import ProcessingRequirementValidator, RequirementValidator
 from .vla_repo import FakeVLARepo, PgVLARepo, VLARepo
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 
 async def build_pool() -> asyncpg.Pool | None:

@@ -16,8 +16,11 @@ from .assistant import (
 )
 from .dependencies import get_template_repo
 from .errors import http_error
+from .log import get_logger
 from .models import _CAMEL_OPEN
 from .template_repo import TemplateRepo
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -60,16 +63,31 @@ async def assist_template(
             request.current_template,
         )
         content = await complete_assistant(messages)
-        return AssistantReply.model_validate(parse_assistant_response(content))
+        reply = AssistantReply.model_validate(parse_assistant_response(content))
     except AssistantUnavailable as exc:
+        logger.warning("Template assistant unavailable", error=str(exc))
         raise http_error(
             status.HTTP_503_SERVICE_UNAVAILABLE,
             str(exc),
             type="ASSISTANT_UNAVAILABLE",
         ) from exc
     except AssistantResponseError as exc:
+        logger.warning(
+            "Template assistant response rejected",
+            error=str(exc),
+            cause=str(exc.__cause__) if exc.__cause__ else None,
+        )
         raise http_error(
             status.HTTP_502_BAD_GATEWAY,
             str(exc),
             type="ASSISTANT_INVALID_RESPONSE",
         ) from exc
+
+    proposal = reply.proposal or {}
+    logger.info(
+        "Template assistant replied",
+        has_proposal=reply.proposal is not None,
+        engine=proposal.get("evaluationMethod", {}).get("engine"),
+        has_examples=reply.examples is not None,
+    )
+    return reply

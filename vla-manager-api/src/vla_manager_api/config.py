@@ -8,6 +8,7 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LogLevel = Literal["critical", "error", "warning", "info", "debug"]
+LogFormat = Literal["auto", "console", "json"]
 AIProvider = Literal["openai", "gemini", "anthropic", "openrouter"]
 
 
@@ -29,6 +30,8 @@ class Config(BaseSettings):
 
     # Both structlog and uvicorn take these names, lowercased.
     log_level: LogLevel = "info"
+    # ``auto`` renders for humans when stderr is a TTY and JSON otherwise.
+    log_format: LogFormat = "auto"
 
     # Postgres DSN. Required for the production (asyncpg) repositories.
     # Example: postgresql://vla:vla@postgres-vla:5432/vla
@@ -53,6 +56,11 @@ class Config(BaseSettings):
     ai_timeout_seconds: float = Field(
         30.0, validation_alias="VLA_MANAGER_AI_TIMEOUT_SECONDS"
     )
+
+    @field_validator("log_format", mode="before")
+    @classmethod
+    def _normalise_log_format(cls, value: object) -> object:
+        return value.lower() if isinstance(value, str) else value
 
     @field_validator("log_level", mode="before")
     @classmethod

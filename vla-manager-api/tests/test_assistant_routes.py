@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Iterator
 
 import pytest
+import structlog
 from fastapi.testclient import TestClient
+from structlog.contextvars import merge_contextvars
+from structlog.testing import LogCapture
+from structlog.typing import EventDict
 
 from vla_manager_api.dependencies import get_repo, get_template_repo
 from vla_manager_api.main import create_app
@@ -13,6 +18,9 @@ from vla_manager_api.vla_repo import FakeVLARepo
 
 
 class FakeResponse:
+    status = 200
+    headers = {"Content-Type": "application/json"}
+
     def __init__(self, payload: dict[str, object]) -> None:
         self._payload = json.dumps(payload).encode()
 
@@ -24,6 +32,21 @@ class FakeResponse:
 
     def read(self) -> bytes:
         return self._payload
+
+
+@pytest.fixture
+def debug_logs() -> Iterator[list[EventDict]]:
+    """Capture every event, debug included, with its bound context."""
+    previous = structlog.get_config()
+    capture = LogCapture()
+    structlog.configure(
+        processors=[merge_contextvars, capture],
+        wrapper_class=structlog.make_filtering_bound_logger(logging.DEBUG),
+    )
+    try:
+        yield capture.entries
+    finally:
+        structlog.configure(**previous)
 
 
 @pytest.fixture
@@ -273,3 +296,80 @@ def test_anthropic_uses_messages_api_headers_and_system_prompt(
     assert body["model"] == "claude-test"
     assert body["system"] == "Return JSON only."
     assert body["messages"] == [{"role": "user", "content": "hello"}]
+
+
+def test_ai_requests_and_responses_are_logged_without_the_api_key(
+    monkeypatch: pytest.MonkeyPatch, debug_logs: list[EventDict]
+) -> None:
+    from vla_manager_api import assistant
+
+    monkeypatch.setattr(assistant.cfg, "ai_provider", "openai")
+    monkeypatch.setattr(assistant.cfg, "ai_url", "https://example.test/v1")
+    monkeypatch.setattr(assistant.cfg, "ai_model", "test-model")
+    monkeypatch.setattr(assistant.cfg, "ai_api_key", "secret-test-key")
+
+    def fake_urlopen(request: object, timeout: float) -> FakeResponse:
+        return FakeResponse(
+            {
+                "choices": [{"message": {"content": '{"message":"ok"}'}}],
+                "usage": {"total_tokens": 7},
+            }
+        )
+
+    monkeypatch.setattr(assistant, "urlopen", fake_urlopen)
+
+    assistant._complete_sync([{"role": "user", "content": "hello"}])
+    logs = debug_logs
+
+    sent = next(e for e in logs if e["event"] == "Sending request to AI endpoint")
+    assert sent["url"] == "https://example.test/v1/chat/completions"
+    assert sent["headers"]["Authorization"] == "<redacted>"
+    assert sent["body"]["messages"] == [{"role": "user", "content": "hello"}]
+    assert "secret-test-key" not in repr(logs)
+
+    received = next(e for e in logs if e["event"] == "Received response from AI endpoint")
+    assert received["status"] == 200
+    assert received["body"]["usage"] == {"total_tokens": 7}
+
+    replied = next(e for e in logs if e["event"] == "AI endpoint replied")
+    assert replied["usage"] == {"total_tokens": 7}
+
+
+def test_ai_error_responses_are_logged_with_their_body(
+    monkeypatch: pytest.MonkeyPatch, debug_logs: list[EventDict]
+) -> None:
+    import io
+    from urllib.error import HTTPError
+
+    from vla_manager_api import assistant
+
+    monkeypatch.setattr(assistant.cfg, "ai_provider", "openai")
+    monkeypatch.setattr(assistant.cfg, "ai_url", "https://example.test/v1")
+    monkeypatch.setattr(assistant.cfg, "ai_model", "test-model")
+    monkeypatch.setattr(assistant.cfg, "ai_api_key", "secret-test-key")
+
+    def fake_urlopen(request: object, timeout: float) -> FakeResponse:
+        raise HTTPError(
+            "https://example.test/v1/chat/completions",
+            404,
+            "Not Found",
+            None,  # type: ignore[arg-type]
+            io.BytesIO(b'{"error":{"message":"unknown model"}}'),
+        )
+
+    monkeypatch.setattr(assistant, "urlopen", fake_urlopen)
+
+    with pytest.raises(assistant.AssistantUnavailable):
+        assistant._complete_sync([{"role": "user", "content": "hello"}])
+    logs = debug_logs
+
+    error = next(e for e in logs if e["event"] == "AI endpoint answered with an error")
+    assert error["status"] == 404
+    assert error["body"] == {"error": {"message": "unknown model"}}
+    assert error["ai_model"] == "test-model"
+
+
+def test_responses_carry_a_request_id(client: TestClient) -> None:
+    assert client.get("/livez").headers["x-request-id"]
+    echoed = client.get("/livez", headers={"X-Request-ID": "abc123"})
+    assert echoed.headers["x-request-id"] == "abc123"

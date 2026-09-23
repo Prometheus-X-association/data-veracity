@@ -80,7 +80,8 @@ spec is still served and `/swagger/components.yaml` answers `404`.
 | `VLA_MANAGER_OPENAPI_FILE` | `/app/openapi.yaml` | Hand-written spec served at `/swagger`. Missing → FastAPI's generated schema. `components.yaml` next to it is served at `/swagger/components.yaml`, where the spec's `$ref`s point. |
 | `VLA_MANAGER_API_HOST` | `0.0.0.0` | Listen address |
 | `VLA_MANAGER_API_PORT` | `8000` | Listen port |
-| `VLA_MANAGER_API_LOG_LEVEL` | `info` | One of `critical`, `error`, `warning`, `info`, `debug` |
+| `VLA_MANAGER_API_LOG_LEVEL` | `info` | One of `critical`, `error`, `warning`, `info`, `debug`. At `debug`, every request to the assistant service is logged with its URL, headers (credentials redacted) and full body, and every response with its status, headers, body and latency – prompts and model output included. |
+| `VLA_MANAGER_API_LOG_FORMAT` | `auto` | `json` for one JSON object per line, `console` for human-readable output, or `auto` to pick `console` on a TTY and `json` otherwise. Covers uvicorn's own logs too. Each event carries the `request_id` of the HTTP request that caused it (the caller's `X-Request-ID`, or a generated one echoed back in that header). |
 | `VLA_MANAGER_API_PROCESSING_URL` | `http://localhost:5000` | URL to a DVA processing instance |
 | `VLA_MANAGER_AI_PROVIDER` | `openai` | `openai` for OpenAI-compatible services, `gemini` for Gemini's compatibility endpoint, `openrouter` for OpenRouter, or `anthropic` for the native Messages API |
 | `VLA_MANAGER_AI_URL` | *(empty)* | Provider base URL or complete endpoint URL. Defaults to the provider's public endpoint. Empty credentials disable the assistant. |

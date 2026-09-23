@@ -4,12 +4,19 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Mapping
+from time import perf_counter
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from structlog.contextvars import bound_contextvars
+
 from .config import cfg
+from .log import get_logger
 from .models import TemplateNew
+
+logger = get_logger(__name__)
 
 _DEFAULT_URLS = {
     "openai": "https://api.openai.com/v1",
@@ -18,6 +25,9 @@ _DEFAULT_URLS = {
     "openrouter": "https://openrouter.ai/api/v1",
 }
 _DEFAULT_MODELS = {"gemini": "gemini-3.1-flash-lite"}
+
+# Request headers that carry credentials; logged as present, never by value.
+_SECRET_HEADERS = frozenset({"authorization", "x-api-key", "x-goog-api-key"})
 
 
 class AssistantUnavailable(RuntimeError):
@@ -88,6 +98,13 @@ def _provider_config() -> tuple[str, str, str, str]:
     base_url = cfg.ai_url.strip() or _DEFAULT_URLS[provider]
     model = cfg.ai_model.strip() or _DEFAULT_MODELS.get(provider, "")
     if not api_key or not model:
+        logger.warning(
+            "Template assistant is not configured",
+            provider=provider,
+            url=base_url,
+            has_api_key=bool(api_key),
+            model=model or None,
+        )
         raise AssistantUnavailable("The template assistant is not configured.")
     return provider, base_url, model, api_key
 
@@ -106,6 +123,26 @@ def _messages_url(base_url: str) -> str:
     return f"{base}/messages"
 
 
+def _redact_headers(headers: Mapping[str, str]) -> dict[str, str]:
+    return {
+        name: "<redacted>" if name.lower() in _SECRET_HEADERS else value
+        for name, value in headers.items()
+    }
+
+
+def _elapsed_ms(started: float) -> float:
+    return round((perf_counter() - started) * 1000, 1)
+
+
+def _decode_body(raw: bytes) -> Any:
+    """The body as JSON if it parses, else as text, for logging."""
+    text = raw.decode("utf-8", errors="replace")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return text
+
+
 def _post_json(
     url: str,
     body: dict[str, Any],
@@ -118,18 +155,83 @@ def _post_json(
         headers=headers,
         method="POST",
     )
+    logger.debug(
+        "Sending request to AI endpoint",
+        method="POST",
+        url=url,
+        headers=_redact_headers(headers),
+        body=body,
+        timeout_seconds=cfg.ai_timeout_seconds,
+    )
+    started = perf_counter()
     try:
         with urlopen(request, timeout=cfg.ai_timeout_seconds) as response:
-            payload = json.loads(response.read())
-    except (HTTPError, URLError, TimeoutError, OSError) as exc:
+            status = response.status
+            response_headers = dict(response.headers.items())
+            raw = response.read()
+    except HTTPError as exc:
+        # Providers explain rejections (bad key, unknown model, rate limit)
+        # in the body, so that is worth keeping even outside debug.
+        try:
+            error_body = _decode_body(exc.read())
+        except OSError:
+            error_body = None
+        logger.warning(
+            "AI endpoint answered with an error",
+            url=url,
+            status=exc.code,
+            reason=exc.reason,
+            elapsed_ms=_elapsed_ms(started),
+            headers=dict(exc.headers.items()) if exc.headers else None,
+            body=error_body,
+        )
         raise AssistantUnavailable(
             "The template assistant could not be reached."
         ) from exc
-    except (json.JSONDecodeError, TypeError, UnicodeDecodeError) as exc:
+    except (URLError, TimeoutError, OSError) as exc:
+        logger.warning(
+            "AI endpoint could not be reached",
+            url=url,
+            elapsed_ms=_elapsed_ms(started),
+            error=str(exc),
+            error_type=type(exc).__name__,
+        )
+        raise AssistantUnavailable(
+            "The template assistant could not be reached."
+        ) from exc
+
+    elapsed_ms = _elapsed_ms(started)
+    logger.debug(
+        "Received response from AI endpoint",
+        url=url,
+        status=status,
+        elapsed_ms=elapsed_ms,
+        headers=response_headers,
+        body=_decode_body(raw),
+    )
+    try:
+        payload = json.loads(raw)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        logger.warning(
+            "AI endpoint returned invalid JSON",
+            url=url,
+            status=status,
+            body=raw.decode("utf-8", errors="replace"),
+        )
         raise AssistantResponseError("The assistant returned invalid JSON.") from exc
 
     if not isinstance(payload, dict):
+        logger.warning(
+            "AI endpoint returned a non-object", url=url, status=status, body=payload
+        )
         raise AssistantResponseError("The assistant response had an unexpected shape.")
+    logger.info(
+        "AI endpoint replied",
+        url=url,
+        status=status,
+        elapsed_ms=elapsed_ms,
+        usage=payload.get("usage"),
+    )
     return payload
 
 
@@ -203,9 +305,16 @@ def _complete_anthropic(
 
 def _complete_sync(messages: list[dict[str, str]]) -> str:
     provider, base_url, model, api_key = _provider_config()
-    if provider == "anthropic":
-        return _complete_anthropic(messages, base_url, model, api_key)
-    return _complete_openai_compatible(messages, base_url, model, api_key, provider)
+    # Scoped to this call, so every event it logs says which service it was.
+    with bound_contextvars(ai_provider=provider, ai_model=model):
+        if provider == "anthropic":
+            content = _complete_anthropic(messages, base_url, model, api_key)
+        else:
+            content = _complete_openai_compatible(
+                messages, base_url, model, api_key, provider
+            )
+        logger.debug("Extracted assistant reply", content=content)
+        return content
 
 
 async def complete_assistant(messages: list[dict[str, str]]) -> str:

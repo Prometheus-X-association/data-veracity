@@ -20,7 +20,7 @@ from .models import (
     ValidationFailureReason,
 )
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 # DVA Processing is a sibling service on the same network, and compiling an
 # expression is not slow, so a call unanswered by now is not going to be.
@@ -111,15 +111,21 @@ class ProcessingRequirementValidator:
         self, engine: QualityEngine, implementation: str
     ) -> TemplateValidationResult:
         """Have processing compile ``implementation`` and report its verdict."""
-        logger.debug("Validating rendered logic with DVA Processing", url=self._url)
+        body = {"engine": engine.value, "implementation": implementation}
+        logger.debug(
+            "Validating rendered logic with DVA Processing", url=self._url, body=body
+        )
         try:
-            response = await self._client.post(
-                self._url,
-                json={"engine": engine.value, "implementation": implementation},
-            )
+            response = await self._client.post(self._url, json=body)
         except httpx2.HTTPError as e:
             raise ProcessingError(f"Request to DVA Processing failed: {e}") from e
 
+        logger.debug(
+            "DVA Processing answered",
+            url=self._url,
+            status=response.status_code,
+            body=response.text,
+        )
         try:
             response.raise_for_status()
             answer = response.json()

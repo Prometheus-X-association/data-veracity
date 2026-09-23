@@ -31,11 +31,11 @@ from .dependencies import (
 )
 from .errors import http_exception_handler
 from .health import router as health_router
-from .log import get_logger, setup_logging
+from .log import RequestContextMiddleware, get_logger, setup_logging
 from .routes import router
 from .template_routes import router as template_router
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 
 def _load_openapi_schema(app: FastAPI) -> dict[str, Any]:
@@ -91,6 +91,7 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
         openapi_url="/swagger/openapi.json",
     )
+    app.add_middleware(RequestContextMiddleware)
     app.include_router(router)
     app.include_router(template_router)
     app.include_router(assistant_router)
@@ -135,4 +136,7 @@ def cli() -> None:
         host=cfg.host,
         port=cfg.port,
         log_level=cfg.log_level,
+        # Keep uvicorn from installing its own plain-text handlers; its
+        # records propagate to the root handler set up in ``setup_logging``.
+        log_config=None,
     )

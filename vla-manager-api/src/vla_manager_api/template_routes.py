@@ -26,7 +26,7 @@ from .template_repo import TemplateRepo
 from .templates import render_template
 from .validation import ProcessingError, RequirementValidator
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -173,7 +173,7 @@ async def validate_template_route(
     try:
         return await validator.validate(em.engine, rendered)
     except ProcessingError as exc:
-        logger.warning("Could not validate rendered logic", error=exc)
+        logger.warning("Could not validate rendered logic", error=str(exc))
         return TemplateValidationResult(
             valid=False,
             reason=ValidationFailureReason.unavailable_engine,
