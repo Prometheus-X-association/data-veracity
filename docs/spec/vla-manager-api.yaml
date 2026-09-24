@@ -789,6 +789,7 @@ components:
                 enum: [user, assistant]
               content:
                 type: string
+                maxLength: 8000
         currentTemplate:
           type: object
           additionalProperties: true
@@ -829,6 +830,7 @@ components:
                 enum: [user, assistant]
               content:
                 type: string
+                maxLength: 8000
         builderContext:
           $ref: '#/components/schemas/BuilderContext'
     BuilderContext:

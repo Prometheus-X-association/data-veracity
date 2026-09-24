@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
-from uuid import UUID
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field, field_validator
@@ -20,7 +19,7 @@ from .assistant import (
 from .dependencies import get_template_repo
 from .errors import http_error
 from .log import get_logger
-from .models import _CAMEL_OPEN
+from .models import _CAMEL
 from .template_repo import TemplateRepo
 
 logger = get_logger(__name__)
@@ -28,11 +27,25 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
+class ConversationTurn(BaseModel):
+    """An earlier chat turn replayed to the model.
+
+    Only ``user`` and ``assistant`` turns are accepted: the system prompt is
+    the server's alone, and a client-supplied ``system`` turn would be merged
+    into it by the Anthropic path.
+    """
+
+    model_config = _CAMEL
+
+    role: Literal["user", "assistant"]
+    content: str = Field(max_length=8000)
+
+
 class AssistantRequest(BaseModel):
-    model_config = _CAMEL_OPEN
+    model_config = _CAMEL
 
     message: str = Field(min_length=1, max_length=4000)
-    conversation: list[dict[str, str]] = Field(default_factory=list, max_length=20)
+    conversation: list[ConversationTurn] = Field(default_factory=list, max_length=20)
     current_template: dict[str, Any] | None = None
 
     @field_validator("message")
@@ -45,7 +58,7 @@ class AssistantRequest(BaseModel):
 
 
 class AssistantReply(BaseModel):
-    model_config = _CAMEL_OPEN
+    model_config = _CAMEL
 
     message: str
     proposal: dict[str, Any] | None = None
@@ -53,7 +66,7 @@ class AssistantReply(BaseModel):
 
 
 class BuilderContext(BaseModel):
-    model_config = _CAMEL_OPEN
+    model_config = _CAMEL
 
     metadata: dict[str, Any] = Field(default_factory=dict)
     sample_data: Any | None = None
@@ -62,10 +75,10 @@ class BuilderContext(BaseModel):
 
 
 class AssistantVLARequest(BaseModel):
-    model_config = _CAMEL_OPEN
+    model_config = _CAMEL
 
     message: str = Field(min_length=1, max_length=4000)
-    conversation: list[dict[str, str]] = Field(default_factory=list, max_length=20)
+    conversation: list[ConversationTurn] = Field(default_factory=list, max_length=20)
     builder_context: BuilderContext = Field(default_factory=BuilderContext)
 
     @field_validator("message")
@@ -78,7 +91,7 @@ class AssistantVLARequest(BaseModel):
 
 
 class VLAAssistantRequirement(BaseModel):
-    model_config = _CAMEL_OPEN
+    model_config = _CAMEL
 
     template_id: str
     model: dict[str, Any]
@@ -86,7 +99,7 @@ class VLAAssistantRequirement(BaseModel):
 
 
 class AssistantVLAReply(BaseModel):
-    model_config = _CAMEL_OPEN
+    model_config = _CAMEL
 
     message: str
     metadata: dict[str, Any] | None = None
@@ -104,7 +117,7 @@ async def assist_template(
         messages = build_assistant_messages(
             request.message,
             templates,
-            request.conversation,
+            [turn.model_dump() for turn in request.conversation],
             request.current_template,
         )
         content = await complete_assistant(messages)
@@ -144,17 +157,15 @@ async def assist_vla(
     repo: TemplateRepo = Depends(get_template_repo),
 ) -> AssistantVLAReply:
     try:
-        templates = [
-            item.model_dump(by_alias=True, mode="json") for item in await repo.all()
-        ]
+        templates = await repo.all()
         messages = build_vla_assistant_messages(
             request.message,
             request.builder_context.model_dump(by_alias=True, mode="json"),
             templates,
-            request.conversation,
+            [turn.model_dump() for turn in request.conversation],
         )
         content = await complete_assistant(messages)
-        catalog_ids = {UUID(str(item["id"])) for item in templates}
+        catalog_ids = {item.id for item in templates}
         parsed = parse_vla_assistant_response(content, catalog_ids)
         reply = AssistantVLAReply.model_validate(parsed)
     except AssistantUnavailable as exc:

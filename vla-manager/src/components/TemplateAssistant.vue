@@ -263,7 +263,7 @@ async function send () {
   try {
     const response = await askTemplateAssistant({
       message,
-      conversation: messages.value.slice(0, -1),
+      conversation: messages.value.slice(0, -1).map(({ role, content }) => ({ role, content })),
       currentTemplate: clone(props.template)
     })
     loading.value = false

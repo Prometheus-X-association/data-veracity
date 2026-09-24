@@ -38,6 +38,7 @@ deployment: this service is not yet in `test-env/compose.yml`.
 | `POST /template/{id}/render` | VLA Manager UI | Render a template's `implementationTemplate` with a model |
 | `POST /template/{id}/validate` | VLA Manager UI | Render a template with a model and have DVA Processing check that the logic compiles |
 | `POST /assistant/template` | VLA Manager UI | Generate an unsaved template draft from a natural-language request |
+| `POST /assistant/vla` | VLA Manager UI | Draft VLA requirements from the template catalog and the builder's sample data: catalog template IDs with filled-in models, suggested metadata, and the rules no template covers |
 
 This service intentionally does **not** do evaluation, attestation, or credential issuance —
 those are concerns of `dva-processing` and the `dva-vc-manager` respectively.
@@ -89,9 +90,14 @@ spec is still served and `/swagger/components.yaml` answers `404`.
 | `VLA_MANAGER_AI_MODEL` | *(empty)* | Model name sent to the assistant service. Gemini defaults to `gemini-3.5-flash-lite`; other providers require an explicit model. |
 | `VLA_MANAGER_AI_TIMEOUT_SECONDS` | `30` | Maximum assistant request duration. |
 
-The assistant returns a structured draft and never saves a template. The UI must show the
-draft for review and use the normal template validation and save actions afterward. Do not
-place the API key in frontend environment variables or browser code.
+Both assistant endpoints return a structured draft and never save anything. The UI must show
+the draft for review and use the normal validation and save actions afterward: a template
+draft goes through the template editor, and each requirement the VLA builder assistant
+drafts is checked with `POST /template/{id}/validate` before it can be attached. The VLA
+builder assistant only chooses catalog templates and fills in their variables; a returned
+template ID that is not in the catalog is rejected with `502 ASSISTANT_INVALID_RESPONSE`.
+Only `user` and `assistant` turns are accepted in `conversation`. Do not place the API key
+in frontend environment variables or browser code.
 
 Example provider settings:
 
