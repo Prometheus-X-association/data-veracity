@@ -72,6 +72,12 @@
       <!-- Left Panel: Data Structure -->
       <div class="panel data-panel">
         <n-card title="Data Structure" size="small" class="h-full">
+          <template #header-extra>
+            <n-tag v-if="lastPath" type="primary" size="small" round closable class="selected-path" @close="lastPath = null">
+              <template #icon><n-icon><CodeIcon /></n-icon></template>
+              {{ lastPath }}
+            </n-tag>
+          </template>
           <n-empty v-if="!sampleData" description="No sample data yet (optional)">
             <template #extra>
               <n-text depth="3" class="block mb-2">
@@ -80,7 +86,7 @@
               <n-button type="primary" @click="showSampleModal">Upload Sample Data</n-button>
             </template>
           </n-empty>
-          <n-text v-else depth="3" class="block mb-2">Click on any JSON node to select it for a new requirement.</n-text>
+          <n-text v-else depth="3" class="block mb-2">Click on any JSON node to select it: the next requirement you add starts from its path.</n-text>
           <div v-if="sampleData" class="json-scroll-area">
             <vue-json-pretty
               :data="sampleData"
@@ -95,57 +101,30 @@
         </n-card>
       </div>
 
-      <!-- Center Panel: Toolbox -->
-      <div class="panel toolbox-panel">
-        <n-card title="Toolbox" size="small" class="toolbox-card">
-          <div class="toolbox-content">
-            <n-statistic label="Selected Element" class="mb-4">
-              <template #prefix>
-                <n-icon><CodeIcon /></n-icon>
-              </template>
-              <n-text v-if="!lastPath" depth="3" italic>No element selected</n-text>
-              <n-text v-else type="primary" strong class="break-all">{{ lastPath }}</n-text>
-            </n-statistic>
-
-            <n-button
-              type="success"
-              size="large"
-              block
-              @click="showReqModal"
-            >
-              <template #icon><n-icon><LinkIcon /></n-icon></template>
-              Attach Requirement
-            </n-button>
-            <n-text depth="3" class="block attach-help">
-              Selecting a field in the sample data fills in its path; without a sample, type the path in the requirement.
-            </n-text>
-          </div>
-        </n-card>
-      </div>
-
       <!-- Right Panel: Fragments -->
       <div class="panel fragments-panel">
         <n-card title="Building Blocks (Fragments)" size="small" class="h-full">
           <n-text v-if="fragments.length === 0" depth="3" class="block mb-4 text-center">
-            No requirements added yet. Attach them with the toolbox, or let "Design with AI" draft them.
+            No requirements added yet. Add one with the + button, or let "Design with AI" draft them.
           </n-text>
 
           <n-scrollbar style="max-height: 550px">
             <div class="fragments-list">
               <div v-for="(frag, index) in fragments" :key="index" class="fragment-block">
                 <n-card size="small" :bordered="false" class="block-card">
-                  <div class="flex justify-between items-start mb-2">
+                  <div class="flex justify-between items-start">
                     <n-text strong class="text-lg text-primary">{{ frag.requirement.name }}</n-text>
                     <n-tag type="info" size="small">{{ frag.requirement.evaluationMethod.engine }}</n-tag>
                   </div>
+                  <n-text depth="3" class="block template-id">Template {{ frag.data.id }}</n-text>
 
-                  <div class="bg-gray-50 p-2 rounded mb-2 overflow-x-auto text-xs font-mono">
-                    {{ frag.requirement.evaluationMethod.implementationTemplate }}
-                  </div>
-
-                  <div class="text-xs mb-2">
-                    <vue-json-pretty :data="frag.data" :deep="1" />
-                  </div>
+                  <!-- Only for the eye: the VLA keeps the template ID and
+                       model, which the server renders again on creation. -->
+                  <pre v-if="renderedFor(frag).value !== undefined" class="rendered-requirement">{{ renderedFor(frag).value }}</pre>
+                  <n-text v-else-if="renderedFor(frag).error" type="error" class="block text-xs rendered-error">
+                    Could not render this requirement: {{ renderedFor(frag).error }}
+                  </n-text>
+                  <n-text v-else depth="3" italic class="block text-xs rendered-error">Rendering…</n-text>
 
                   <n-divider class="my-2" />
 
@@ -173,6 +152,23 @@
         </n-card>
       </div>
     </div>
+
+    <!-- Floating action button: a selected sample field extends it with the
+         path the new requirement will start from. -->
+    <button
+      type="button"
+      class="add-fab"
+      :class="{ extended: lastPath }"
+      :title="lastPath ? `Add a requirement on ${lastPath}` : 'Add a requirement'"
+      aria-label="Add requirement"
+      @click="showReqModal"
+    >
+      <n-icon size="28"><AddIcon /></n-icon>
+      <span v-if="lastPath" class="add-fab-label">
+        <span class="add-fab-kicker">Requirement on</span>
+        <span class="add-fab-path">{{ lastPath }}</span>
+      </span>
+    </button>
   </div>
 </template>
 
@@ -184,13 +180,13 @@
   import axios from 'axios'
   import {
     NPageHeader, NSpace, NButton, NIcon, NEmpty, NCard, NFormItem, NInput,
-    NText, NStatistic, NTag, NDivider, NScrollbar, useMessage
+    NText, NTag, NDivider, NScrollbar, useMessage
   } from 'naive-ui'
 
   import SampleModal from './SampleModal.vue'
   import ReqModal from './ReqModal.vue'
   import VlaBuilderAssistant from './VlaBuilderAssistant.vue'
-  import { evaluateTemplate, listTemplates } from '../api/templates.js'
+  import { evaluateTemplate, listTemplates, renderTemplate } from '../api/templates.js'
   import { templateBugReport } from '../api/templatePresentation.js'
   import {
     applyVlaAssistantDraft,
@@ -217,12 +213,11 @@
       ])
     }
   })
-  const LinkIcon = defineComponent({
+  const AddIcon = defineComponent({
     render() {
       return h('svg', { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 512 512" }, [
-        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "36", d: "M208 352h-64a96 96 0 010-192h64" }),
-        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "36", d: "M304 160h64a96 96 0 010 192h-64" }),
-        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "36", d: "M163.29 256h187.42" })
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "40", d: "M256 112v288" }),
+        h('path', { fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "40", d: "M400 256H112" })
       ])
     }
   })
@@ -260,6 +255,28 @@
   const showReqModal = () => reqModal.value?.show()
 
   const onNodeClick = (node) => lastPath.value = node.path
+
+  // Rendered requirements, keyed by what they were rendered from, so a
+  // template fixed in the workspace is rendered again. Each entry is
+  // `{ value }`, `{ error }`, or `{}` while the render is in flight.
+  const renderedRequirements = ref({})
+  const renderKey = (frag) => JSON.stringify([
+    frag.data?.id,
+    frag.requirement?.evaluationMethod?.implementationTemplate,
+    frag.data?.model
+  ])
+  const renderedFor = (frag) => renderedRequirements.value[renderKey(frag)] || {}
+
+  watch(fragments, (list) => {
+    for (const frag of list) {
+      const key = renderKey(frag)
+      if (key in renderedRequirements.value) continue
+      renderedRequirements.value[key] = {}
+      renderTemplate(frag.data.id, frag.data.model)
+        .then(result => { renderedRequirements.value[key] = { value: result.implementation ?? '' } })
+        .catch(cause => { renderedRequirements.value[key] = { error: cause.message } })
+    }
+  }, { deep: true, immediate: true })
 
   const assistantContext = computed(() => createBuilderAssistantContext({
     metadata: metadata.value,
@@ -381,6 +398,7 @@
     metadata.value = { name: '', description: '' }
     testedFragment.value = null
     testOutcome.value = null
+    renderedRequirements.value = {}
     assistantOpen.value = false
     assistantKey.value++
   }
@@ -418,7 +436,63 @@
 </script>
 
 <style scoped>
-  .attach-help { margin-top: 8px; font-size: .75rem; }
+  .template-id {
+    margin: 2px 0 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .68rem;
+    overflow-wrap: anywhere;
+  }
+  .rendered-requirement {
+    margin: 0 0 8px;
+    max-height: 220px;
+    overflow: auto;
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    color: #334155;
+    background: #f8fafc;
+    font: .75rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .rendered-error { margin-bottom: 8px; }
+
+  .selected-path { max-width: 260px; }
+  .selected-path :deep(.n-tag__content) { overflow: hidden; text-overflow: ellipsis; }
+
+  /* Material-style extended FAB */
+  .add-fab {
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 60px;
+    min-width: 60px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 30px;
+    color: #fff;
+    background: #0891b2;
+    box-shadow: 0 6px 16px rgba(8, 145, 178, .35), 0 2px 4px rgba(0, 0, 0, .15);
+    cursor: pointer;
+    transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
+  }
+  .add-fab:hover { background: #0e7490; box-shadow: 0 8px 22px rgba(8, 145, 178, .45), 0 3px 6px rgba(0, 0, 0, .18); }
+  .add-fab:active { transform: scale(.97); }
+  .add-fab:focus-visible { outline: 3px solid #a5f3fc; outline-offset: 3px; }
+  .add-fab.extended { padding-right: 22px; }
+  .add-fab-label { display: grid; text-align: left; line-height: 1.2; min-width: 0; }
+  .add-fab-kicker { font-size: .68rem; opacity: .85; text-transform: uppercase; letter-spacing: .04em; }
+  .add-fab-path {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 600 .85rem ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
 
   .test-outcome {
     display: grid;
@@ -438,6 +512,8 @@
     display: flex;
     flex-direction: column;
     min-height: calc(100vh - 100px);
+    /* Room for the floating button below the last fragment. */
+    padding-bottom: 88px;
   }
 
   .mb-4 { margin-bottom: 16px; }
@@ -480,7 +556,7 @@
 
   .builder-layout {
     display: grid;
-    grid-template-columns: 2fr 1fr 2fr;
+    grid-template-columns: 1fr 1fr;
     gap: 16px;
     flex-grow: 1;
     min-height: 0;
@@ -492,10 +568,6 @@
     flex-direction: column;
     min-height: 0;
     min-width: 0;
-  }
-
-  .toolbox-panel {
-    align-self: center;
   }
 
   .builder-container :deep(.n-page-header) {
@@ -514,11 +586,6 @@
     min-height: 40px;
   }
 
-  .toolbox-card {
-    background: #f8fafc;
-    border: 2px dashed #cbd5e1;
-  }
-
   @media (max-width: 900px) {
     .builder-container {
       height: auto;
@@ -528,10 +595,6 @@
     .builder-layout {
       grid-template-columns: 1fr;
       flex-grow: 0;
-    }
-
-    .toolbox-panel {
-      align-self: stretch;
     }
 
     .json-scroll-area {
@@ -572,13 +635,9 @@
     .builder-layout .panel :deep(.n-card__content) {
       min-height: 0;
     }
-  }
 
-  .toolbox-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+    .add-fab { right: 16px; bottom: 16px; }
+    .add-fab-path { max-width: calc(100vw - 140px); }
   }
 
   .json-scroll-area {
