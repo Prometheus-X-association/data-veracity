@@ -4,10 +4,13 @@ import assert from 'node:assert/strict'
 import {
   applyVlaAssistantDraft,
   checkDraftRequirements,
+  missingTemplateBrief,
+  missingTemplateName,
   createBuilderAssistantContext,
   normaliseAssistantRequest,
   normaliseVlaAssistantReply,
-  passingRequirements
+  passingRequirements,
+  recheckRequest
 } from '../src/api/vlaBuilderAssistant.js'
 
 const schemaTemplate = {
@@ -137,4 +140,39 @@ test('applies metadata on its own and merges participants and tags', () => {
   assert.deepEqual(next.metadata.participants, ['Alice', 'Bob'])
   assert.deepEqual(next.metadata.tags, ['energy', 'hourly'])
   assert.equal(next.fragments.length, 1)
+})
+
+test('sends a compact copy of the previous draft with the builder context', () => {
+  const draft = {
+    message: 'Draft',
+    requirements: [{ templateId: schemaTemplate.id, template: schemaTemplate, model: { schema: {} }, reason: 'Fits.' }],
+    missingTemplates: [{ name: 'Freshness window', reason: 'At most 1h old.' }]
+  }
+
+  const context = createBuilderAssistantContext({ metadata: {}, draft })
+
+  assert.deepEqual(context.draft, {
+    requirements: [{ templateId: schemaTemplate.id, model: { schema: {} }, reason: 'Fits.' }],
+    missingTemplates: [{ name: 'Freshness window', reason: 'At most 1h old.' }]
+  })
+  assert.equal(createBuilderAssistantContext({}).draft, null)
+})
+
+test('names a missing template and briefs a sub-session on that one template', () => {
+  const named = { name: 'Freshness window', reason: 'Every record is at most one hour old.' }
+  const unnamed = { reason: 'Values stay between 0 and 100. They are in kWh.' }
+
+  assert.equal(missingTemplateName(named), 'Freshness window')
+  assert.equal(missingTemplateName(unnamed), 'Values stay between 0 and 100.')
+  assert.equal(missingTemplateName({}), 'Missing template')
+  assert.equal(missingTemplateBrief(named), 'Freshness window: Every record is at most one hour old.')
+  assert.equal(missingTemplateBrief({ name: 'Only a name' }), 'Only a name')
+})
+
+test('asks for a recheck naming the templates the author ticked', () => {
+  const request = recheckRequest([{ name: 'Freshness window' }, { name: 'Production range' }])
+
+  assert.match(request, /these templates:\n- Freshness window\n- Production range\n/)
+  assert.match(request, /check the catalog again and complete the draft/)
+  assert.match(recheckRequest([{ name: 'One' }]), /this template:\n- One\n/)
 })

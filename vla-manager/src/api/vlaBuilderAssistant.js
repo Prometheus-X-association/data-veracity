@@ -12,7 +12,21 @@ function serialisedSize (value) {
   return new TextEncoder().encode(JSON.stringify(value)).length
 }
 
-export function createBuilderAssistantContext ({ metadata = {}, sampleData = null, selectedPath = null, fragments = [] } = {}) {
+// What the assistant needs of its previous draft to complete it on a
+// recheck: the chosen templates with their values, and what was missing.
+function compactDraft (draft) {
+  if (!draft) return null
+  return {
+    requirements: (draft.requirements || []).map(requirement => ({
+      templateId: requirement.templateId,
+      model: clone(requirement.model) || {},
+      reason: requirement.reason
+    })),
+    missingTemplates: clone(draft.missingTemplates) || []
+  }
+}
+
+export function createBuilderAssistantContext ({ metadata = {}, sampleData = null, selectedPath = null, fragments = [], draft = null } = {}) {
   let boundedSample = clone(sampleData)
   if (boundedSample !== null && serialisedSize(boundedSample) > MAX_SAMPLE_BYTES) {
     const json = JSON.stringify(boundedSample)
@@ -31,8 +45,32 @@ export function createBuilderAssistantContext ({ metadata = {}, sampleData = nul
       requirement: fragment.requirement
         ? { id: fragment.requirement.id, name: fragment.requirement.name }
         : undefined
-    }))
+    })),
+    draft: compactDraft(draft)
   }
+}
+
+// A missing template is named by the assistant; older replies only carry a
+// reason, so its first sentence stands in as the name.
+export function missingTemplateName (item = {}) {
+  if (item.name && String(item.name).trim()) return String(item.name).trim()
+  const reason = String(item.reason || item.description || '').trim()
+  const sentence = reason.split(/(?<=[.!?])\s/)[0]
+  return sentence.length > 60 ? `${sentence.slice(0, 57)}…` : sentence || 'Missing template'
+}
+
+// The request a template sub-session starts from: this one template only.
+export function missingTemplateBrief (item = {}) {
+  const name = missingTemplateName(item)
+  const reason = String(item.reason || item.description || '').trim()
+  return reason && reason !== name ? `${name}: ${reason}` : name
+}
+
+// Sent when the author has created templates and wants the draft completed.
+export function recheckRequest (createdItems = []) {
+  const names = createdItems.map(missingTemplateName)
+  const list = names.map(name => `- ${name}`).join('\n')
+  return `I have now created ${names.length === 1 ? 'this template' : 'these templates'}:\n${list}\nPlease check the catalog again and complete the draft.`
 }
 
 function requiredVariables (template) {

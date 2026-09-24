@@ -13,9 +13,11 @@
     @req-added="handleReqAdded"
   />
   <VlaBuilderAssistant
+    :key="assistantKey"
     v-model:show="assistantOpen"
     :context="assistantContext"
     :templates="availableTemplates"
+    :refresh-templates="refreshTemplates"
     @apply="handleAssistantApply"
     @create-template="handleCreateTemplate"
   />
@@ -217,8 +219,8 @@
 </template>
 
 <script setup>
-  import { ref, toRaw, h, defineComponent, onMounted, nextTick, computed } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { ref, toRaw, h, defineComponent, onActivated, nextTick, computed, watch } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
   import axios from 'axios'
@@ -231,7 +233,12 @@
   import ReqModal from './ReqModal.vue'
   import VlaBuilderAssistant from './VlaBuilderAssistant.vue'
   import { listTemplates } from '../api/templates.js'
-  import { applyVlaAssistantDraft, createBuilderAssistantContext } from '../api/vlaBuilderAssistant.js'
+  import {
+    applyVlaAssistantDraft,
+    createBuilderAssistantContext,
+    missingTemplateBrief,
+    missingTemplateName
+  } from '../api/vlaBuilderAssistant.js'
 
   // Basic SVG Icons
   const RefreshIcon = defineComponent({
@@ -260,13 +267,20 @@
     }
   })
 
+  // Named so App.vue's <keep-alive include="CreateView"> keeps the builder's
+  // work while the author visits the template workspace.
+  defineOptions({ name: 'CreateView' })
+
   const message = useMessage()
   const router = useRouter()
+  const route = useRoute()
 
   const sampleModal = ref(null)
   const testModal = ref(null)
   const reqModal = ref(null)
   const assistantOpen = ref(false)
+  // Bumped to give the assistant a fresh conversation once a VLA is created.
+  const assistantKey = ref(0)
   const availableTemplates = ref([])
 
   const sampleData = ref(null)
@@ -405,10 +419,14 @@
     }
   }
 
-  const handleCreateTemplate = () => {
+  // One sub-session per missing template: the builder (and the assistant's
+  // conversation) is kept alive meanwhile, and this template's rule alone
+  // seeds the template assistant.
+  const handleCreateTemplate = (item) => {
+    const brief = missingTemplateBrief(item)
     assistantOpen.value = false
-    router.push({ path: '/templates', query: { mode: 'create' } })
-    message.info('Create the missing template, then return here to attach it.')
+    router.push({ path: '/templates', query: { mode: 'create', from: 'builder', ...(brief ? { brief } : {}) } })
+    message.info(`Creating “${missingTemplateName(item)}”. Your builder work and conversation are kept.`)
   }
 
   const handleTestDataSelected = async () => {
@@ -448,27 +466,65 @@
     try {
       await axios.post('/api/vla/from-templates', body)
       message.success(`Successfully created VLA from ${fragments.value.length} fragments`)
+      // The view is kept alive, so the next visit would otherwise reopen
+      // the VLA that was just saved.
+      resetBuilder()
       router.push({ path: "/list" })
     } catch (err) {
       message.error(err.response?.data?.details || err.response?.data?.title || 'The VLA could not be created.')
     }
   }
 
-  onMounted(async () => {
+  const resetBuilder = () => {
+    sampleData.value = null
+    testData.value = null
+    lastPath.value = null
+    fragments.value = []
+    metadata.value = { name: '', description: '', participants: [], dataReference: '', tags: [] }
+    participantDraft.value = ''
+    tagDraft.value = ''
+    testedFragment.value = null
+    testResult.value = null
+    assistantOpen.value = false
+    assistantKey.value++
+  }
+
+  // A failed refresh keeps the catalog already loaded rather than emptying it.
+  const refreshTemplates = async () => {
     try {
-      const [response, templates] = await Promise.all([axios.get('/api/vla'), listTemplates()])
+      const templates = await listTemplates()
+      availableTemplates.value = Array.isArray(templates) ? templates : []
+    } catch {
+      // The assistant still works against the last catalog it saw.
+    }
+  }
+
+  const refreshSuggestions = async () => {
+    try {
+      const response = await axios.get('/api/vla')
       const participants = response.data.flatMap(vla => Array.isArray(vla.participants) ? vla.participants : [])
       const tags = response.data.flatMap(vla => Array.isArray(vla.tags) ? vla.tags : [])
       knownParticipants.value = new Set(participants)
       participantSuggestions.value = [...knownParticipants.value].map(value => ({ label: value, value }))
       knownTags.value = new Set(tags)
       tagSuggestions.value = [...knownTags.value].map(value => ({ label: value, value }))
-      availableTemplates.value = Array.isArray(templates) ? templates : []
     } catch {
       // Suggestions are optional; participants can still be entered manually.
-      try { availableTemplates.value = await listTemplates() } catch { availableTemplates.value = [] }
     }
+  }
+
+  // Runs on the first visit and on every return: templates created or VLAs
+  // saved in the meantime show up in the catalog and the suggestions.
+  onActivated(() => {
+    // Returning from a template sub-session reopens the assistant on the
+    // conversation it was started from.
+    if (route.query.assistant === 'open') {
+      assistantOpen.value = true
+      router.replace({ path: '/create' })
+    }
+    return Promise.all([refreshTemplates(), refreshSuggestions()])
   })
+  watch(assistantOpen, open => { if (open) refreshTemplates() })
 </script>
 
 <style scoped>

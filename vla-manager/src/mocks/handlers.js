@@ -152,8 +152,13 @@ export const handlers = [
   http.post('/api/assistant/vla', async ({ request }) => {
     const body = await request.json()
     const template = templates[0]
+    // A first draft reports two templates to create; a recheck (which
+    // carries the previous draft) reports them as found.
+    const rechecking = Boolean(body.builderContext?.draft)
     return HttpResponse.json({
-      message: `I found ${template.name} and prepared it from the builder context. Review the draft before applying it.`,
+      message: rechecking
+        ? 'Thanks – the draft is complete now.'
+        : `I found ${template.name} and prepared it from the builder context. Two rules still need templates.`,
       metadata: {
         name: 'Sample data VLA',
         description: 'Checks the uploaded sample data against the selected requirement.',
@@ -164,7 +169,12 @@ export const handlers = [
         model: { schemaURL: 'sample://schema' },
         reason: 'This is the closest reusable template in the current catalog.'
       }],
-      missingTemplates: []
+      missingTemplates: rechecking
+        ? []
+        : [
+            { name: 'Freshness window', reason: 'Every record timestamp is at most one hour old.' },
+            { name: 'Production range', reason: 'production_kwh is between 0 and 100000.' }
+          ]
     })
   }),
 

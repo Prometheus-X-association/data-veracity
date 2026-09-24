@@ -41,15 +41,15 @@
       <n-empty v-else description="No variables yet" size="small" />
 
       <n-form-item label="Implementation template" required :validation-status="errors.implementation ? 'error' : undefined" :feedback="errors.implementation || 'Use the variable names above in the implementation.'">
-        <n-input v-model:value="form.evaluationMethod.implementationTemplate" type="textarea" :autosize="{ minRows: 8, maxRows: 18 }" placeholder="Write the SCHEMA, JQ, or Great Expectations implementation." />
+        <n-input v-model:value="form.evaluationMethod.implementationTemplate" type="textarea" :autosize="{ minRows: 8, maxRows: 18 }" placeholder="Write the JSON Schema, jq, or Great Expectations implementation." />
       </n-form-item>
         </n-form>
 
         <div class="editor-actions">
           <n-button @click="$emit('cancel')">Cancel</n-button>
-          <TemplateAssistant :template="form" @apply="applyAssistantProposal" />
+          <TemplateAssistant :template="form" :brief="brief" :return-to-builder="returnToBuilder" @apply="applyAssistantProposal" @apply-and-save="applyAndSave" />
           <n-button :loading="rendering" :disabled="!canRender" @click="renderCurrent">Preview implementation</n-button>
-          <n-button type="primary" :loading="saving" @click="save">{{ isEditing ? 'Save changes' : 'Create template' }}</n-button>
+          <n-button type="primary" :loading="saving" @click="save">{{ saveLabel }}</n-button>
         </div>
       </div>
       <TemplatePreview :template="form" :value="previewValue" class="preview" />
@@ -63,10 +63,19 @@ import { NAlert, NButton, NCard, NCheckbox, NEmpty, NForm, NFormItem, NInput, NS
 import TemplatePreview from './TemplatePreview.vue'
 import TemplateAssistant from './TemplateAssistant.vue'
 import { applyTemplateProposal } from '../api/assistant.js'
+import { engineInfo } from '../api/templatePresentation.js'
 import { createTemplate, renderTemplate, updateTemplate } from '../api/templates.js'
 import { createVariableKeyStore, removeTemplateVariable, renameTemplateVariable, updateTemplateVariable } from '../api/templateVariables.js'
 
-const props = defineProps({ template: { type: Object, default: null } })
+const props = defineProps({
+  template: { type: Object, default: null },
+  // A rule the VLA builder assistant found no template for; it seeds the
+  // template assistant's request.
+  brief: { type: String, default: '' },
+  // Set when the VLA builder assistant opened this editor for a missing
+  // template; saving then returns the author to that conversation.
+  returnToBuilder: { type: Boolean, default: false }
+})
 const emit = defineEmits(['saved', 'cancel'])
 const message = useMessage()
 const saving = ref(false)
@@ -87,13 +96,17 @@ function blankTemplate () {
 function clone (value) { return JSON.parse(JSON.stringify(value)) }
 const form = ref(blankTemplate())
 const isEditing = computed(() => Boolean(props.template?.id))
+const saveLabel = computed(() => {
+  if (isEditing.value) return 'Save changes'
+  return props.returnToBuilder ? 'Save template and return to the VLA conversation' : 'Create template'
+})
 const variableKeys = createVariableKeyStore()
 const variableRows = computed(() => Object.entries(form.value.evaluationMethod.variableSchema.properties || {}).map(([name, definition]) => ({ name, key: variableKeys.keyFor(name), definition: definition || {} })))
 const canRender = computed(() => Boolean(form.value.id && Object.keys(errors.value).length === 0))
 
 watch(() => props.template, value => { form.value = value ? clone(value) : blankTemplate(); previewValue.value = '' }, { immediate: true })
 
-const engineOptions = [{ label: 'Schema', value: 'SCHEMA' }, { label: 'JQ', value: 'JQ' }, { label: 'Great Expectations', value: 'GREAT_EXPECTATIONS' }]
+const engineOptions = ['SCHEMA', 'JQ', 'GREAT_EXPECTATIONS'].map(value => ({ label: engineInfo(value).label, value }))
 const criterionOptions = [{ label: 'Valid or invalid', value: 'VALID_INVALID' }, { label: 'In range', value: 'IN_RANGE' }, { label: 'Greater than', value: 'GREATER_THAN' }, { label: 'Less than', value: 'LESS_THAN' }]
 const aspectOptions = [{ label: 'Syntax', value: 'SYNTAX' }, { label: 'Timeliness', value: 'TIMELINESS' }, { label: 'Accuracy', value: 'ACCURACY' }, { label: 'Completeness', value: 'COMPLETENESS' }, { label: 'Consistency', value: 'CONSISTENCY' }]
 const variableTypeOptions = [{ label: 'Text', value: 'string' }, { label: 'Number', value: 'number' }, { label: 'Integer', value: 'integer' }, { label: 'Boolean', value: 'boolean' }, { label: 'JSON object', value: 'object' }]
@@ -142,6 +155,15 @@ function applyAssistantProposal (proposal) {
   form.value = applyTemplateProposal(form.value, proposal)
   errors.value = {}
   message.info('Draft proposal applied. Review and validate it before saving.')
+}
+// "Save template and return" from the template assistant. If the proposal
+// does not pass the editor's checks it stays in the editor with the
+// problems highlighted, rather than being saved.
+async function applyAndSave (proposal) {
+  form.value = applyTemplateProposal(form.value, proposal)
+  errors.value = {}
+  await save()
+  if (Object.keys(errors.value).length) message.warning('The draft needs the highlighted fixes before it can be saved.')
 }
 async function save () {
   if (!validate()) return

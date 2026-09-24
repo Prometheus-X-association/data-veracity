@@ -865,6 +865,14 @@ components:
           items:
             type: object
             additionalProperties: true
+        draft:
+          description: >-
+            The assistant's previous draft (requirements and missing
+            templates), so that a follow-up such as a recheck after creating
+            templates can complete it rather than start over.
+          type: object
+          nullable: true
+          additionalProperties: true
     AssistantVLAResponse:
       type: object
       required: [message, requirements, missingTemplates]
@@ -892,10 +900,27 @@ components:
               reason:
                 type: string
         missingTemplates:
+          description: >-
+            One entry per template the author still has to create before the
+            draft can cover every requested rule.
           type: array
           items:
             type: object
             additionalProperties: true
+            properties:
+              name:
+                type: string
+                description: Short title for the template to create.
+              reason:
+                type: string
+                description: >-
+                  The rule the template must express, precise enough to
+                  write the template from.
+              templateId:
+                type: string
+                description: >-
+                  Set when a catalog template was chosen but could not be
+                  filled in completely.
     QualityEngine:
       $ref: ./components.yaml#/schemas/QualityEngine
     Health:

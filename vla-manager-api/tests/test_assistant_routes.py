@@ -654,3 +654,46 @@ def test_assistant_replays_only_role_and_content(
         {"role": "assistant", "content": "Hello"},
         {"role": "user", "content": "And now?"},
     ]
+
+
+def test_vla_assistant_sees_its_previous_draft_and_keeps_missing_template_names(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[list[dict[str, str]]] = []
+
+    async def fake_complete(messages: list[dict[str, str]]) -> str:
+        seen.append(messages)
+        return json.dumps(
+            {
+                "message": "One template is still missing.",
+                "requirements": [],
+                "missingTemplates": [
+                    {"name": "Freshness window", "reason": "Records are at most 1h old."}
+                ],
+            }
+        )
+
+    monkeypatch.setattr(
+        "vla_manager_api.assistant_routes.complete_assistant", fake_complete
+    )
+    previous = {
+        "requirements": [],
+        "missingTemplates": [{"name": "Freshness window", "reason": "old"}],
+    }
+
+    response = client.post(
+        "/assistant/vla",
+        json={
+            "message": "I have created templates. Please check the catalog again.",
+            "builderContext": {"draft": previous},
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["missingTemplates"] == [
+        {"name": "Freshness window", "reason": "Records are at most 1h old."}
+    ]
+    system_prompt = seen[0][0]["content"]
+    assert json.dumps(previous, ensure_ascii=False) in system_prompt
+    assert "Each reply replaces the previous draft" in system_prompt
+    assert "exactly one template" in system_prompt

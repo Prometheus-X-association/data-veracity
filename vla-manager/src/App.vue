@@ -8,7 +8,14 @@
           </n-layout-header>
 
           <n-layout-content class="app-content">
-            <router-view />
+            <!-- The builder holds unsaved work (sample, metadata, requirements,
+                 assistant chat), so it survives a trip to the template
+                 workspace and back. -->
+            <router-view v-slot="{ Component }">
+              <keep-alive include="CreateView">
+                <component :is="Component" />
+              </keep-alive>
+            </router-view>
           </n-layout-content>
         </n-layout>
       </n-dialog-provider>

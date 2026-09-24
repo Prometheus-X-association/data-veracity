@@ -156,9 +156,13 @@
             </div>
           </div>
 
-          <n-button class="apply-button" type="primary" block @click="apply">
+          <n-button v-if="returnToBuilder" class="apply-button" type="primary" block @click="applyAndSave">
             <template #icon><n-icon><CheckIcon /></n-icon></template>
-            Apply draft to editor
+            Save template and return to the VLA conversation
+          </n-button>
+          <n-button class="apply-button" :type="returnToBuilder ? 'default' : 'primary'" :secondary="returnToBuilder" block @click="apply">
+            <template v-if="!returnToBuilder" #icon><n-icon><CheckIcon /></n-icon></template>
+            {{ returnToBuilder ? 'Apply to the editor to review it first' : 'Apply draft to editor' }}
           </n-button>
         </section>
       </div>
@@ -178,8 +182,13 @@ import { engineInfo } from '../api/templatePresentation.js'
 
 const engineLabel = engine => engineInfo(engine).label
 
-const props = defineProps({ template: { type: Object, default: null } })
-const emit = defineEmits(['apply'])
+const props = defineProps({
+  template: { type: Object, default: null },
+  brief: { type: String, default: '' },
+  // Set in a sub-session opened from the VLA builder assistant.
+  returnToBuilder: { type: Boolean, default: false }
+})
+const emit = defineEmits(['apply', 'apply-and-save'])
 
 const open = ref(false)
 const input = ref('')
@@ -194,6 +203,15 @@ const busy = computed(() => loading.value || revealingMessageId.value !== null)
 let nextMessageId = 0
 let revealTimer = null
 let resolveReveal = null
+
+// A brief arrives when the VLA builder assistant sends the author here for
+// a missing template: open with it ready to send, but let the author edit
+// it first rather than sending on their behalf.
+watch(() => props.brief, brief => {
+  if (!brief || messages.value.length) return
+  input.value = `Create a template for this rule:\n${brief}`.slice(0, 1000)
+  open.value = true
+}, { immediate: true })
 
 const exampleGroups = computed(() => {
   const normalised = normaliseAssistantExamples(examples.value)
@@ -300,6 +318,14 @@ onBeforeUnmount(stopReveal)
 function apply () {
   if (!proposal.value) return
   emit('apply', clone(proposal.value))
+}
+
+// In a sub-session opened from the VLA builder: the editor saves the
+// proposal and, once it is saved, takes the author back to the builder.
+function applyAndSave () {
+  if (!proposal.value) return
+  emit('apply-and-save', clone(proposal.value))
+  open.value = false
 }
 
 const SparkleIcon = defineComponent({

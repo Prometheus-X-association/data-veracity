@@ -72,6 +72,9 @@ class BuilderContext(BaseModel):
     sample_data: Any | None = None
     selected_path: str | None = None
     fragments: list[dict[str, Any]] = Field(default_factory=list)
+    # The assistant's previous draft, so a recheck can complete it rather
+    # than start over; the conversation only carries its prose.
+    draft: dict[str, Any] | None = None
 
 
 class AssistantVLARequest(BaseModel):
