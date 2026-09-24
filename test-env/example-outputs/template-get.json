@@ -14,7 +14,7 @@
           }
         }
       },
-      "implementationTemplate": "{ success: .date == '{{ date }}' }"
+      "implementationTemplate": "{ success: .date == \"{{ date }}\" }"
     }
   },
   {
