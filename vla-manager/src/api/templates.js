@@ -51,6 +51,12 @@ export function evaluateTemplate (templateID, templateModel, data) {
   return request({ method: 'post', url: '/api/evaluate/from-template', data: { templateID, templateModel, data } })
 }
 
+// Runs every requirement of a stored VLA over sample data – a dry run that
+// attests nothing – and answers one `EvaluationResult` per requirement.
+export function evaluateVla (id, data) {
+  return request({ method: 'post', url: `/api/vla/${encodeURIComponent(id)}/evaluate`, data: { data } })
+}
+
 export { normaliseError }
 
 // Validation keeps the raw axios error rather than going through

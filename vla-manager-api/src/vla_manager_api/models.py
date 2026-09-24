@@ -109,6 +109,14 @@ class EvaluationFromTemplate(BaseModel):
     data: Any
 
 
+class VLAEvaluation(BaseModel):
+    """Body of ``POST /vla/{id}/evaluate``: the sample data to try it on."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    data: Any
+
+
 class TemplateInstantiation(BaseModel):
     """
     One entry in ``VLANewFromTemplates.qualityTemplates`` — a template id

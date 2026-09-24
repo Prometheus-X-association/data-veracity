@@ -330,24 +330,30 @@ export const handlers = [
     return HttpResponse.json(vla, { status: 201 })
   }),
 
-  http.post('/api/attestation', async ({ request }) => {
-    const body = await request.json()
-    console.log('Mock backend received /attestation request:')
-    console.log(body)
+  http.post('/api/vla/:id/evaluate', async ({ params, request }) => {
+    const { data = {} } = await request.json()
+    console.log(`Mock backend received /vla/${params.id}/evaluate request:`)
+    console.log(data)
 
-    if (!body?.credentialSubject || !body?.dataReference) {
-      return HttpResponse.json({
-        type: 'BAD_REQUEST',
-        title: 'Attestation request is incomplete',
-        details: 'A credential subject and data reference are required before an attestation can be requested.'
-      }, { status: 400 })
+    const vla = vlas.find(candidate => String(candidate.id) === String(params.id))
+    if (vla === undefined) {
+      return HttpResponse.json({ type: 'NOT_FOUND', title: 'No VLA with the given ID exists' }, { status: 404 })
     }
 
-    const resp = HttpResponse.json({ id: uuid(), status: 'pending' }, { status: 202 })
-    console.log('Returning mock response for /attestation request:')
+    // As for a single fragment: a status of invalid or failed fails every check.
+    const failed = data?.status === 'invalid' || data?.status === 'failed'
+    const resp = (vla.quality || []).map(({ engine }) => ({
+      engine,
+      timestamp: new Date().toISOString(),
+      success: !failed,
+      details: failed
+        ? 'The supplied demo data did not satisfy this requirement.'
+        : `The ${engine} check passed for the supplied demo data.`
+    }))
+    console.log(`Returning mock response for /vla/${params.id}/evaluate request:`)
     console.log(resp)
 
-    return resp
+    return HttpResponse.json(resp)
   }),
 
   http.post('/api/evaluate/from-template', async ({ request }) => {

@@ -434,6 +434,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /vla/{id}/evaluate:
+    parameters:
+      - $ref: '#/components/parameters/idParam'
+    post:
+      tags: [VLA]
+      summary: Try a VLA out on sample data
+      description: >-
+        Runs every requirement in the VLA's `quality` array over `data` with
+        DVA Processing's `/evaluate`, as `/evaluate/from-template` runs a
+        single one.  Nothing is attested: this is for checking a VLA before
+        it is used in an exchange.  A requirement the data fails, or one the
+        engine could not run, is a result with `success` false (and `error`
+        set in the latter case), so this stays a `200`.
+      operationId: evaluateVLA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VLAEvaluationRequest'
+      responses:
+        '200':
+          description: >-
+            One result per requirement, in the order the requirements appear
+            in the VLA's `quality` array; a VLA without requirements yields
+            an empty array.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvaluationResult'
+        '404':
+          description: No VLA with the given ID exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Invalid request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '503':
+          description: >-
+            DVA Processing could not be reached (`EVALUATION_UNAVAILABLE`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /evaluate/from-template:
     post:
       tags: [Templates]
@@ -1027,6 +1078,14 @@ components:
       $ref: ./components.yaml#/schemas/QualityEngine
     EvaluationResult:
       $ref: ./components.yaml#/schemas/EvaluationResult
+    VLAEvaluationRequest:
+      type: object
+      description: The sample data to try a VLA out on.
+      required: [data]
+      additionalProperties: false
+      properties:
+        data:
+          description: The sample data to run the VLA's requirements over.
     EvaluationFromTemplateRequest:
       type: object
       description: >-

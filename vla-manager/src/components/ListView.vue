@@ -19,10 +19,34 @@
       </template>
     </n-page-header>
 
-    <n-alert v-if="lastAttestation" type="info" class="submission-alert" closable @close="lastAttestation = null">
-      <strong>Attestation request accepted</strong> for {{ lastAttestation.name }}.
-      Evaluation is processed asynchronously. Request ID: <code>{{ lastAttestation.id }}</code>
-    </n-alert>
+    <n-modal
+      v-model:show="trialOpen"
+      preset="card"
+      :title="trial ? `Sample run: ${trial.name}` : 'Sample run'"
+      :style="{ width: 'min(820px, calc(100vw - 24px))' }"
+    >
+      <n-spin :show="!!trial?.loading">
+        <div v-if="trial" class="trial-body">
+          <n-alert v-if="trial.error" type="error">{{ trial.error }}</n-alert>
+          <template v-else-if="!trial.loading">
+            <n-alert :type="trialTone" :show-icon="true">
+              {{ trialSummary }}
+              <n-text depth="3" class="block trial-note">A dry run over the sample: nothing was attested.</n-text>
+            </n-alert>
+            <div v-for="(row, index) in trial.rows" :key="index" class="trial-row" :class="row.tone">
+              <div class="trial-row-head">
+                <EngineBadge :engine="row.requirement.engine" />
+                <strong>{{ TONE_LABELS[row.tone] }}</strong>
+              </div>
+              <p v-if="row.result.error || row.result.details" class="trial-message">
+                {{ row.result.error || row.result.details }}
+              </p>
+              <pre class="trial-implementation">{{ row.requirement.implementation }}</pre>
+            </div>
+          </template>
+        </div>
+      </n-spin>
+    </n-modal>
 
     <n-spin :show="loading">
       <div v-if="vlas.length > 0">
@@ -109,13 +133,15 @@
 </template>
 
 <script setup>
-  import { ref, onMounted, h, defineComponent } from 'vue'
+  import { ref, computed, onMounted, h, defineComponent } from 'vue'
   import axios from 'axios'
   import {
-    NCard, NButton, NPageHeader, NGrid, NGridItem,
+    NCard, NButton, NPageHeader, NGrid, NGridItem, NModal,
     NTag, NSpace, NText, NDivider, NTooltip, NEmpty, NIcon, NSpin, NAlert, useMessage
   } from 'naive-ui'
   import SampleModal from './SampleModal.vue'
+  import EngineBadge from './EngineBadge.vue'
+  import { evaluateVla } from '../api/templates.js'
 
   // We define a simple SVG icon for Add to avoid external icon dependencies
   const AddIcon = defineComponent({
@@ -137,54 +163,50 @@
 
   const showModalAndSetFields = (vla) => {
     selectedVLA.value = vla
-    vlaID.value = vla.id
-    quality.value = vla.quality || []
     sampleModal.value?.show()
   }
 
   const data = ref(null)
-  const vlaID = ref(null)
-  const quality = ref(null)
-  const lastAttestation = ref(null)
+  const trial = ref(null)
+  const trialOpen = ref(false)
 
+  // A dry run: each requirement is evaluated over the sample, as "Test
+  // Fragment" does in the builder, and nothing is attested.
   const onDataSelected = async (newData) => {
-    const body = {
-      "exchangeID": "xchg-0001",
-      "attesterID": "attester-0000",
-      "data": newData,
-      "contract": {
-        "id": "contract-0001",
-        "dataProvider": "/catalog/participants/provider-test-id",
-        "vla": {
-          "id": vlaID.value,
-          "name": selectedVLA.value?.name,
-          "description": selectedVLA.value?.description,
-          "participants": selectedVLA.value?.participants || [],
-          "dataReference": selectedVLA.value?.dataReference,
-          "schema": {
-            "quality": quality.value
-          }
-        }
-      }
-    }
-
+    const vla = selectedVLA.value
+    if (!vla) return
+    const quality = vla.quality || []
+    trial.value = { name: vla.name || vla.description || 'VLA', loading: true, rows: [], error: null }
+    trialOpen.value = true
     try {
-      const response = await axios.post('/api/attestation', body)
-      if (response.status === 200 || response.status === 201 || response.status === 202) {
-        lastAttestation.value = {
-          name: selectedVLA.value?.name || selectedVLA.value?.description || 'VLA',
-          id: response.data?.id || 'not returned'
-        }
-        message.success('Attestation submitted successfully!')
-      }
-    } catch (err) {
-      message.error('Failed to submit attestation.')
+      const results = await evaluateVla(vla.id, newData)
+      trial.value.rows = quality.map((requirement, index) => {
+        const result = results[index] || {}
+        const tone = result.error ? 'error' : result.success ? 'passed' : 'failed'
+        return { requirement, result, tone }
+      })
+    } catch (cause) {
+      trial.value.error = cause.message || 'The VLA could not be evaluated.'
+      message.error(trial.value.error)
     } finally {
-      vlaID.value = null
-      quality.value = null
+      trial.value.loading = false
       selectedVLA.value = null
     }
   }
+
+  const trialSummary = computed(() => {
+    const rows = trial.value?.rows || []
+    const passed = rows.filter(row => row.tone === 'passed').length
+    if (!rows.length) return 'This VLA has no requirements to evaluate.'
+    return `${passed} of ${rows.length} requirement${rows.length === 1 ? '' : 's'} passed.`
+  })
+  const trialTone = computed(() => {
+    const rows = trial.value?.rows || []
+    if (rows.some(row => row.tone === 'error')) return 'error'
+    if (rows.some(row => row.tone === 'failed')) return 'warning'
+    return 'success'
+  })
+  const TONE_LABELS = { passed: 'Passed', failed: 'Not satisfied', error: 'Could not run' }
 
   onMounted(async () => {
     try {
@@ -203,8 +225,36 @@
     margin-bottom: 24px;
   }
 
-  .submission-alert {
-    margin-bottom: 16px;
+  .trial-body {
+    display: grid;
+    gap: 12px;
+    min-height: 60px;
+  }
+  .trial-note { font-size: .75rem; margin-top: 2px; }
+  .trial-row {
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid;
+    border-radius: 6px;
+    font-size: .8rem;
+  }
+  .trial-row.passed { border-color: #a7f3d0; background: #f0fdf4; color: #065f46; }
+  .trial-row.failed { border-color: #fcd34d; background: #fffbeb; color: #78350f; }
+  .trial-row.error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+  .trial-row-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .trial-message { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .trial-implementation {
+    margin: 0;
+    max-height: 160px;
+    overflow: auto;
+    padding: 8px;
+    border-radius: 4px;
+    color: #334155;
+    background: rgba(255, 255, 255, .7);
+    font: .72rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
   .mb-2 {
     margin-bottom: 8px;

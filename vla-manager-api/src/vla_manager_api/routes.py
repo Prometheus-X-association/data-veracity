@@ -8,17 +8,38 @@ rendered quality requirements into the VLA before persistence.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
-from .dependencies import get_repo, get_requirement_validator, get_template_repo
+from .dependencies import (
+    get_repo,
+    get_requirement_evaluator,
+    get_requirement_validator,
+    get_template_repo,
+)
 from .errors import http_error
-from .models import IDDTO, ValidationFailureReason, VLANew, VLANewFromTemplates
+from .log import get_logger
+from .models import (
+    IDDTO,
+    QualityEngine,
+    ValidationFailureReason,
+    VLAEvaluation,
+    VLANew,
+    VLANewFromTemplates,
+)
 from .template_repo import TemplateRepo
-from .validation import RequirementValidator, check_requirement
+from .validation import (
+    ProcessingError,
+    RequirementEvaluator,
+    RequirementValidator,
+    check_requirement,
+)
 from .vla_repo import VLARepo
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -47,6 +68,61 @@ async def get_vla(id: UUID, repo: VLARepo = Depends(get_repo)) -> dict[str, Any]
     if vla is None:
         raise http_error(status.HTTP_404_NOT_FOUND, "No VLA with the given ID exists")
     return vla
+
+
+def _as_result(engine: QualityEngine, code: int, body: Any) -> dict[str, Any]:
+    """
+    Read processing's answer for one requirement as an ``EvaluationResult``.
+
+    A run the engine could not finish is already one (a ``500`` with
+    ``error``); anything else processing refuses with is a problem detail,
+    which becomes a failed result, as ``/evaluate-batch`` reports it.
+    """
+    if isinstance(body, dict) and isinstance(body.get("success"), bool):
+        return body
+    reason = (body.get("title") or body.get("detail")) if isinstance(body, dict) else None
+    return {
+        "engine": engine.value,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "success": False,
+        "error": str(reason or f"DVA Processing answered with status {code}"),
+    }
+
+
+@router.post("/vla/{id}/evaluate")
+async def evaluate_vla(
+    id: UUID,
+    request: VLAEvaluation,
+    repo: VLARepo = Depends(get_repo),
+    evaluator: RequirementEvaluator = Depends(get_requirement_evaluator),
+) -> list[dict[str, Any]]:
+    """
+    Try a stored VLA out on sample data, without attesting anything.
+
+    Each requirement in the VLA's ``quality`` is run through DVA
+    Processing's ``/evaluate``, as "Test fragment" runs one in the builder.
+    """
+    vla = await repo.by_id(id)
+    if vla is None:
+        raise http_error(status.HTTP_404_NOT_FOUND, "No VLA with the given ID exists")
+
+    results: list[dict[str, Any]] = []
+    for requirement in vla.get("quality") or []:
+        # Stored requirements came through `DataQuality`, so this holds.
+        engine = QualityEngine(requirement["engine"])
+        try:
+            code, body = await evaluator.evaluate(
+                engine, requirement["implementation"], request.data
+            )
+        except ProcessingError as exc:
+            logger.warning("Could not evaluate a VLA requirement", error=str(exc))
+            raise http_error(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                f"The evaluation service is unavailable: {exc}",
+                type="EVALUATION_UNAVAILABLE",
+            ) from exc
+        results.append(_as_result(engine, code, body))
+    return results
 
 
 @router.post("/vla", status_code=status.HTTP_201_CREATED, response_model=IDDTO)
