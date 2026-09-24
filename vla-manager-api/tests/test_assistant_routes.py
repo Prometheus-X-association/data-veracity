@@ -209,7 +209,9 @@ def test_assistant_rejects_prose_where_a_schema_implementation_is_required(
 def test_assistant_reports_missing_model_configuration(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr("vla_manager_api.assistant.cfg.ai_url", "")
+    # No API key is what leaves the assistant unconfigured; every provider
+    # falls back to a default URL, so a blank URL alone would not.
+    monkeypatch.setattr("vla_manager_api.assistant.cfg.ai_api_key", "")
 
     response = client.post(
         "/assistant/template", json={"message": "Create a schema check."}
@@ -268,7 +270,9 @@ def test_vla_assistant_returns_catalog_backed_requirements(
             }
         )
 
-    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    monkeypatch.setattr(
+        "vla_manager_api.assistant_routes.complete_assistant", fake_complete
+    )
     response = client.post(
         "/assistant/vla",
         json={
@@ -299,7 +303,9 @@ def test_vla_assistant_rejects_unknown_template_ids(
             }
         )
 
-    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    monkeypatch.setattr(
+        "vla_manager_api.assistant_routes.complete_assistant", fake_complete
+    )
     response = client.post("/assistant/vla", json={"message": "Use a schema template."})
 
     assert response.status_code == 502
@@ -312,7 +318,9 @@ def test_vla_assistant_treats_empty_missing_template_object_as_empty_list(
     async def fake_complete(_messages: list[dict[str, str]]) -> str:
         return '{"message":"No matching template is available.","requirements":[],"missingTemplates":{}}'
 
-    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    monkeypatch.setattr(
+        "vla_manager_api.assistant_routes.complete_assistant", fake_complete
+    )
     response = client.post("/assistant/vla", json={"message": "Check freshness."})
 
     assert response.status_code == 200
@@ -325,11 +333,15 @@ def test_vla_assistant_keeps_string_missing_template_reasons_actionable(
     async def fake_complete(_messages: list[dict[str, str]]) -> str:
         return '{"message":"A template is needed.","requirements":[],"missingTemplates":["No freshness template is available."]}'
 
-    monkeypatch.setattr("vla_manager_api.assistant_routes.complete_assistant", fake_complete)
+    monkeypatch.setattr(
+        "vla_manager_api.assistant_routes.complete_assistant", fake_complete
+    )
     response = client.post("/assistant/vla", json={"message": "Check freshness."})
 
     assert response.status_code == 200
-    assert response.json()["missingTemplates"] == [{"reason": "No freshness template is available."}]
+    assert response.json()["missingTemplates"] == [
+        {"reason": "No freshness template is available."}
+    ]
 
 
 def test_assistant_accepts_json_wrapped_in_a_markdown_fence() -> None:
@@ -346,7 +358,12 @@ def test_vla_assistant_prompt_contains_catalog_and_bounded_sample() -> None:
     template_id = "11111111-1111-1111-1111-111111111111"
     messages = build_vla_assistant_messages(
         "Match the uploaded sample.",
-        {"metadata": {}, "sampleData": {"field": "value"}, "selectedPath": None, "fragments": []},
+        {
+            "metadata": {},
+            "sampleData": {"field": "value"},
+            "selectedPath": None,
+            "fragments": [],
+        },
         [
             Template.model_validate(
                 {
@@ -537,7 +554,9 @@ def test_ai_requests_and_responses_are_logged_without_the_api_key(
     assert sent["body"]["messages"] == [{"role": "user", "content": "hello"}]
     assert "secret-test-key" not in repr(logs)
 
-    received = next(e for e in logs if e["event"] == "Received response from AI endpoint")
+    received = next(
+        e for e in logs if e["event"] == "Received response from AI endpoint"
+    )
     assert received["status"] == 200
     assert received["body"]["usage"] == {"total_tokens": 7}
 
@@ -668,7 +687,10 @@ def test_vla_assistant_sees_its_previous_draft_and_keeps_missing_template_names(
                 "message": "One template is still missing.",
                 "requirements": [],
                 "missingTemplates": [
-                    {"name": "Freshness window", "reason": "Records are at most 1h old."}
+                    {
+                        "name": "Freshness window",
+                        "reason": "Records are at most 1h old.",
+                    }
                 ],
             }
         )
