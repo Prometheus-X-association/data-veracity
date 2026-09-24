@@ -30,8 +30,13 @@
           </n-alert>
 
           <template v-if="chosenFragment.evaluationMethod?.variableSchema?.properties?.property">
-            <n-form-item label="Element:">
-              <n-input disabled :value="element" />
+            <n-form-item label="Element (jq path):">
+              <div class="w-full">
+                <n-input v-model:value="values.property" placeholder=".records[0].temperature" />
+                <small class="element-help">
+                  {{ element ? 'Taken from the field selected in the sample data; you can edit it.' : 'Type the path of the field to check, or select one in the sample data.' }}
+                </small>
+              </div>
             </n-form-item>
           </template>
 
@@ -164,7 +169,7 @@
       }
       for(const key in newChosenFragment.evaluationMethod?.variableSchema?.properties || {}) {
         if(key === 'property') {
-          values[key] = props.element
+          values[key] = asPath(props.element)
         } else if (newChosenFragment.evaluationMethod?.variableSchema?.properties?.[key]?.type === 'boolean') {
           values[key] = false
         } else {
@@ -173,6 +178,12 @@
       }
     }
   })
+
+  // A jq path starts with a dot; the sample-data tree gives paths without one.
+  function asPath (value) {
+    const path = String(value || '').trim()
+    return !path || path.startsWith('.') ? path : `.${path}`
+  }
 
   const capitalize = str => str && typeof str === "string" && str.length >= 1 ? str.charAt(0).toUpperCase() + str.slice(1) : ""
 
@@ -227,13 +238,9 @@
       model[key] = rawValues[key]
     }
 
-    if (props.element && chosenFragment.value?.evaluationMethod?.variableSchema?.properties?.property) {
-      let propPath = props.element.trim()
-      if (!propPath.startsWith('.')) {
-        propPath = '.' + propPath
-      }
-      model.property = propPath
-    }
+    // The element is a jq path whether it came from the sample data or was
+    // typed, so it is normalised the same way either way.
+    if ('property' in model) model.property = asPath(model.property)
 
     return model
   }
@@ -283,6 +290,7 @@
 </script>
 
 <style scoped>
+  .element-help { display: block; margin-top: 4px; color: #64748b; font-size: .75rem; }
   .modal-body {
     display: flex;
     flex-direction: column;

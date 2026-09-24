@@ -1,7 +1,7 @@
 import { validateTemplate, validationFailureFromError } from './templates.js'
 
 const MAX_SAMPLE_BYTES = 32 * 1024
-const METADATA_FIELDS = ['name', 'description', 'dataReference', 'participants', 'tags']
+const METADATA_FIELDS = ['name', 'description']
 
 function clone (value) {
   if (value === undefined) return undefined
@@ -115,8 +115,35 @@ export function normaliseVlaAssistantReply (reply = {}, templates = []) {
   }
 }
 
+// JSON with object keys sorted, so the same model compares equal however
+// the assistant happened to order its keys.
+function canonical (value) {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`
+  }
+  return JSON.stringify(value ?? null)
+}
+
+// A requirement is its template together with the values filled into it.
 function duplicateKey (templateId, model) {
-  return `${templateId}:${JSON.stringify(model)}`
+  return `${templateId}:${canonical(model || {})}`
+}
+
+const fragmentKey = fragment => duplicateKey(fragment?.data?.id, fragment?.data?.model)
+const requirementKey = requirement => duplicateKey(requirement?.templateId, requirement?.model)
+
+// How applying a draft changes the requirements already in the builder: the
+// draft is the complete list, so attached requirements it leaves out are
+// removed.
+export function planDraftChanges (fragments = [], requirements = []) {
+  const attached = new Set((fragments || []).map(fragmentKey))
+  const drafted = new Set((requirements || []).map(requirementKey))
+  return {
+    keep: (requirements || []).filter(requirement => attached.has(requirementKey(requirement))),
+    add: (requirements || []).filter(requirement => !attached.has(requirementKey(requirement))),
+    remove: (fragments || []).filter(fragment => !drafted.has(fragmentKey(fragment)))
+  }
 }
 
 // Each requirement goes through `/template/{id}/validate`, exactly as the
@@ -136,31 +163,25 @@ export function passingRequirements (requirements = [], checks = []) {
   return (requirements || []).filter((_, index) => checks[index]?.valid === true)
 }
 
-const LIST_FIELDS = new Set(['participants', 'tags'])
-
-function listValue (value) {
-  const items = Array.isArray(value) ? value : String(value).split(',')
-  return items.map(item => String(item).trim()).filter(Boolean)
-}
-
-// Participants and tags are added to, never replaced, matching the builder's
-// own inputs, which ignore case when deciding whether an entry is new.
-function mergeList (existing = [], additions = []) {
-  const merged = [...existing]
-  for (const item of additions) {
-    if (!merged.some(present => present.toLowerCase() === item.toLowerCase())) merged.push(item)
-  }
-  return merged
-}
-
-export function applyVlaAssistantDraft (state, draft, templates = [], { includeMetadata = false } = {}) {
+// With `replaceRequirements`, the draft's requirements become the builder's
+// requirements: attached ones it lists are kept as they are, the others are
+// added, and attached ones it leaves out are removed. Otherwise they are
+// only added.
+export function applyVlaAssistantDraft (state, draft, templates = [], { includeMetadata = false, replaceRequirements = false } = {}) {
   const current = state || { metadata: {}, fragments: [] }
   const available = new Map((templates || []).map(template => [String(template.id), template]))
   const requirements = Array.isArray(draft?.requirements) ? draft.requirements : []
+  const attached = new Map((current.fragments || []).map(fragment => [fragmentKey(fragment), fragment]))
   const prepared = []
-  const seen = new Set((current.fragments || []).map(fragment => duplicateKey(fragment?.data?.id, fragment?.data?.model || {})))
+  const seen = new Set(replaceRequirements ? [] : attached.keys())
 
   for (const requirement of requirements) {
+    const kept = replaceRequirements && attached.get(requirementKey(requirement))
+    if (kept) {
+      if (!seen.has(fragmentKey(kept))) prepared.push(clone(kept))
+      seen.add(fragmentKey(kept))
+      continue
+    }
     const template = available.get(String(requirement?.templateId || ''))
     if (!template) throw new Error('A selected template is no longer available.')
     const model = clone(requirement.model) || {}
@@ -181,17 +202,35 @@ export function applyVlaAssistantDraft (state, draft, templates = [], { includeM
   const metadata = { ...(clone(current.metadata) || {}) }
   for (const field of includeMetadata ? METADATA_FIELDS : []) {
     const value = draft?.metadata?.[field]
-    if (!hasValue(value)) continue
-    if (LIST_FIELDS.has(field)) {
-      metadata[field] = mergeList(metadata[field] || [], listValue(value))
-    } else if (typeof value === 'string' && value.trim()) {
-      metadata[field] = value.trim()
-    }
+    if (typeof value === 'string' && value.trim()) metadata[field] = value.trim()
   }
   return {
     metadata,
-    fragments: [...(clone(current.fragments) || []), ...prepared]
+    fragments: replaceRequirements ? prepared : [...(clone(current.fragments) || []), ...prepared]
   }
 }
 
 export { MAX_SAMPLE_BYTES }
+
+// What the VLA builder requires before a VLA can be created; the
+// description is optional. Mirrors the check on the "Create VLA" button.
+export const REQUIRED_METADATA = [
+  { field: 'name', label: 'Name' }
+]
+
+// The builder's metadata once the assistant's suggestion is applied to it.
+export function mergedMetadata (builderMetadata = {}, draftMetadata = {}) {
+  return applyVlaAssistantDraft(
+    { metadata: builderMetadata || {}, fragments: [] },
+    { metadata: draftMetadata || {}, requirements: [] },
+    [],
+    { includeMetadata: true }
+  ).metadata
+}
+
+export function missingMetadata (metadata = {}) {
+  return REQUIRED_METADATA.filter(({ field }) => {
+    const value = metadata?.[field]
+    return Array.isArray(value) ? value.length === 0 : !String(value ?? '').trim()
+  })
+}

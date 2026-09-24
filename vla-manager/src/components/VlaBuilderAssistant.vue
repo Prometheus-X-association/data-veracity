@@ -49,17 +49,22 @@
           </div>
           <p class="draft-message">{{ draft.message }}</p>
 
-          <div v-if="metadataEntries.length" class="preview-section">
+          <div class="preview-section">
             <div class="section-row">
-              <span class="section-label">Metadata suggestion</span>
+              <span class="section-label">VLA metadata</span>
               <n-checkbox v-model:checked="applyMetadata" size="small">Fill in the VLA metadata</n-checkbox>
             </div>
             <dl class="metadata-preview" :class="{ unselected: !applyMetadata }">
-              <template v-for="entry in metadataEntries" :key="entry[0]">
-                <dt>{{ labelFor(entry[0]) }}</dt>
-                <dd>{{ formatValue(entry[1]) }}</dd>
+              <template v-for="entry in metadataEntries" :key="entry.field">
+                <dt>{{ entry.label }}<span v-if="entry.required" class="required-mark" title="Required">*</span></dt>
+                <dd :class="{ needed: entry.required && entry.empty }">
+                  {{ entry.empty ? (entry.required ? 'Needed – answer the assistant' : '–') : entry.value }}
+                </dd>
               </template>
             </dl>
+            <p v-if="includeMetadata && metadataGaps.length" class="metadata-gaps">
+              The VLA still needs a name. Tell the assistant below what to call it, or untick the metadata to attach only the requirements.
+            </p>
           </div>
 
           <div class="preview-section">
@@ -78,6 +83,9 @@
                   <strong>{{ requirement.template.name }}</strong>
                   <EngineBadge :engine="requirement.template.evaluationMethod?.engine" />
                 </div>
+                <span class="change-pill" :class="isAttached(requirement) ? 'kept' : 'added'">
+                  {{ isAttached(requirement) ? 'In the VLA' : 'New' }}
+                </span>
                 <p>{{ requirement.reason }}</p>
                 <TemplateVariables :schema="requirement.template.evaluationMethod?.variableSchema" :values="requirement.model" />
                 <div class="check" role="status">
@@ -87,6 +95,13 @@
               </article>
             </div>
             <p v-else class="muted">No available template was selected.</p>
+            <div v-if="plan.remove.length" class="removal-panel" role="status">
+              <strong>Will be removed from the VLA</strong>
+              <p>The draft no longer includes {{ plan.remove.length === 1 ? 'this requirement' : 'these requirements' }}; applying it removes {{ plan.remove.length === 1 ? 'it' : 'them' }} from the builder.</p>
+              <ul>
+                <li v-for="(fragment, index) in plan.remove" :key="index">{{ fragment.requirement?.name || fragment.data?.id }}</li>
+              </ul>
+            </div>
             <div v-if="failedCount" class="check-summary">
               <span>{{ failedCount }} requirement{{ failedCount === 1 ? '' : 's' }} will not be attached until {{ failedCount === 1 ? 'it passes' : 'they pass' }} validation.</span>
               <n-button v-if="unavailableCount" size="tiny" secondary :disabled="checking" @click="runChecks">Check again</n-button>
@@ -160,7 +175,11 @@ import {
   missingTemplateName,
   normaliseAssistantRequest,
   normaliseVlaAssistantReply,
+  missingMetadata,
+  mergedMetadata,
   passingRequirements,
+  planDraftChanges,
+  REQUIRED_METADATA,
   recheckRequest
 } from '../api/vlaBuilderAssistant.js'
 
@@ -190,27 +209,51 @@ const lastDraft = ref(null)
 // Indices into draft.missingTemplates the author has marked as created.
 const createdMissing = ref([])
 const busy = computed(() => loading.value || messages.value.some(item => item.revealing))
-const metadataEntries = computed(() => Object.entries(draft.value?.metadata || {}).filter(([, value]) => value !== '' && value !== null && value !== undefined && !(Array.isArray(value) && !value.length)))
+// The builder's metadata as applying this draft would leave it: what the
+// author entered, completed by the assistant's suggestion.
+const metadataAfterApply = computed(() => mergedMetadata(props.context?.metadata, draft.value?.metadata))
+const metadataGaps = computed(() => missingMetadata(metadataAfterApply.value))
+const metadataEntries = computed(() => [
+  ...REQUIRED_METADATA.map(item => ({ ...item, required: true })),
+  { field: 'description', label: 'Description', required: false }
+].map(item => {
+  const value = metadataAfterApply.value?.[item.field]
+  return { ...item, value, empty: Array.isArray(value) ? !value.length : !String(value ?? '').trim() }
+}))
 
 // Validation verdicts, index-aligned with draft.requirements; `null` while
 // a requirement is still being checked.
 const checks = ref([])
 const checking = computed(() => checks.value.some(check => check === null))
-const applyMetadata = ref(false)
+// Metadata is filled in along with the requirements unless the author opts out.
+const applyMetadata = ref(true)
 let checkRun = 0
 
 const passing = computed(() => passingRequirements(draft.value?.requirements, checks.value))
 const failedCount = computed(() => checks.value.filter(check => check && !check.valid).length)
 const unavailableCount = computed(() => checks.value.filter(check => check && validationTone(check) === 'unavailable').length)
-const includeMetadata = computed(() => applyMetadata.value && metadataEntries.value.length > 0)
-const canApply = computed(() => !checking.value && (passing.value.length > 0 || includeMetadata.value))
+const includeMetadata = computed(() => applyMetadata.value)
+// The draft is the VLA's complete requirement list: requirements already in
+// the builder are kept, new ones added once they pass validation, and the
+// builder's requirements the draft leaves out removed.
+const plan = computed(() => planDraftChanges(props.context?.fragments, draft.value?.requirements))
+const attachedKeys = computed(() => new Set(plan.value.keep))
+const additions = computed(() => plan.value.add.filter(requirement => passing.value.includes(requirement)))
+const changeCount = computed(() => additions.value.length + plan.value.remove.length)
+function isAttached (requirement) { return attachedKeys.value.has(requirement) }
+// With the metadata included, the builder is only filled in once every
+// required field has a value; otherwise the requirement changes alone can be.
+const canApply = computed(() => !checking.value &&
+  (includeMetadata.value ? metadataGaps.value.length === 0 : changeCount.value > 0))
 const applyLabel = computed(() => {
   if (checking.value) return 'Validating…'
-  const count = passing.value.length
-  const requirements = `${count} requirement${count === 1 ? '' : 's'}`
-  if (count && includeMetadata.value) return `Apply ${requirements} and metadata`
-  if (includeMetadata.value) return 'Apply metadata'
-  return count ? `Apply ${requirements}` : 'Apply to builder'
+  if (includeMetadata.value && metadataGaps.value.length) return 'Waiting for metadata'
+  const parts = []
+  if (additions.value.length) parts.push(`add ${additions.value.length}`)
+  if (plan.value.remove.length) parts.push(`remove ${plan.value.remove.length}`)
+  const changes = parts.length ? `${parts.join(', ')} requirement${additions.value.length + plan.value.remove.length === 1 ? '' : 's'}` : ''
+  if (includeMetadata.value) return changes ? `Fill in the VLA (${changes})` : 'Fill in the VLA'
+  return changes ? `Apply: ${changes}` : 'Nothing to apply'
 })
 
 function checkTone (index) {
@@ -230,10 +273,6 @@ async function runChecks () {
   if (run === checkRun) checks.value = results
 }
 
-function labelFor (value) {
-  return String(value).replace(/[A-Z]/g, letter => ` ${letter}`).replace(/^./, letter => letter.toUpperCase())
-}
-function formatValue (value) { return Array.isArray(value) ? value.join(', ') : typeof value === 'object' ? JSON.stringify(value) : String(value) }
 function context () { return createBuilderAssistantContext({ ...props.context, draft: lastDraft.value }) }
 function scrollConversation () { nextTick(() => document.querySelector('.vla-assistant-drawer .conversation')?.scrollTo({ top: 99999, behavior: 'smooth' })) }
 
@@ -268,7 +307,7 @@ async function send (value) {
     await reveal(assistantMessage, normalised.message)
     draft.value = normalised
     lastDraft.value = normalised
-    applyMetadata.value = false
+    applyMetadata.value = true
     createdMissing.value = []
     runChecks()
   } catch (cause) {
@@ -297,7 +336,8 @@ function apply () {
   if (!canApply.value) return
   emit('apply', {
     metadata: includeMetadata.value ? draft.value.metadata : {},
-    requirements: passing.value,
+    // The builder is made to match: kept and newly passing requirements.
+    requirements: [...plan.value.keep, ...additions.value],
     includeMetadata: includeMetadata.value
   })
 }
@@ -308,4 +348,6 @@ watch(() => props.show, value => { if (!value) error.value = '' })
 .assistant-body{display:grid;gap:16px;padding-bottom:24px}.drawer-heading{display:flex;align-items:center;gap:10px}.heading-mark,.empty-mark{display:grid;place-items:center;color:#0f766e}.heading-mark{width:30px;height:30px;border:1px solid #99f6e4;border-radius:8px;background:#f0fdfa;font-size:18px}.eyebrow,.section-label{display:block;color:#0f766e;font-size:.6rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.drawer-heading strong{display:block;margin-top:3px;color:#1e293b;font-size:.88rem}.intro{margin:0;padding-bottom:13px;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:.73rem;line-height:1.5}.conversation{display:grid;gap:12px;max-height:360px;overflow:auto;padding:2px}.empty-conversation{display:grid;justify-items:center;padding:16px 10px;text-align:center}.empty-mark{width:36px;height:36px;margin-bottom:8px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;font-size:18px}.empty-conversation strong{color:#334155;font-size:.78rem}.empty-conversation p,.muted{margin:5px 0 0;color:#94a3b8;font-size:.7rem;line-height:1.45}.message{display:grid;gap:4px;justify-items:start}.message.user{justify-items:end}.message-label{color:#94a3b8;font-size:.59rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.message p{max-width:92%;margin:0;padding:9px 11px;border:1px solid #e2e8f0;border-radius:4px 11px 11px 11px;background:#f8fafc;color:#475569;font-size:.73rem;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.message.user p{border-color:#bae6fd;border-radius:11px 4px 11px 11px;background:#f0f9ff;color:#164e63}.cursor{display:inline-block;width:2px;height:1em;margin-left:2px;vertical-align:-.15em;background:#0f766e;animation:blink .9s steps(1,end) infinite}.skeleton{display:grid;gap:9px;width:100%;padding:12px;border:1px solid #dbe4ec;border-radius:4px 11px 11px 11px;background:#f8fafc}.skeleton span{display:block;width:88%;height:9px;border-radius:4px;background:#dce5ec;animation:pulse 1.35s ease-in-out infinite}.skeleton span:nth-child(2){width:68%;animation-delay:.08s}.skeleton .short{width:48%}.skeleton div{display:flex;gap:10px}.skeleton div span{width:55%}.assistant-error{font-size:.72rem}.assistant-error p{margin:4px 0 8px}.draft-card{display:grid;gap:13px;padding:15px;border:1px solid #cbd5e1;border-radius:12px;background:#fff}.draft-heading,.section-row,.requirement-topline,.draft-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}.draft-heading h3{margin:3px 0 0;color:#1e293b;font-size:.9rem}.not-saved{padding:3px 6px;border:1px solid #cbd5e1;border-radius:999px;color:#64748b;font-size:.56rem;font-weight:800;text-transform:uppercase}.draft-message{margin:-3px 0 0;color:#475569;font-size:.71rem;line-height:1.5}.preview-section{display:grid;gap:8px}.count{color:#94a3b8;font-size:.65rem;font-weight:800}.metadata-preview{display:grid;grid-template-columns:max-content 1fr;gap:5px 10px;margin:0;padding:10px;border:1px solid #e2e8f0;border-radius:9px;background:#f8fafc;font-size:.68rem}.metadata-preview dt{color:#94a3b8;font-weight:700}.metadata-preview dd{margin:0;color:#334155;overflow-wrap:anywhere}.requirement-list{display:grid;gap:8px}.requirement-card{display:grid;gap:7px;padding:10px;border:1px solid #dbe4ec;border-radius:9px;background:#f8fafc}.requirement-topline strong{min-width:0;color:#334155;font-size:.73rem;overflow-wrap:anywhere}.requirement-card p{margin:0;color:#64748b;font-size:.67rem;line-height:1.4}.requirement-card pre{max-height:130px;overflow:auto;margin:0;padding:8px;border-radius:6px;background:#0f172a;color:#bae6fd;font:500 .62rem/1.5 ui-monospace,monospace;white-space:pre-wrap}.missing-panel{display:grid;gap:7px;padding:10px;border:1px solid #fcd34d;border-radius:9px;background:#fffbeb;color:#78350f;font-size:.69rem}.missing-panel p{margin:0;line-height:1.4}.composer{display:grid;gap:8px;padding:11px;border:1px solid #cbd5e1;border-radius:11px}.composer-label,.composer-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}.composer-label{color:#334155;font-size:.66rem;font-weight:800}.composer-label span:last-child,.composer-footer span{color:#94a3b8;font-size:.6rem;font-weight:500}.composer-footer{align-items:center}.composer-footer :deep(.n-button){font-size:.68rem}.draft-actions :deep(.n-button){font-size:.68rem}@keyframes pulse{0%,100%{opacity:.45}50%{opacity:.95}}@keyframes blink{0%,45%{opacity:1}46%,100%{opacity:0}}@media(prefers-reduced-motion:reduce){.cursor,.skeleton span{animation:none}}
 .requirement-card.valid{border-color:#a7f3d0}.requirement-card.invalid{border-color:#fecaca;background:#fef2f2}.requirement-card.unavailable{border-color:#fcd34d;background:#fffbeb}.check{display:grid;gap:4px;justify-items:start}.check-pill{padding:2px 6px;border-radius:999px;background:#e2e8f0;color:#475569;font-size:.56rem;font-weight:800;text-transform:uppercase}.valid .check-pill{background:#d1fae5;color:#047857}.invalid .check-pill{background:#fee2e2;color:#b91c1c}.unavailable .check-pill{background:#fef3c7;color:#92400e}.check-details{color:#7f1d1d;font-size:.64rem;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}.unavailable .check-details{color:#78350f}.check-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#64748b;font-size:.66rem}.metadata-preview.unselected{opacity:.55}
 .missing-help{color:#92400e}.missing-list{display:grid;gap:7px;margin:0;padding:0;list-style:none}.missing-item{display:grid;gap:7px;padding:9px;border:1px solid #fde68a;border-radius:8px;background:#fff}.missing-item.created{border-color:#a7f3d0;background:#f0fdf4}.missing-text{display:grid;gap:3px}.missing-text strong{color:#451a03}.missing-text p{color:#78350f}.missing-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.recheck{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.required-mark{margin-left:2px;color:#b91c1c}.metadata-preview dd.needed{color:#b45309;font-style:italic}.metadata-gaps{margin:0;padding:8px 10px;border:1px solid #fcd34d;border-radius:8px;background:#fffbeb;color:#78350f;font-size:.68rem;line-height:1.45}
+.change-pill{justify-self:start;padding:2px 6px;border-radius:999px;font-size:.55rem;font-weight:800;text-transform:uppercase}.change-pill.kept{background:#e2e8f0;color:#475569}.change-pill.added{background:#dbeafe;color:#1d4ed8}.removal-panel{display:grid;gap:5px;padding:10px;border:1px solid #fecaca;border-radius:9px;background:#fef2f2;color:#991b1b;font-size:.69rem}.removal-panel p{margin:0;line-height:1.4}.removal-panel ul{margin:0;padding-left:18px}
 </style>

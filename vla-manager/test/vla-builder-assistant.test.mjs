@@ -6,10 +6,14 @@ import {
   checkDraftRequirements,
   missingTemplateBrief,
   missingTemplateName,
+  mergedMetadata,
+  missingMetadata,
+  REQUIRED_METADATA,
   createBuilderAssistantContext,
   normaliseAssistantRequest,
   normaliseVlaAssistantReply,
   passingRequirements,
+  planDraftChanges,
   recheckRequest
 } from '../src/api/vlaBuilderAssistant.js'
 
@@ -124,24 +128,21 @@ test('leaves metadata alone unless it is opted in', () => {
   )
 })
 
-test('applies metadata on its own and merges participants and tags', () => {
+test('applies metadata on its own, keeping the existing requirements', () => {
   const state = {
-    metadata: { name: '', participants: ['Alice'], tags: ['energy'] },
+    metadata: { name: '', description: 'Mine' },
     fragments: [{ data: { id: 'old', model: {} }, requirement: { name: 'Old' } }]
   }
   const next = applyVlaAssistantDraft(
     state,
-    { metadata: { name: ' Energy records ', participants: 'alice, Bob', tags: ['Energy', 'hourly'] }, requirements: [] },
+    { metadata: { name: ' Energy records ', description: '  ', participants: ['ignored'] }, requirements: [] },
     [],
     { includeMetadata: true }
   )
 
-  assert.equal(next.metadata.name, 'Energy records')
-  assert.deepEqual(next.metadata.participants, ['Alice', 'Bob'])
-  assert.deepEqual(next.metadata.tags, ['energy', 'hourly'])
+  assert.deepEqual(next.metadata, { name: 'Energy records', description: 'Mine' })
   assert.equal(next.fragments.length, 1)
 })
-
 test('sends a compact copy of the previous draft with the builder context', () => {
   const draft = {
     message: 'Draft',
@@ -175,4 +176,70 @@ test('asks for a recheck naming the templates the author ticked', () => {
   assert.match(request, /these templates:\n- Freshness window\n- Production range\n/)
   assert.match(request, /check the catalog again and complete the draft/)
   assert.match(recheckRequest([{ name: 'One' }]), /this template:\n- One\n/)
+})
+
+test('merges the suggested metadata into what the author entered', () => {
+  assert.deepEqual(
+    mergedMetadata({ name: 'Mine', description: '' }, { name: 'Suggested', description: 'Checks energy records.' }),
+    { name: 'Suggested', description: 'Checks energy records.' }
+  )
+  assert.deepEqual(mergedMetadata({ name: 'Mine', description: 'Kept' }, { name: '' }), { name: 'Mine', description: 'Kept' })
+})
+test('requires only a name; the description is optional', () => {
+  assert.deepEqual(REQUIRED_METADATA.map(item => item.field), ['name'])
+  assert.deepEqual(missingMetadata({ name: ' ', description: 'd' }).map(gap => gap.field), ['name'])
+  assert.deepEqual(missingMetadata({ name: 'VLA', description: '' }), [])
+})
+
+const rangeTemplate = {
+  id: '22222222-2222-2222-2222-222222222222',
+  name: 'Range',
+  evaluationMethod: { engine: 'JQ', variableSchema: { type: 'object', required: ['max'] }, implementationTemplate: '.v <= {{{max}}}' }
+}
+const attachedSchema = { data: { id: schemaTemplate.id, model: { schema: { type: 'object', required: ['a'] } } }, requirement: schemaTemplate }
+const attachedRange = { data: { id: rangeTemplate.id, model: { max: 3 } }, requirement: rangeTemplate }
+
+test('plans which attached requirements a complete draft keeps, adds and removes', () => {
+  const requirements = [
+    // Same model as attached, keys in another order: still the same one.
+    { templateId: schemaTemplate.id, model: { schema: { required: ['a'], type: 'object' } } },
+    { templateId: rangeTemplate.id, model: { max: 5 } }
+  ]
+
+  const plan = planDraftChanges([attachedSchema, attachedRange], requirements)
+
+  assert.deepEqual(plan.keep, [requirements[0]])
+  assert.deepEqual(plan.add, [requirements[1]])
+  assert.deepEqual(plan.remove, [attachedRange])
+})
+
+test('replaces the builder requirements with the draft, keeping attached ones as they are', () => {
+  const state = { metadata: { name: 'VLA', description: '' }, fragments: [attachedSchema, attachedRange] }
+  const draft = {
+    requirements: [
+      { templateId: schemaTemplate.id, model: { schema: { required: ['a'], type: 'object' } } },
+      { templateId: rangeTemplate.id, model: { max: 5 }, reason: 'Raised the limit.' },
+      { templateId: rangeTemplate.id, model: { max: 5 } }
+    ]
+  }
+
+  // The schema template is no longer in the catalog: a kept requirement
+  // stays without being looked up again.
+  const next = applyVlaAssistantDraft(state, draft, [rangeTemplate], { replaceRequirements: true })
+
+  assert.equal(next.fragments.length, 2)
+  assert.deepEqual(next.fragments[0], attachedSchema)
+  assert.deepEqual(next.fragments[1].data, { id: rangeTemplate.id, model: { max: 5 } })
+  assert.deepEqual(state.fragments, [attachedSchema, attachedRange])
+})
+
+test('an empty complete draft removes every attached requirement', () => {
+  const next = applyVlaAssistantDraft(
+    { metadata: {}, fragments: [attachedSchema] },
+    { requirements: [] },
+    [],
+    { replaceRequirements: true }
+  )
+
+  assert.deepEqual(next.fragments, [])
 })

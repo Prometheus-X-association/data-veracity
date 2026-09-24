@@ -46,7 +46,7 @@
             type="primary"
             size="large"
             @click="handleCreateVLA"
-            :disabled="!sampleData || fragments.length === 0 || !metadata.name.trim() || !metadata.description.trim() || metadata.participants.length === 0 || !metadata.dataReference.trim()"
+            :disabled="fragments.length === 0 || !metadata.name.trim()"
           >
             Create VLA
           </n-button>
@@ -56,78 +56,32 @@
 
     <n-card title="VLA metadata" size="small" class="metadata-card mb-4">
       <n-text depth="3" class="block metadata-help">
-        Add the contract context first so this VLA can be identified without relying on its UUID.
+        Name the VLA so it can be identified without relying on its UUID.
       </n-text>
-      <div class="metadata-grid">
-        <n-form-item label="Name" required>
-          <n-input v-model:value="metadata.name" placeholder="e.g. Customer events quality" />
-        </n-form-item>
-        <n-form-item label="Data reference" required>
-          <n-input v-model:value="metadata.dataReference" placeholder="Dataset, endpoint, or data product" />
-        </n-form-item>
-        <n-form-item label="Participants" required>
-          <div class="participant-editor">
-            <n-space v-if="metadata.participants.length" size="small" :wrap="true" class="participant-tags">
-              <n-tag
-                v-for="participant in metadata.participants"
-                :key="participant"
-                closable
-                :type="isKnownParticipant(participant) ? 'info' : 'warning'"
-                @close="removeParticipant(participant)"
-              >
-                {{ participant }}
-                <template v-if="!isKnownParticipant(participant)" #icon><span class="participant-status">?</span></template>
-              </n-tag>
-            </n-space>
-            <n-auto-complete
-              v-model:value="participantDraft"
-              :options="filteredParticipantSuggestions"
-              placeholder="Type an ID or email, then press comma or Enter"
-              clearable
-              @select="handleParticipantSelect"
-              @keydown="handleParticipantKeydown"
-            />
-          </div>
-        </n-form-item>
-        <n-form-item label="Tags">
-          <div class="participant-editor">
-            <n-space v-if="metadata.tags.length" size="small" :wrap="true" class="participant-tags">
-              <n-tag v-for="tag in metadata.tags" :key="tag" closable type="info" @close="removeTag(tag)">
-                {{ tag }}
-              </n-tag>
-            </n-space>
-            <n-auto-complete
-              v-model:value="tagDraft"
-              :options="filteredTagSuggestions"
-              placeholder="Type a tag, then press comma or Enter"
-              clearable
-              @select="handleTagSelect"
-              @keydown="handleTagKeydown"
-            />
-          </div>
-        </n-form-item>
-      </div>
-      <n-form-item label="Description" required>
-        <n-input v-model:value="metadata.description" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="What does this VLA guarantee?" />
+      <n-form-item label="Name" required>
+        <n-input v-model:value="metadata.name" placeholder="e.g. Customer events quality" />
+      </n-form-item>
+      <n-form-item label="Description">
+        <n-input v-model:value="metadata.description" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="What does this VLA guarantee? (optional)" />
       </n-form-item>
     </n-card>
 
-    <div v-if="!sampleData" class="empty-state-container">
-      <n-empty description="Start by uploading sample data to build your VLA">
-        <template #extra>
-          <n-button type="primary" size="large" @click="showSampleModal">
-            Upload Sample Data
-          </n-button>
-        </template>
-      </n-empty>
-    </div>
-
-    <div v-else class="builder-layout">
+    <!-- Sample data is optional: the assistant can build a VLA without it,
+         and requirements it attaches must stay visible either way. -->
+    <div class="builder-layout">
       <!-- Left Panel: Data Structure -->
       <div class="panel data-panel">
         <n-card title="Data Structure" size="small" class="h-full">
-          <n-text depth="3" class="block mb-2">Click on any JSON node to select it for a new requirement.</n-text>
-          <div class="json-scroll-area">
+          <n-empty v-if="!sampleData" description="No sample data yet (optional)">
+            <template #extra>
+              <n-text depth="3" class="block mb-2">
+                Upload a sample to pick fields for requirements by hand, or let "Design with AI" build the VLA without one.
+              </n-text>
+              <n-button type="primary" @click="showSampleModal">Upload Sample Data</n-button>
+            </template>
+          </n-empty>
+          <n-text v-else depth="3" class="block mb-2">Click on any JSON node to select it for a new requirement.</n-text>
+          <div v-if="sampleData" class="json-scroll-area">
             <vue-json-pretty
               :data="sampleData"
               :showDoubleQuotes="false"
@@ -153,21 +107,18 @@
               <n-text v-else type="primary" strong class="break-all">{{ lastPath }}</n-text>
             </n-statistic>
 
-            <n-tooltip trigger="hover" :disabled="!!lastPath">
-              <template #trigger>
-                <n-button
-                  type="success"
-                  size="large"
-                  block
-                  :disabled="!lastPath"
-                  @click="showReqModal"
-                >
-                  <template #icon><n-icon><LinkIcon /></n-icon></template>
-                  Attach Requirement
-                </n-button>
-              </template>
-              You must select a JSON element from the Data Structure first
-            </n-tooltip>
+            <n-button
+              type="success"
+              size="large"
+              block
+              @click="showReqModal"
+            >
+              <template #icon><n-icon><LinkIcon /></n-icon></template>
+              Attach Requirement
+            </n-button>
+            <n-text depth="3" class="block attach-help">
+              Selecting a field in the sample data fills in its path; without a sample, type the path in the requirement.
+            </n-text>
           </div>
         </n-card>
       </div>
@@ -176,7 +127,7 @@
       <div class="panel fragments-panel">
         <n-card title="Building Blocks (Fragments)" size="small" class="h-full">
           <n-text v-if="fragments.length === 0" depth="3" class="block mb-4 text-center">
-            No requirements added yet. Attach them using the toolbox.
+            No requirements added yet. Attach them with the toolbox, or let "Design with AI" draft them.
           </n-text>
 
           <n-scrollbar style="max-height: 550px">
@@ -202,6 +153,9 @@
                     <n-button size="small" ghost type="warning" @click="showTestModal(frag)">
                       Test Fragment
                     </n-button>
+                    <n-button size="small" quaternary type="error" @click="removeFragment(index)">
+                      Remove
+                    </n-button>
                   </div>
 
                   <div v-if="testedFragment === frag && testOutcome" class="test-outcome" :class="testOutcome.tone" role="status">
@@ -220,14 +174,14 @@
 </template>
 
 <script setup>
-  import { ref, toRaw, h, defineComponent, onActivated, nextTick, computed, watch } from 'vue'
+  import { ref, toRaw, h, defineComponent, onActivated, computed, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
   import axios from 'axios'
   import {
-    NPageHeader, NSpace, NButton, NIcon, NEmpty, NCard, NFormItem, NInput, NAutoComplete,
-    NText, NStatistic, NTooltip, NTag, NDivider, NScrollbar, useMessage
+    NPageHeader, NSpace, NButton, NIcon, NEmpty, NCard, NFormItem, NInput,
+    NText, NStatistic, NTag, NDivider, NScrollbar, useMessage
   } from 'naive-ui'
 
   import SampleModal from './SampleModal.vue'
@@ -236,6 +190,7 @@
   import { evaluateTemplate, listTemplates } from '../api/templates.js'
   import {
     applyVlaAssistantDraft,
+    planDraftChanges,
     createBuilderAssistantContext,
     missingTemplateBrief,
     missingTemplateName
@@ -288,89 +243,7 @@
   const testData = ref(null)
   const lastPath = ref(null)
   const fragments = ref([])
-  const metadata = ref({
-    name: '',
-    description: '',
-    participants: [],
-    dataReference: '',
-    tags: []
-  })
-  const participantDraft = ref('')
-  const knownParticipants = ref(new Set())
-  const participantSuggestions = ref([])
-  const tagDraft = ref('')
-  const knownTags = ref(new Set())
-  const tagSuggestions = ref([])
-  const filteredParticipantSuggestions = computed(() => {
-    const query = participantDraft.value.trim().toLowerCase()
-    return participantSuggestions.value.filter(option => !query || option.value.toLowerCase().includes(query))
-  })
-  const filteredTagSuggestions = computed(() => {
-    const query = tagDraft.value.trim().toLowerCase()
-    return tagSuggestions.value.filter(option => !query || option.value.toLowerCase().includes(query))
-  })
-  const participantSelectedFromAutocomplete = ref(false)
-  const tagSelectedFromAutocomplete = ref(false)
-
-  const addParticipant = (value = participantDraft.value) => {
-    const participant = String(value || '').trim().replace(/,$/, '')
-    if (participant && !metadata.value.participants.some(item => item.toLowerCase() === participant.toLowerCase())) {
-      metadata.value.participants.push(participant)
-    }
-    participantDraft.value = ''
-  }
-
-  const isKnownParticipant = (participant) =>
-    [...knownParticipants.value].some(item => item.toLowerCase() === participant.toLowerCase())
-
-  const removeParticipant = (participant) => {
-    metadata.value.participants = metadata.value.participants.filter(item => item !== participant)
-  }
-
-  const handleParticipantSelect = (value) => {
-    participantSelectedFromAutocomplete.value = true
-    addParticipant(value)
-    nextTick(() => { participantDraft.value = '' })
-  }
-
-  const handleParticipantKeydown = (event) => {
-    if (event.key === ',' || event.key === 'Enter') {
-      event.preventDefault()
-      if (participantSelectedFromAutocomplete.value) {
-        participantSelectedFromAutocomplete.value = false
-        return
-      }
-      addParticipant()
-    }
-  }
-
-  const addTag = (value = tagDraft.value) => {
-    const tag = String(value || '').trim().replace(/,$/, '')
-    if (tag && !metadata.value.tags.some(item => item.toLowerCase() === tag.toLowerCase())) metadata.value.tags.push(tag)
-    tagDraft.value = ''
-  }
-
-  const removeTag = (tag) => {
-    metadata.value.tags = metadata.value.tags.filter(item => item !== tag)
-  }
-
-  const handleTagSelect = (value) => {
-    tagSelectedFromAutocomplete.value = true
-    addTag(value)
-    nextTick(() => { tagDraft.value = '' })
-  }
-
-  const handleTagKeydown = (event) => {
-    if (event.key === ',' || event.key === 'Enter') {
-      event.preventDefault()
-      if (tagSelectedFromAutocomplete.value) {
-        tagSelectedFromAutocomplete.value = false
-        return
-      }
-      addTag()
-    }
-  }
-
+  const metadata = ref({ name: '', description: '' })
   const testedFragment = ref(null)
   const testOutcome = ref(null)
 
@@ -391,6 +264,12 @@
     fragments: fragments.value
   }))
 
+  const removeFragment = (index) => {
+    const [removed] = fragments.value.splice(index, 1)
+    if (testedFragment.value === removed) testOutcome.value = null
+    message.info(`Removed requirement: ${removed?.requirement?.name || "requirement"}`)
+  }
+
   const handleReqAdded = (req) => {
     fragments.value.push(req)
     message.success(`Attached requirement: ${req.requirement.name}`)
@@ -400,20 +279,24 @@
   // the metadata only when the author opted in.
   const handleAssistantApply = (selection) => {
     try {
+      // The draft is the VLA's complete requirement list, so the builder is
+      // made to match it: requirements are added and removed.
+      const { add, remove } = planDraftChanges(fragments.value, selection.requirements)
       const next = applyVlaAssistantDraft(
         { metadata: metadata.value, fragments: fragments.value },
         selection,
         availableTemplates.value,
-        { includeMetadata: selection.includeMetadata }
+        { includeMetadata: selection.includeMetadata, replaceRequirements: true }
       )
-      const attached = next.fragments.length - fragments.value.length
       metadata.value = next.metadata
       fragments.value = next.fragments
       assistantOpen.value = false
+      const count = n => `${n} requirement${n === 1 ? '' : 's'}`
       const parts = []
-      if (attached) parts.push(`attached ${attached} requirement${attached === 1 ? '' : 's'}`)
+      if (add.length) parts.push(`added ${count(add.length)}`)
+      if (remove.length) parts.push(`removed ${count(remove.length)}`)
       if (selection.includeMetadata) parts.push('filled in the metadata')
-      const summary = parts.join(' and ') || 'nothing new to attach'
+      const summary = parts.join(', ') || 'nothing changed'
       message.success(`Assistant draft applied: ${summary}.`)
     } catch (cause) {
       message.error(cause.message || 'The assistant draft could not be applied.')
@@ -453,14 +336,11 @@
   }
 
   const handleCreateVLA = async () => {
-    const participants = [...metadata.value.participants]
-    const tags = [...metadata.value.tags]
+    const description = metadata.value.description.trim()
     const body = {
       name: metadata.value.name.trim(),
-      description: metadata.value.description.trim(),
-      participants,
-      dataReference: metadata.value.dataReference.trim(),
-      tags,
+      // Optional, so left out rather than sent empty.
+      ...(description ? { description } : {}),
       schema: {
         properties: {
           timestamp: { type: "string" },
@@ -487,9 +367,7 @@
     testData.value = null
     lastPath.value = null
     fragments.value = []
-    metadata.value = { name: '', description: '', participants: [], dataReference: '', tags: [] }
-    participantDraft.value = ''
-    tagDraft.value = ''
+    metadata.value = { name: '', description: '' }
     testedFragment.value = null
     testOutcome.value = null
     assistantOpen.value = false
@@ -506,22 +384,8 @@
     }
   }
 
-  const refreshSuggestions = async () => {
-    try {
-      const response = await axios.get('/api/vla')
-      const participants = response.data.flatMap(vla => Array.isArray(vla.participants) ? vla.participants : [])
-      const tags = response.data.flatMap(vla => Array.isArray(vla.tags) ? vla.tags : [])
-      knownParticipants.value = new Set(participants)
-      participantSuggestions.value = [...knownParticipants.value].map(value => ({ label: value, value }))
-      knownTags.value = new Set(tags)
-      tagSuggestions.value = [...knownTags.value].map(value => ({ label: value, value }))
-    } catch {
-      // Suggestions are optional; participants can still be entered manually.
-    }
-  }
-
-  // Runs on the first visit and on every return: templates created or VLAs
-  // saved in the meantime show up in the catalog and the suggestions.
+  // Runs on the first visit and on every return: templates created in the
+  // meantime show up in the catalog.
   onActivated(() => {
     // Returning from a template sub-session reopens the assistant on the
     // conversation it was started from.
@@ -529,12 +393,14 @@
       assistantOpen.value = true
       router.replace({ path: '/create' })
     }
-    return Promise.all([refreshTemplates(), refreshSuggestions()])
+    return refreshTemplates()
   })
   watch(assistantOpen, open => { if (open) refreshTemplates() })
 </script>
 
 <style scoped>
+  .attach-help { margin-top: 8px; font-size: .75rem; }
+
   .test-outcome {
     display: grid;
     gap: 4px;
@@ -587,40 +453,11 @@
     margin-bottom: 12px;
   }
 
-  .participant-editor {
-    display: grid;
-    gap: 8px;
-    width: 100%;
-  }
 
-  .participant-tags {
-    min-height: 28px;
-  }
 
-  .participant-hint {
-    font-size: .75rem;
-  }
 
-  .participant-status {
-    font-size: .75rem;
-    font-weight: 700;
-  }
 
-  .metadata-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 16px;
-  }
 
-  .empty-state-container {
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  }
 
   .builder-layout {
     display: grid;
@@ -668,9 +505,6 @@
       height: auto;
     }
 
-    .metadata-grid {
-      grid-template-columns: 1fr;
-    }
 
     .builder-layout {
       grid-template-columns: 1fr;
@@ -705,9 +539,6 @@
       flex: 1 1 180px;
     }
 
-    .metadata-grid {
-      row-gap: 4px;
-    }
 
     .json-scroll-area {
       height: min(480px, 55vh);

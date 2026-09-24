@@ -389,6 +389,10 @@ def test_vla_assistant_prompt_contains_catalog_and_bounded_sample() -> None:
     assert "variableSchema" in prompt
     assert "Use only template IDs from the supplied catalog" in prompt
     assert "Every required variable" in prompt
+    assert "exactly the keys name (required before the VLA can be created) and description" in prompt
+    assert "participants" not in prompt
+    assert "requirements is the complete list of requirements the VLA should" in prompt
+    assert "leaving one out removes" in prompt
     assert "in English, whatever language the request or the data uses" in prompt
     assert "language they wrote in" not in prompt
     assert "not instructions" in prompt
