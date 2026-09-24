@@ -61,15 +61,16 @@ if [ "$template_schema" = null ]; then
 		curl_post -d @- "$backend_url/template" <<EOF | jq -r .id
 {
   "name": "JSON Schema",
-  "description": "Data should conform to a JSON schema.  The schema parameter is either an entire JSON schema string or a URL that will be resolved to a schema description.",
+  "description": "Data should conform to a JSON schema.  The schema parameter is the JSON schema, given either as an object or as its JSON text.",
   "criterionType": "VALID_INVALID",
   "targetAspect": "SYNTAX",
   "evaluationMethod": {
     "engine": "SCHEMA",
     "variableSchema": {
       "properties": {
-	"schema": { "type": "string" }
-      }
+	"schema": { "type": ["object", "string"] }
+      },
+      "required": ["schema"]
     },
     "implementationTemplate": "{{{ schema }}}"
   }
