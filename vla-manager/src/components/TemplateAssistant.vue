@@ -63,12 +63,12 @@
         </n-alert>
 
         <div class="composer">
-          <div class="composer-label"><span>Describe your requirement</span><span>{{ input.length }}/1000</span></div>
+          <div class="composer-label"><span>Describe your requirement</span><span>{{ input.length }}/4000</span></div>
           <n-input
             v-model:value="input"
             class="assistant-input"
             type="textarea"
-            maxlength="1000"
+            maxlength="4000"
             :autosize="{ minRows: 3, maxRows: 7 }"
             placeholder="For example: every xAPI statement must contain an actor, verb, and object."
             :disabled="busy"
@@ -99,6 +99,16 @@
             <span class="draft-badge">Not saved</span>
           </div>
           <p class="proposal-note">Check the wording, fields, and implementation before applying this draft to the editor.</p>
+
+          <div v-if="selfTest && selfTest.status !== 'skipped'" class="self-test" :class="selfTest.status" role="status">
+            <strong>{{ selfTestTitle }}</strong>
+            <ul v-if="selfTest.problems.length && selfTest.status === 'failed'">
+              <li v-for="(problem, index) in selfTest.problems" :key="index">{{ problem }}</li>
+            </ul>
+            <n-button v-if="selfTest.status === 'failed'" size="small" secondary :disabled="busy" @click="askToFixSelfTest">
+              Ask the assistant to fix these
+            </n-button>
+          </div>
 
           <div class="proposal-details">
             <div class="proposal-field proposal-field-wide">
@@ -156,13 +166,13 @@
             </div>
           </div>
 
-          <n-button v-if="returnToBuilder" class="apply-button" type="primary" block @click="applyAndSave">
+          <n-button v-if="returnTo" class="apply-button" type="primary" block @click="applyAndSave">
             <template #icon><n-icon><CheckIcon /></n-icon></template>
-            Save template and return to the VLA conversation
+            Save template and return to {{ returnTo }}
           </n-button>
-          <n-button class="apply-button" :type="returnToBuilder ? 'default' : 'primary'" :secondary="returnToBuilder" block @click="apply">
-            <template v-if="!returnToBuilder" #icon><n-icon><CheckIcon /></n-icon></template>
-            {{ returnToBuilder ? 'Apply to the editor to review it first' : 'Apply draft to editor' }}
+          <n-button class="apply-button" :type="returnTo ? 'default' : 'primary'" :secondary="!!returnTo" block @click="apply">
+            <template v-if="!returnTo" #icon><n-icon><CheckIcon /></n-icon></template>
+            {{ returnTo ? 'Apply to the editor to review it first' : 'Apply draft to editor' }}
           </n-button>
         </section>
       </div>
@@ -185,8 +195,9 @@ const engineLabel = engine => engineInfo(engine).label
 const props = defineProps({
   template: { type: Object, default: null },
   brief: { type: String, default: '' },
-  // Set in a sub-session opened from the VLA builder assistant.
-  returnToBuilder: { type: Boolean, default: false }
+  // Where saving leads, in a sub-session opened from the VLA builder
+  // ("the VLA conversation" or "the VLA builder"); empty otherwise.
+  returnTo: { type: String, default: '' }
 })
 const emit = defineEmits(['apply', 'apply-and-save'])
 
@@ -204,12 +215,12 @@ let nextMessageId = 0
 let revealTimer = null
 let resolveReveal = null
 
-// A brief arrives when the VLA builder assistant sends the author here for
-// a missing template: open with it ready to send, but let the author edit
-// it first rather than sending on their behalf.
+// A brief arrives when the author is sent here from the VLA builder – to
+// create a missing template, or with a bug report after a failed test: open
+// with it ready to send, but let the author edit it first.
 watch(() => props.brief, brief => {
   if (!brief || messages.value.length) return
-  input.value = `Create a template for this rule:\n${brief}`.slice(0, 1000)
+  input.value = brief.slice(0, 4000)
   open.value = true
 }, { immediate: true })
 
@@ -290,14 +301,22 @@ async function send () {
     const response = await askTemplateAssistant({
       message,
       conversation: messages.value.slice(0, -1).map(({ role, content }) => ({ role, content })),
-      currentTemplate: clone(props.template)
+      currentTemplate: clone(props.template),
+      // The last proposal, so a follow-up such as "raise the limit to 5"
+      // adjusts it rather than starting over.
+      proposal: clone(proposal.value)
     })
     loading.value = false
     messages.value.push({ id: ++nextMessageId, role: 'assistant', content: '' })
     const assistantMessage = messages.value[messages.value.length - 1]
     await revealAssistantMessage(assistantMessage, response.message)
-    proposal.value = response.proposal || null
-    examples.value = response.examples || null
+    // A reply that only answers a question carries no proposal; the one
+    // being worked on stays, so the next follow-up can still adjust it.
+    if (response.proposal) {
+      proposal.value = response.proposal
+      examples.value = response.examples || null
+      selfTest.value = response.selfTest || null
+    }
   } catch (cause) {
     error.value = assistantErrorMessage(cause)
   } finally {
@@ -305,11 +324,36 @@ async function send () {
   }
 }
 
+// The proposal was run over its own examples before it was shown; one that
+// still failed after the automatic correction can be sent back by hand.
+const selfTest = ref(null)
+const selfTestTitle = computed(() => {
+  const test = selfTest.value
+  if (!test) return ''
+  const count = exampleCount.value
+  const examplesText = `${count} example${count === 1 ? '' : 's'}`
+  if (test.status === 'passed') {
+    return test.attempts > 1
+      ? `Tested on its ${examplesText} – passed after the assistant corrected its first attempt.`
+      : `Tested on its ${examplesText} – passed.`
+  }
+  if (test.status === 'unavailable') return 'Not tested: the evaluation service could not be reached. Test it before using it.'
+  return test.attempts > 1
+    ? 'Still fails its own examples after one correction:'
+    : 'Fails its own examples:'
+})
+function askToFixSelfTest () {
+  const problems = (selfTest.value?.problems || []).map(problem => `- ${problem}`).join('\n')
+  input.value = `The proposal still fails its self-test:\n${problems}\nPlease find the cause and fix it.`.slice(0, 4000)
+  send()
+}
+
 function clear () {
   stopReveal()
   messages.value = []
   proposal.value = null
   examples.value = null
+  selfTest.value = null
   error.value = ''
 }
 
@@ -374,4 +418,5 @@ const CrossIcon = defineComponent({
 <style scoped>
 .assistant-launcher{display:inline-flex}.assistant-trigger{border-color:#0f766e;color:#0f766e;font-weight:700;transition:background .2s ease,border-color .2s ease}.assistant-trigger:hover{border-color:#115e59;background:#f0fdfa}.assistant-trigger :deep(.n-icon){color:#0f766e}.assistant-drawer :deep(.n-drawer-body-content){padding:0;background:#fff}.assistant-drawer-title{display:flex;align-items:center;gap:10px}.assistant-title-mark{display:grid;place-items:center;width:30px;height:30px;border:1px solid #0f766e;border-radius:8px;background:#f0fdfa;color:#0f766e}.assistant-title-mark svg{width:16px;height:16px}.assistant-kicker,.section-kicker{display:block;color:#0f766e;font-size:.59rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.assistant-drawer-title strong{display:block;margin-top:2px;color:#0f172a;font-size:.91rem}.assistant-content{display:grid;gap:15px;padding:0 2px 20px}.assistant-intro{margin:0;padding:0 0 13px;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:.73rem;line-height:1.5}.conversation{display:grid;gap:11px;max-height:390px;overflow-y:auto;padding:1px 2px 2px;scroll-behavior:smooth}.conversation-empty{display:grid;justify-items:center;padding:8px 12px 4px;text-align:center}.empty-icon{display:grid;place-items:center;width:36px;height:36px;margin-bottom:8px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;color:#64748b}.empty-icon svg{width:18px;height:18px}.conversation-empty strong{color:#334155;font-size:.78rem}.conversation-empty p{max-width:320px;margin:5px 0 0;color:#94a3b8;font-size:.7rem;line-height:1.45}.message{display:flex;align-items:flex-start;gap:8px;min-width:0}.message.user{flex-direction:row-reverse}.message-avatar{display:grid;flex:0 0 27px;place-items:center;width:27px;height:27px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#64748b}.message-avatar svg{width:15px;height:15px}.assistant .message-avatar{border-color:#a7f3d0;background:#ecfdf5;color:#0f766e}.message-content{min-width:0;max-width:88%}.message.user .message-content{text-align:right}.message-meta{display:flex;align-items:center;gap:5px;margin:0 2px 3px;color:#94a3b8;font-size:.58rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.message.user .message-meta{justify-content:flex-end}.ai-label{padding:2px 4px;border-radius:3px;background:#ecfdf5;color:#0f766e;font-size:.51rem}.message-content p{margin:0;padding:9px 11px;border:1px solid #e2e8f0;border-radius:4px 11px 11px 11px;background:#f8fafc;color:#475569;font-size:.73rem;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.message.user .message-content p{border-color:#bae6fd;border-radius:11px 4px 11px 11px;background:#f0f9ff;color:#164e63}.is-generating .message-content{flex:1}.generating-label{display:flex;align-items:center;gap:5px;color:#0f766e}.generating-dot,.typing-dot{width:6px;height:6px;border-radius:50%;background:#0f766e;box-shadow:0 0 0 3px #d1fae5}.generating-dot{animation:dot-pulse 1.2s ease-in-out infinite}.typing-card{display:flex;align-items:center;gap:8px;padding:10px 11px;border:1px solid #dbeafe;border-radius:4px 11px 11px 11px;background:#f8fafc;color:#475569;font-size:.71rem}.typing-dot{animation:dot-pulse 1.2s ease-in-out infinite}.typing-dots{display:inline-flex;gap:3px;margin-left:1px}.typing-dots i{width:3px;height:3px;border-radius:50%;background:#64748b;animation:dot-bounce 1.1s ease-in-out infinite}.typing-dots i:nth-child(2){animation-delay:.15s}.typing-dots i:nth-child(3){animation-delay:.3s}.assistant-error{margin:0}.assistant-error strong{display:block;margin-bottom:3px}.composer{padding:11px;border:1px solid #cbd5e1;border-radius:12px;background:#fff}.composer-label,.composer-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}.composer-label{margin:0 2px 7px;color:#334155;font-size:.66rem;font-weight:800}.composer-label span:last-child{color:#94a3b8;font-weight:600}.assistant-input :deep(.n-input__textarea){font-size:.75rem;line-height:1.5}.assistant-input :deep(.n-input-wrapper){border-radius:8px}.composer-footer{margin-top:8px}.composer-hint{color:#94a3b8;font-size:.6rem}.composer-hint kbd{padding:2px 4px;border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:3px;background:#f8fafc;color:#64748b;font:600 .57rem inherit}.composer-divider{padding:0 3px;color:#cbd5e1}.assistant-actions{display:flex;align-items:center;gap:5px}.send-button{font-size:.68rem;font-weight:700}.send-button :deep(.n-icon){width:13px;height:13px}.proposal-card{display:grid;gap:13px;padding:15px;border:1px solid #cbd5e1;border-radius:14px;background:#fff}.proposal-heading,.proposal-heading-main,.implementation-heading,.examples-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}.proposal-heading-main{justify-content:flex-start}.proposal-icon{display:grid;flex:0 0 30px;place-items:center;width:30px;height:30px;border-radius:8px;background:#0f766e;color:#fff}.proposal-icon svg{width:16px;height:16px}.proposal-heading h3{margin:3px 0 0;color:#1e293b;font-size:.88rem}.draft-badge{padding:3px 6px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#64748b;font-size:.55rem;font-weight:800;text-transform:uppercase}.proposal-note{margin:-2px 0 0;color:#64748b;font-size:.68rem;line-height:1.5}.proposal-details{display:grid;grid-template-columns:1fr 1fr;gap:8px}.proposal-field{display:grid;gap:4px;min-width:0;padding:9px 10px;border:1px solid #e2e8f0;border-radius:9px;background:#fff}.proposal-field-wide{grid-column:1/-1}.field-label,.code-label{color:#94a3b8;font-size:.56rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.proposal-field strong{color:#1e293b;font-size:.74rem;line-height:1.35;overflow-wrap:anywhere}.proposal-field p{margin:0;color:#475569;font-size:.69rem;line-height:1.45}.value-chip,.engine-chip{display:inline-flex;align-items:center;justify-self:start;padding:3px 6px;border-radius:5px;background:#f0fdfa;color:#0f766e;font-size:.63rem;font-weight:800}.implementation-section,.examples-section{display:grid;gap:9px;padding-top:2px}.implementation-heading>div,.examples-heading>div{display:grid;gap:3px}.implementation-heading strong,.examples-heading strong{color:#334155;font-size:.73rem}.engine-chip{border:1px solid #a7f3d0}.implementation-block{display:grid;gap:5px}.implementation-code{max-height:170px;overflow:auto;margin:0;padding:11px 12px;border:1px solid #1e293b;border-radius:9px;background:#0f172a;color:#bae6fd;font:500 .68rem/1.6 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,\"Liberation Mono\",\"Courier New\",monospace;white-space:pre-wrap;overflow-wrap:anywhere}.examples-heading{padding-top:3px}.examples-count{color:#94a3b8;font-size:.6rem;font-weight:700}.example-grid{display:grid;gap:8px}.example-card{display:grid;gap:8px;padding:10px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4}.example-card.failing{border-color:#fecaca;background:#fef2f2}.example-card-heading{display:flex;align-items:center;justify-content:space-between;color:#64748b;font-size:.59rem;font-weight:700}.example-status{display:flex;align-items:center;gap:4px;color:#15803d;font-size:.66rem;font-weight:800}.failing .example-status{color:#b91c1c}.example-status svg{width:13px;height:13px}.example-item{display:grid;grid-template-columns:22px minmax(0,1fr);gap:6px;align-items:start}.example-index{display:grid;place-items:center;width:22px;height:22px;border-radius:6px;background:#fff;color:#64748b;font:800 .56rem ui-monospace,monospace}.example-item :deep(.json-view){max-height:135px;padding:9px 10px;border-color:#334155;font-size:.63rem}.apply-button{height:38px;font-size:.7rem;font-weight:800}.apply-button :deep(.n-icon){width:14px;height:14px}@keyframes dot-pulse{0%,100%{transform:scale(.8);opacity:.55}50%{transform:scale(1.15);opacity:1}}@keyframes dot-bounce{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-3px);opacity:1}}@media(max-width:520px){.composer-footer{align-items:flex-end;flex-direction:column}.composer-hint{align-self:flex-start}.assistant-actions{width:100%;justify-content:flex-end}.proposal-details{grid-template-columns:1fr}.proposal-field-wide{grid-column:auto}}@media(prefers-reduced-motion:reduce){.assistant-trigger,.generating-dot,.typing-dot,.typing-dots i{animation:none;transition:none}}
 .message.is-revealing .message-content p{border-color:#99f6e4}.typing-cursor{display:inline-block;width:2px;height:1em;margin-left:3px;vertical-align:-.15em;background:#0f766e;animation:cursor-blink .9s steps(1,end) infinite}.skeleton-card{display:grid;gap:9px;padding:11px;border:1px solid #dbe4ec;border-radius:4px 11px 11px 11px;background:#f8fafc}.skeleton-heading,.skeleton-row{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;gap:8px}.skeleton-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.skeleton-avatar,.skeleton-line{display:block;height:9px;border-radius:4px;background:#dce5ec;animation:skeleton-pulse 1.35s ease-in-out infinite}.skeleton-avatar{width:28px;height:28px;border-radius:8px}.skeleton-title{width:42%}.skeleton-wide{width:88%}.skeleton-medium{width:65%}.skeleton-short{width:54%}@keyframes skeleton-pulse{0%,100%{opacity:.45}50%{opacity:.95}}@keyframes cursor-blink{0%,45%{opacity:1}46%,100%{opacity:0}}@media(prefers-reduced-motion:reduce){.typing-cursor,.skeleton-avatar,.skeleton-line{animation:none}}
+.self-test{display:grid;gap:6px;padding:10px;border:1px solid;border-radius:9px;font-size:.68rem;line-height:1.45}.self-test ul{margin:0;padding-left:18px}.self-test.passed{border-color:#a7f3d0;background:#f0fdf4;color:#065f46}.self-test.failed{border-color:#fecaca;background:#fef2f2;color:#991b1b}.self-test.unavailable{border-color:#fcd34d;background:#fffbeb;color:#78350f}.self-test :deep(.n-button){justify-self:start}
 </style>

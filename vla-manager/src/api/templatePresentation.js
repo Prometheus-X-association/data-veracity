@@ -84,3 +84,23 @@ export function describeVariables (schema) {
     constraints: constraints(definition || {})
   }))
 }
+
+// How much of the test data a bug report quotes.
+const REPORTED_DATA_CHARS = 1500
+
+// The message that opens the template assistant after a failed test, for the
+// author to adjust and send: what was run, on what, and what came of it.
+export function templateBugReport ({ model = {}, data, outcome = {} } = {}) {
+  let quoted = JSON.stringify(data ?? null)
+  if (quoted.length > REPORTED_DATA_CHARS) quoted = `${quoted.slice(0, REPORTED_DATA_CHARS)}… (truncated)`
+  const result = outcome.tone === 'error'
+    ? `It could not be evaluated: ${outcome.message || 'no error message'}`
+    : `It reported that the data does not satisfy it${outcome.message ? ` (details: ${outcome.message})` : ''}, which I believe is wrong.`
+  return [
+    'Testing this template gave a wrong result.',
+    `Template variables: ${JSON.stringify(model)}`,
+    `Test data: ${quoted}`,
+    `Result: ${result}`,
+    'Please find the cause in the implementation template and fix it.'
+  ].join('\n')
+}

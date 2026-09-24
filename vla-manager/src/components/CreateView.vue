@@ -162,6 +162,9 @@
                     <strong>{{ testOutcome.title }}</strong>
                     <p v-if="testOutcome.message">{{ testOutcome.message }}</p>
                     <vue-json-pretty v-if="testOutcome.body" :data="testOutcome.body" :deep="2" class="text-xs" />
+                    <n-button v-if="testOutcome.tone !== 'passed'" size="small" secondary @click="fixWithAssistant(frag)">
+                      Fix this template with AI
+                    </n-button>
                   </div>
                 </n-card>
               </div>
@@ -188,6 +191,7 @@
   import ReqModal from './ReqModal.vue'
   import VlaBuilderAssistant from './VlaBuilderAssistant.vue'
   import { evaluateTemplate, listTemplates } from '../api/templates.js'
+  import { templateBugReport } from '../api/templatePresentation.js'
   import {
     applyVlaAssistantDraft,
     planDraftChanges,
@@ -307,14 +311,21 @@
   // conversation) is kept alive meanwhile, and this template's rule alone
   // seeds the template assistant.
   const handleCreateTemplate = (item) => {
-    const brief = missingTemplateBrief(item)
+    const brief = `Create a template for this rule:\n${missingTemplateBrief(item)}`
     assistantOpen.value = false
-    router.push({ path: '/templates', query: { mode: 'create', from: 'builder', ...(brief ? { brief } : {}) } })
+    router.push({ path: '/templates', query: { mode: 'create', from: 'builder', reopen: 'assistant', brief } })
     message.info(`Creating “${missingTemplateName(item)}”. Your builder work and conversation are kept.`)
   }
 
   // A test has three outcomes that must not look alike: the data passed,
   // the data failed the requirement, or the requirement could not be run.
+  // After a failed test: open the template for editing with its assistant
+  // ready to send a report of what went wrong; saving the fix returns here.
+  const fixWithAssistant = (frag) => {
+    const brief = templateBugReport({ model: frag.data.model, data: testData.value, outcome: testOutcome.value })
+    router.push({ path: '/templates', query: { mode: 'edit', id: frag.data.id, from: 'builder', brief } })
+  }
+
   const handleTestDataSelected = async () => {
     const { id, model } = testedFragment.value.data
     try {
@@ -393,7 +404,15 @@
       assistantOpen.value = true
       router.replace({ path: '/create' })
     }
-    return refreshTemplates()
+    // A template may have been fixed in the meantime: attached requirements
+    // show its current version.
+    return refreshTemplates().then(() => {
+      const byId = new Map(availableTemplates.value.map(template => [String(template.id), template]))
+      fragments.value = fragments.value.map(fragment => {
+        const current = byId.get(String(fragment.data?.id))
+        return current ? { ...fragment, requirement: current } : fragment
+      })
+    })
   })
   watch(assistantOpen, open => { if (open) refreshTemplates() })
 </script>

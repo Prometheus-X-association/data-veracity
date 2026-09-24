@@ -172,10 +172,13 @@ export const handlers = [
             },
             required: ['field', 'max']
           },
-          implementationTemplate: '{success: (.[] | {{{field}}} <= {{{max}}})}'
+          implementationTemplate: '([.[] | {{{field}}} <= {{{max}}}] | all) as $ok | {success: $ok, details: (if $ok then "all values are at most {{{max}}}" else "a value exceeds {{{max}}}" end)}'
         }
       },
-      examples: { passing: [{ value: 1 }], failing: [{ value: 1e9 }] }
+      // Complete input documents, as the real assistant is asked for.
+      examples: { passing: [[{ value: 1 }, { value: 5 }]], failing: [[{ value: 1e9 }]] },
+      exampleModel: { field: '.value', max: 10 },
+      selfTest: { status: 'passed', problems: [], attempts: 1 }
     })
   }),
 

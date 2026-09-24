@@ -16,11 +16,13 @@ from .assistant import (
     parse_assistant_response,
     parse_vla_assistant_response,
 )
-from .dependencies import get_template_repo
+from .dependencies import get_requirement_evaluator, get_template_repo
 from .errors import http_error
 from .log import get_logger
 from .models import _CAMEL
 from .template_repo import TemplateRepo
+from .template_self_test import SelfTestResult, self_test, self_test_feedback
+from .validation import RequirementEvaluator
 
 logger = get_logger(__name__)
 
@@ -47,6 +49,9 @@ class AssistantRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=20)
     current_template: dict[str, Any] | None = None
+    # The assistant's last proposal, so a follow-up can adjust it; the
+    # conversation only carries the assistant's prose.
+    proposal: dict[str, Any] | None = None
 
     @field_validator("message")
     @classmethod
@@ -63,6 +68,10 @@ class AssistantReply(BaseModel):
     message: str
     proposal: dict[str, Any] | None = None
     examples: dict[str, Any] | None = None
+    # The variable values the examples were written for.
+    example_model: dict[str, Any] | None = None
+    # How the proposal fared when run over its own examples.
+    self_test: SelfTestResult | None = None
 
 
 class BuilderContext(BaseModel):
@@ -114,6 +123,7 @@ class AssistantVLAReply(BaseModel):
 async def assist_template(
     request: AssistantRequest,
     repo: TemplateRepo = Depends(get_template_repo),
+    evaluator: RequirementEvaluator = Depends(get_requirement_evaluator),
 ) -> AssistantReply:
     try:
         templates = await repo.all()
@@ -122,9 +132,10 @@ async def assist_template(
             templates,
             [turn.model_dump() for turn in request.conversation],
             request.current_template,
+            request.proposal,
         )
         content = await complete_assistant(messages)
-        reply = AssistantReply.model_validate(parse_assistant_response(content))
+        parsed = parse_assistant_response(content)
     except AssistantUnavailable as exc:
         logger.warning("Template assistant unavailable", error=str(exc))
         raise http_error(
@@ -144,14 +155,57 @@ async def assist_template(
             type="ASSISTANT_INVALID_RESPONSE",
         ) from exc
 
+    parsed, result = await _self_tested(parsed, content, messages, evaluator)
+    reply = AssistantReply.model_validate({**parsed, "selfTest": result})
+
     proposal = reply.proposal or {}
     logger.info(
         "Template assistant replied",
         has_proposal=reply.proposal is not None,
         engine=proposal.get("evaluationMethod", {}).get("engine"),
         has_examples=reply.examples is not None,
+        self_test=result.status,
+        attempts=result.attempts,
     )
     return reply
+
+
+async def _self_tested(
+    parsed: dict[str, Any],
+    content: str,
+    messages: list[dict[str, str]],
+    evaluator: RequirementEvaluator,
+) -> tuple[dict[str, Any], SelfTestResult]:
+    """
+    Run the proposal over its examples, and give the assistant one chance
+    to correct a proposal that fails, with the problems it caused.
+
+    A correction that cannot be had – the assistant unreachable, its answer
+    unusable, or no proposal in it – leaves the first proposal standing with
+    its failed result, so the author still sees what went wrong.
+    """
+    result = await self_test(parsed, evaluator)
+    if result.status != "failed":
+        return parsed, result
+
+    logger.info(
+        "Template proposal failed its self-test; asking for a correction",
+        problems=result.problems,
+    )
+    retry = [
+        *messages,
+        {"role": "assistant", "content": content},
+        {"role": "user", "content": self_test_feedback(result)},
+    ]
+    try:
+        corrected = parse_assistant_response(await complete_assistant(retry))
+    except (AssistantUnavailable, AssistantResponseError) as exc:
+        logger.warning("Could not get a corrected proposal", error=str(exc))
+        return parsed, result.model_copy(update={"attempts": 2})
+    if not corrected.get("proposal"):
+        return parsed, result.model_copy(update={"attempts": 2})
+    corrected_result = await self_test(corrected, evaluator)
+    return corrected, corrected_result.model_copy(update={"attempts": 2})
 
 
 @router.post("/assistant/vla", response_model=AssistantVLAReply)

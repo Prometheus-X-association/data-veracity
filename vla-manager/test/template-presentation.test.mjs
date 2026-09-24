@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { describeVariables, engineInfo } from '../src/api/templatePresentation.js'
+import { describeVariables, engineInfo, templateBugReport } from '../src/api/templatePresentation.js'
 
 test('names each quality engine and says what it checks', () => {
   assert.equal(engineInfo('SCHEMA').label, 'JSON Schema')
@@ -51,4 +51,32 @@ test('has nothing to list for an empty or missing schema', () => {
   assert.deepEqual(describeVariables(null), [])
   assert.deepEqual(describeVariables({ type: 'object' }), [])
   assert.deepEqual(describeVariables({ type: 'object', properties: {} }), [])
+})
+
+test('reports a failed template test for the assistant to fix', () => {
+  const report = templateBugReport({
+    model: { fields: ['foo'], minRequired: 1 },
+    data: { foo: 1 },
+    outcome: { tone: 'error', message: 'Cannot check whether number has a string key' }
+  })
+
+  assert.equal(report, [
+    'Testing this template gave a wrong result.',
+    'Template variables: {"fields":["foo"],"minRequired":1}',
+    'Test data: {"foo":1}',
+    'Result: It could not be evaluated: Cannot check whether number has a string key',
+    'Please find the cause in the implementation template and fix it.'
+  ].join('\n'))
+})
+
+test('reports a wrong verdict and truncates large test data', () => {
+  const report = templateBugReport({
+    model: {},
+    data: { text: 'x'.repeat(5000) },
+    outcome: { tone: 'failed', message: 'value is empty' }
+  })
+
+  assert.match(report, /Result: It reported that the data does not satisfy it \(details: value is empty\), which I believe is wrong\./)
+  assert.match(report, /… \(truncated\)\n/)
+  assert.ok(report.length < 2000)
 })

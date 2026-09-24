@@ -11,11 +11,21 @@ from structlog.contextvars import merge_contextvars
 from structlog.testing import LogCapture
 from structlog.typing import EventDict
 
-from vla_manager_api.dependencies import get_repo, get_template_repo
+from vla_manager_api.dependencies import (
+    get_repo,
+    get_requirement_evaluator,
+    get_template_repo,
+)
 from vla_manager_api.main import create_app
 from vla_manager_api.models import Template, TemplateNew
 from vla_manager_api.template_repo import FakeTemplateRepo
+from vla_manager_api.validation import ProcessingError
 from vla_manager_api.vla_repo import FakeVLARepo
+
+
+class UnreachableProcessing:
+    async def evaluate(self, engine: object, implementation: str, data: object):
+        raise ProcessingError("processing is not reachable in these tests")
 
 
 class FakeResponse:
@@ -60,6 +70,11 @@ def client(fake_template_repo: FakeTemplateRepo) -> Iterator[TestClient]:
     app = create_app()
     app.dependency_overrides[get_repo] = lambda: FakeVLARepo()
     app.dependency_overrides[get_template_repo] = lambda: fake_template_repo
+    # Proposals are self-tested through DVA Processing; these tests are about
+    # the conversation, so processing is simply never reachable here.
+    app.dependency_overrides[get_requirement_evaluator] = lambda: (
+        UnreachableProcessing()
+    )
     with TestClient(app) as test_client:
         yield test_client
 
@@ -349,7 +364,12 @@ def test_assistant_accepts_json_wrapped_in_a_markdown_fence() -> None:
 
     response = parse_assistant_response('```json\n{"message":"Draft ready."}\n```')
 
-    assert response == {"message": "Draft ready.", "proposal": None, "examples": None}
+    assert response == {
+        "message": "Draft ready.",
+        "proposal": None,
+        "examples": None,
+        "exampleModel": None,
+    }
 
 
 def test_vla_assistant_prompt_contains_catalog_and_bounded_sample() -> None:
@@ -389,7 +409,10 @@ def test_vla_assistant_prompt_contains_catalog_and_bounded_sample() -> None:
     assert "variableSchema" in prompt
     assert "Use only template IDs from the supplied catalog" in prompt
     assert "Every required variable" in prompt
-    assert "exactly the keys name (required before the VLA can be created) and description" in prompt
+    assert (
+        "exactly the keys name (required before the VLA can be created) and description"
+        in prompt
+    )
     assert "participants" not in prompt
     assert "requirements is the complete list of requirements the VLA should" in prompt
     assert "leaving one out removes" in prompt
@@ -429,6 +452,13 @@ def test_assistant_prompt_describes_the_template_enums_and_examples_shape() -> N
         in system_prompt
     )
     assert "jq strings use double quotes" in system_prompt
+    assert "a details string, both required in every output" in system_prompt
+    assert "in every branch of if/elif/else" in system_prompt
+    assert "trace every branch" in system_prompt
+    assert "meta.schema.columns" in system_prompt
+    assert "{message, proposal, examples, exampleModel}" in system_prompt
+    assert "rendered with exampleModel" in system_prompt
+    assert "When the author reports a bug" in system_prompt
     assert "in English, whatever language the request or the data uses" in system_prompt
     assert "language they wrote in" not in system_prompt
     assert "Write placeholders with triple braces, {{{name}}}" in system_prompt
@@ -723,3 +753,48 @@ def test_vla_assistant_sees_its_previous_draft_and_keeps_missing_template_names(
     assert json.dumps(previous, ensure_ascii=False) in system_prompt
     assert "Each reply replaces the previous draft" in system_prompt
     assert "exactly one template" in system_prompt
+
+
+def test_template_assistant_follow_up_sees_its_previous_proposal(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[list[dict[str, str]]] = []
+
+    async def fake_complete(messages: list[dict[str, str]]) -> str:
+        seen.append(messages)
+        return '{"message":"Raised the limit to 5."}'
+
+    monkeypatch.setattr(
+        "vla_manager_api.assistant_routes.complete_assistant", fake_complete
+    )
+    previous = {
+        "name": "Range check",
+        "criterionType": "IN_RANGE",
+        "targetAspect": "ACCURACY",
+        "evaluationMethod": {
+            "engine": "JQ",
+            "variableSchema": {"type": "object"},
+            "implementationTemplate": '{success: (.v <= 3), details: "ok"}',
+        },
+    }
+
+    response = client.post(
+        "/assistant/template",
+        json={
+            "message": "Raise the limit to 5.",
+            "conversation": [
+                {"role": "user", "content": "A range check up to 3."},
+                {"role": "assistant", "content": "Here is a range check."},
+            ],
+            "proposal": previous,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    system_prompt = seen[0][0]["content"]
+    assert (
+        f"Previous proposal: {json.dumps(previous, ensure_ascii=False)}"
+        in system_prompt
+    )
+    assert "return the complete adjusted template as proposal" in system_prompt
+    assert seen[0][-1] == {"role": "user", "content": "Raise the limit to 5."}

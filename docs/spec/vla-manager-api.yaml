@@ -869,6 +869,13 @@ components:
         currentTemplate:
           type: object
           additionalProperties: true
+        proposal:
+          description: >-
+            The assistant's previous proposal, so that a follow-up request
+            can have it adjusted rather than regenerated from scratch.
+          type: object
+          nullable: true
+          additionalProperties: true
     AssistantResponse:
       type: object
       required: [message]
@@ -881,9 +888,43 @@ components:
             - $ref: '#/components/schemas/TemplateCreate'
           nullable: true
         examples:
+          description: >-
+            Example input documents, as `passing` and `failing` arrays, that
+            the proposal is tested with.
           type: object
           nullable: true
           additionalProperties: true
+        exampleModel:
+          description: The variable values the examples were written for.
+          type: object
+          nullable: true
+          additionalProperties: true
+        selfTest:
+          $ref: '#/components/schemas/TemplateSelfTest'
+    TemplateSelfTest:
+      type: object
+      description: >-
+        How a proposal fared when rendered with `exampleModel` and run by DVA
+        Processing over its own examples, before being returned. A proposal
+        that failed is sent back to the assistant once with the problems, so
+        `attempts` is 2 when a correction was asked for.
+      required: [status, problems, attempts]
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [passed, failed, unavailable, skipped]
+          description: >-
+            `unavailable` when DVA Processing could not be reached, so the
+            proposal is untested; `skipped` when there was no proposal.
+        problems:
+          type: array
+          items:
+            type: string
+        attempts:
+          type: integer
+          minimum: 1
+          maximum: 2
     AssistantVLARequest:
       type: object
       required: [message]

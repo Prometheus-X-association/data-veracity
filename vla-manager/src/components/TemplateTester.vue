@@ -8,6 +8,10 @@
       Evaluation passed. The selected data satisfies this requirement.
     </n-alert>
     <FailureExplanation v-if="failure" :failure="failure" heading="Why this test did not pass" />
+    <div v-if="lastRun && lastRun.outcome.tone !== 'passed'" class="fix-with-ai">
+      <n-button secondary @click="fixWithAssistant">Fix this template with AI</n-button>
+      <n-text depth="3">Opens the template with its assistant, ready to send a report of this test.</n-text>
+    </div>
 
     <div class="tester-grid">
       <section>
@@ -35,10 +39,15 @@ import { NAlert, NButton, NCard, NInput, NText } from 'naive-ui'
 import TemplatePreview from './TemplatePreview.vue'
 import TemplateVariableForm from './TemplateVariableForm.vue'
 import FailureExplanation from './FailureExplanation.vue'
+import { useRouter } from 'vue-router'
 import { evaluateTemplate, renderTemplate } from '../api/templates.js'
+import { templateBugReport } from '../api/templatePresentation.js'
 import { failureFromCode, normalizeEvaluationResult } from '../failures/failureModel.js'
 
 const props = defineProps({ template: { type: Object, required: true } })
+const router = useRouter()
+// The data and outcome of the last evaluation, for a bug report.
+const lastRun = ref(null)
 const model = ref({})
 const sampleText = ref('{\n  "status": "valid"\n}')
 const rendered = ref('')
@@ -70,19 +79,29 @@ async function runRender () {
     failure.value = apiFailure(cause)
   } finally { rendering.value = false }
 }
+function fixWithAssistant () {
+  const brief = templateBugReport({ model: model.value, data: lastRun.value.data, outcome: lastRun.value.outcome })
+  router.push({ path: '/templates', query: { mode: 'edit', id: props.template.id, brief } })
+}
+
 async function runEvaluation () {
   error.value = null
   failure.value = null
   result.value = null
+  lastRun.value = null
+  let data
   try {
-    const data = parseSample()
+    data = parseSample()
     evaluating.value = true
     const response = await evaluateTemplate(props.template.id, model.value, data)
+    lastRun.value = { data, outcome: { tone: response.success ? 'passed' : 'failed', message: response.details } }
     result.value = response
     failure.value = normalizeEvaluationResult(response, { source: 'template-evaluation' })
     if (failure.value.status === 'passed') failure.value = null
     rendered.value = response.implementation || rendered.value
   } catch (cause) {
+    // An engine that could not run the requirement still reports why.
+    if (data !== undefined) lastRun.value = { data, outcome: { tone: 'error', message: cause.details?.error || cause.message } }
     failure.value = cause.message === 'Sample data is not valid JSON.'
       ? failureFromCode('INVALID_TEMPLATE_INPUT', { evidence: cause.message, source: 'template-tester' })
       : apiFailure(cause)
@@ -94,4 +113,5 @@ async function runEvaluation () {
 .tester-card{border-radius:8px}.tester-error{margin-bottom:14px}.tester-result{margin-bottom:14px}.tester-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.section-title{display:grid;gap:3px;margin-bottom:10px}.section-title :deep(.n-text:last-child),.sample-help{font-size:.72rem}.sample-help{display:block;margin-top:8px}.tester-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:18px}.rendered-preview{margin-top:18px}
 @media(max-width:800px){.tester-grid{grid-template-columns:1fr}.tester-actions :deep(.n-button){flex:1;min-height:42px}}
 @media(max-width:460px){.tester-actions{display:grid}.tester-actions :deep(.n-button){width:100%}}
+.fix-with-ai{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
 </style>

@@ -6,7 +6,7 @@
           <n-button @click="loadTemplates">Refresh</n-button>
           <n-button type="primary" @click="openCreate">Create template</n-button>
         </n-space>
-        <n-button v-else @click="closeWorkspace">{{ fromBuilder ? 'Back to the VLA conversation' : 'Back to templates' }}</n-button>
+        <n-button v-else @click="closeWorkspace">{{ fromBuilder ? `Back to ${returnTo}` : 'Back to templates' }}</n-button>
       </template>
     </n-page-header>
 
@@ -28,8 +28,11 @@
     <n-alert v-if="fromBuilder && activeMode === 'create'" type="info" :show-icon="false">
       You are creating one of the templates the VLA builder assistant asked for. Saving it takes you back to that conversation, where you tick it as created and recheck.
     </n-alert>
+    <n-alert v-if="fromBuilder && activeMode === 'edit'" type="info" :show-icon="false">
+      You are fixing a template used in the VLA builder. Its assistant has a report of the failed test ready to send; saving the fix takes you back to the builder.
+    </n-alert>
     <div v-if="activeMode" class="workspace-shell">
-      <TemplateEditor v-if="activeMode === 'create' || (activeMode === 'edit' && activeTemplate)" :template="activeMode === 'edit' ? activeTemplate : null" :brief="activeMode === 'create' ? brief : ''" :return-to-builder="fromBuilder && activeMode === 'create'" @saved="handleSaved" @cancel="closeWorkspace" />
+      <TemplateEditor v-if="activeMode === 'create' || (activeMode === 'edit' && activeTemplate)" :template="activeMode === 'edit' ? activeTemplate : null" :brief="brief" :return-to="returnTo" @saved="handleSaved" @cancel="closeWorkspace" />
       <TemplateTester v-if="activeMode === 'test' && activeTemplate" :template="activeTemplate" />
     </div>
 
@@ -73,6 +76,10 @@ const activeMode = computed(() => String(route.query.mode || ''))
 // template it was missing; `brief` describes the rule that needs one.
 const fromBuilder = computed(() => route.query.from === 'builder')
 const brief = computed(() => String(route.query.brief || ''))
+// Creating a missing template returns to the assistant's conversation;
+// fixing a template after a failed test returns to the builder itself.
+const reopenAssistant = computed(() => route.query.reopen === 'assistant')
+const returnTo = computed(() => fromBuilder.value ? (reopenAssistant.value ? 'the VLA conversation' : 'the VLA builder') : '')
 const activeTemplate = computed(() => templates.value.find(template => String(template.id) === String(route.query.id)))
 const pageTitle = computed(() => ({ create: 'Create template', edit: 'Edit template', test: 'Test template' }[activeMode.value] || 'VLA templates'))
 const pageSubtitle = computed(() => activeMode.value ? 'Work on one reusable quality requirement at a time.' : 'Create reusable quality requirements for new agreements')
@@ -111,7 +118,7 @@ async function handleSaved (template) {
 }
 // Back to the builder with its assistant drawer open on the conversation
 // this sub-session was started from.
-function returnToBuilder () { router.push({ path: '/create', query: { assistant: 'open' } }) }
+function returnToBuilder () { router.push({ path: '/create', query: reopenAssistant.value ? { assistant: 'open' } : {} }) }
 function closeWorkspace () {
   if (fromBuilder.value) returnToBuilder()
   else router.replace({ path: '/templates' })

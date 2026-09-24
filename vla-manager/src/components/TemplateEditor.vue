@@ -47,7 +47,7 @@
 
         <div class="editor-actions">
           <n-button @click="$emit('cancel')">Cancel</n-button>
-          <TemplateAssistant :template="form" :brief="brief" :return-to-builder="returnToBuilder" @apply="applyAssistantProposal" @apply-and-save="applyAndSave" />
+          <TemplateAssistant :template="form" :brief="brief" :return-to="returnTo" @apply="applyAssistantProposal" @apply-and-save="applyAndSave" />
           <n-button :loading="rendering" :disabled="!canRender" @click="renderCurrent">Preview implementation</n-button>
           <n-button type="primary" :loading="saving" @click="save">{{ saveLabel }}</n-button>
         </div>
@@ -72,9 +72,9 @@ const props = defineProps({
   // A rule the VLA builder assistant found no template for; it seeds the
   // template assistant's request.
   brief: { type: String, default: '' },
-  // Set when the VLA builder assistant opened this editor for a missing
-  // template; saving then returns the author to that conversation.
-  returnToBuilder: { type: Boolean, default: false }
+  // Where saving returns the author when the VLA builder opened this
+  // editor ("the VLA conversation" or "the VLA builder"); empty otherwise.
+  returnTo: { type: String, default: '' }
 })
 const emit = defineEmits(['saved', 'cancel'])
 const message = useMessage()
@@ -97,8 +97,8 @@ function clone (value) { return JSON.parse(JSON.stringify(value)) }
 const form = ref(blankTemplate())
 const isEditing = computed(() => Boolean(props.template?.id))
 const saveLabel = computed(() => {
-  if (isEditing.value) return 'Save changes'
-  return props.returnToBuilder ? 'Save template and return to the VLA conversation' : 'Create template'
+  if (props.returnTo) return `${isEditing.value ? 'Save changes' : 'Save template'} and return to ${props.returnTo}`
+  return isEditing.value ? 'Save changes' : 'Create template'
 })
 const variableKeys = createVariableKeyStore()
 const variableRows = computed(() => Object.entries(form.value.evaluationMethod.variableSchema.properties || {}).map(([name, definition]) => ({ name, key: variableKeys.keyFor(name), definition: definition || {} })))
