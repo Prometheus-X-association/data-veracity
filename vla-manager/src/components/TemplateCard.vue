@@ -9,7 +9,7 @@
     </div>
     <n-text depth="3" class="template-description">{{ template.description || 'No description provided.' }}</n-text>
     <n-space size="small" :wrap="true" class="template-tags">
-      <n-tag size="small" type="info">{{ template.evaluationMethod?.engine || 'Unknown engine' }}</n-tag>
+      <n-tag size="small" type="info" :title="engine.summary">{{ engine.label }}</n-tag>
       <n-tag size="small">{{ template.criterionType || 'No criterion' }}</n-tag>
       <n-tag size="small" type="success">{{ template.targetAspect || 'No aspect' }}</n-tag>
     </n-space>
@@ -30,10 +30,12 @@
 <script setup>
 import { computed } from 'vue'
 import { NButton, NCard, NSpace, NTag, NText } from 'naive-ui'
+import { engineInfo } from '../api/templatePresentation.js'
 
 const props = defineProps({ template: { type: Object, required: true } })
 defineEmits(['edit', 'test', 'remove'])
 
+const engine = computed(() => engineInfo(props.template.evaluationMethod?.engine))
 const engineShort = computed(() => ({ SCHEMA: 'SC', JQ: 'JQ', GREAT_EXPECTATIONS: 'GE' }[props.template.evaluationMethod?.engine] || 'RQ'))
 const variableCount = computed(() => Object.keys(props.template.evaluationMethod?.variableSchema?.properties || {}).length)
 const implementationLabel = computed(() => props.template.evaluationMethod?.implementationTemplate ? 'Implementation ready' : 'Implementation missing')

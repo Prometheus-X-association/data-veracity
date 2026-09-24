@@ -109,6 +109,10 @@
               <span class="field-label">Description</span>
               <p>{{ proposal.description || 'No description was generated.' }}</p>
             </div>
+            <div v-if="proposal.evaluationMethod" class="proposal-field proposal-field-wide">
+              <span class="field-label">How it is checked</span>
+              <EngineBadge :engine="proposal.evaluationMethod.engine" detailed />
+            </div>
             <div class="proposal-field">
               <span class="field-label">Quality aspect</span>
               <span class="value-chip">{{ labelFor(proposal.targetAspect) }}</span>
@@ -122,14 +126,13 @@
           <div v-if="proposal.evaluationMethod" class="implementation-section">
             <div class="implementation-heading">
               <div><span class="section-kicker">Evaluation</span><strong>Implementation details</strong></div>
-              <span class="engine-chip">{{ labelFor(proposal.evaluationMethod.engine) }}</span>
             </div>
-            <div v-if="proposal.evaluationMethod.variableSchema" class="implementation-block">
-              <span class="code-label">Variable schema</span>
-              <AssistantJson :value="proposal.evaluationMethod.variableSchema" />
+            <div class="implementation-block">
+              <span class="code-label">Variables</span>
+              <TemplateVariables :schema="proposal.evaluationMethod.variableSchema" />
             </div>
             <div v-if="proposal.evaluationMethod.implementationTemplate" class="implementation-block">
-              <span class="code-label">Implementation template</span>
+              <span class="code-label">{{ engineLabel(proposal.evaluationMethod.engine) }} implementation template</span>
               <pre class="implementation-code"><code>{{ proposal.evaluationMethod.implementationTemplate }}</code></pre>
             </div>
           </div>
@@ -169,6 +172,11 @@ import { NAlert, NButton, NDrawer, NDrawerContent, NIcon, NInput } from 'naive-u
 import { askTemplateAssistant, assistantErrorMessage } from '../api/assistant.js'
 import { assistantTextChunks, normaliseAssistantExamples } from '../api/assistantPresentation.js'
 import AssistantJson from './AssistantJson.vue'
+import EngineBadge from './EngineBadge.vue'
+import TemplateVariables from './TemplateVariables.vue'
+import { engineInfo } from '../api/templatePresentation.js'
+
+const engineLabel = engine => engineInfo(engine).label
 
 const props = defineProps({ template: { type: Object, default: null } })
 const emit = defineEmits(['apply'])
