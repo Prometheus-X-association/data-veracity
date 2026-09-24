@@ -434,6 +434,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /evaluate/from-template:
+    post:
+      tags: [Templates]
+      summary: Run a template over sample data
+      description: >-
+        Renders the template with the supplied model – after checking the
+        model against the template's variable schema – and has DVA
+        Processing's `/evaluate` run the resulting requirement over `data`.
+        The request and the `EvaluationResult` are those of DVA Processing's
+        own `/evaluate/from-template`; processing's status and result are
+        returned as they are, so a requirement the data fails is a `200`
+        with `success: false`, and one the engine could not run is a `500`
+        carrying the result's `error`.
+      operationId: evaluateFromTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationFromTemplateRequest'
+      responses:
+        '200':
+          description: The requirement was evaluated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+        '400':
+          description: >-
+            The model does not match the template's variable schema
+            (`INVALID_TEMPLATE_INPUT`), or the template could not be
+            rendered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No template with the given ID exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Invalid request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: The evaluation engine could not run the requirement.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+        '503':
+          description: >-
+            DVA Processing could not be reached (`EVALUATION_UNAVAILABLE`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /vla/from-templates:
     post:
       tags: [VLA]
@@ -923,6 +984,23 @@ components:
                   filled in completely.
     QualityEngine:
       $ref: ./components.yaml#/schemas/QualityEngine
+    EvaluationResult:
+      $ref: ./components.yaml#/schemas/EvaluationResult
+    EvaluationFromTemplateRequest:
+      type: object
+      description: >-
+        The same request as DVA Processing's `/evaluate/from-template`,
+        with the DVA's `...ID` spelling.
+      required: [templateID, templateModel, data]
+      additionalProperties: false
+      properties:
+        templateID:
+          type: string
+          format: uuid
+        templateModel:
+          $ref: '#/components/schemas/TemplateModel'
+        data:
+          description: The sample data to run the requirement over.
     Health:
       $ref: ./components.yaml#/schemas/Health
     CriterionType:

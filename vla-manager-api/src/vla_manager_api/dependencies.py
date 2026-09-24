@@ -8,7 +8,11 @@ from fastapi import Request
 from .config import cfg
 from .log import get_logger
 from .template_repo import FakeTemplateRepo, PgTemplateRepo, TemplateRepo
-from .validation import ProcessingRequirementValidator, RequirementValidator
+from .validation import (
+    ProcessingRequirementValidator,
+    RequirementEvaluator,
+    RequirementValidator,
+)
 from .vla_repo import FakeVLARepo, PgVLARepo, VLARepo
 
 logger = get_logger(__name__)
@@ -82,4 +86,9 @@ def get_template_repo(request: Request) -> TemplateRepo:
 
 def get_requirement_validator(request: Request) -> RequirementValidator:
     """Return the evaluation logic validator built during startup."""
+    return request.app.state.requirement_validator
+
+
+def get_requirement_evaluator(request: Request) -> RequirementEvaluator:
+    """Return the client that runs requirements, built during startup."""
     return request.app.state.requirement_validator

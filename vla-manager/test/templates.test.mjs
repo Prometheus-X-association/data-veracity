@@ -21,7 +21,7 @@ test('validates a template through the VLA Manager API', async () => {
 
   assert.deepEqual(calls, [{
     url: '/api/template/template%2Fid/validate',
-    body: { model: { minimum: 2 } }
+    body: { minimum: 2 }
   }])
   assert.equal(result.valid, true)
 })

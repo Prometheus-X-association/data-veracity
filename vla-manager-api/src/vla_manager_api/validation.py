@@ -33,6 +33,9 @@ logger = get_logger(__name__)
 # DVA Processing is a sibling service on the same network, and compiling an
 # expression is not slow, so a call unanswered by now is not going to be.
 TIMEOUT_SECONDS = 10
+# Running a requirement over data can take longer than compiling it: Great
+# Expectations in particular builds a dataframe first.
+EVALUATION_TIMEOUT_SECONDS = 60
 
 # The required fields of processing's `RequirementValidationResult`
 # (docs/spec/dva-processing.yaml): `{valid, reason?, engine, details?}`.
@@ -53,6 +56,14 @@ class RequirementValidator(Protocol):
     async def validate(
         self, engine: QualityEngine, implementation: str
     ) -> TemplateValidationResult: ...
+
+
+class RequirementEvaluator(Protocol):
+    """Runs a rendered requirement over data."""
+
+    async def evaluate(
+        self, engine: QualityEngine, implementation: str, data: Any
+    ) -> tuple[int, Any]: ...
 
 
 def _reason(answer: dict[str, Any]) -> Optional[ValidationFailureReason]:
@@ -144,6 +155,39 @@ class ProcessingRequirementValidator:
                 f"DVA Processing answered without {', '.join(sorted(missing))}"
             )
         return _to_result(engine, implementation, answer)
+
+    async def evaluate(
+        self, engine: QualityEngine, implementation: str, data: Any
+    ) -> tuple[int, Any]:
+        """
+        Have processing run ``implementation`` over ``data``.
+
+        Returns processing's status and JSON body as they are: an evaluation
+        that ran is an ``EvaluationResult`` whatever its outcome, and
+        processing's own error responses are already problem details.
+        """
+        url = self._url.removesuffix("/validate-requirement") + "/evaluate"
+        body = {
+            "requirement": {"engine": engine.value, "implementation": implementation},
+            "data": data,
+        }
+        logger.debug("Evaluating rendered logic with DVA Processing", url=url)
+        try:
+            response = await self._client.post(
+                url, json=body, timeout=EVALUATION_TIMEOUT_SECONDS
+            )
+            answer = response.json()
+        except httpx2.HTTPError as e:
+            raise ProcessingError(f"Request to DVA Processing failed: {e}") from e
+        except ValueError as e:
+            raise ProcessingError(f"Unusable DVA Processing response: {e}") from e
+        logger.debug(
+            "DVA Processing evaluated",
+            url=url,
+            status=response.status_code,
+            body=answer,
+        )
+        return response.status_code, answer
 
 
 async def check_requirement(

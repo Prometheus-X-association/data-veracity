@@ -96,6 +96,19 @@ class IDDTO(BaseModel):
     id: UUID
 
 
+class EvaluationFromTemplate(BaseModel):
+    """
+    Body of ``POST /evaluate/from-template``: the same contract as DVA
+    Processing's endpoint of that name, with the DVA's ``...ID`` spelling.
+    """
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    template_id: UUID = Field(alias="templateID")
+    template_model: dict[str, Any] = Field(alias="templateModel")
+    data: Any
+
+
 class TemplateInstantiation(BaseModel):
     """
     One entry in ``VLANewFromTemplates.qualityTemplates`` — a template id

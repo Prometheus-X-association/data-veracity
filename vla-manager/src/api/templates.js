@@ -43,7 +43,8 @@ export function deleteTemplate (id) {
 }
 
 export function renderTemplate (id, model) {
-  return request({ method: 'post', url: `/api/template/${encodeURIComponent(id)}/render`, data: { model } })
+  // The body is the model itself (the spec's TemplateModel), not wrapped.
+  return request({ method: 'post', url: `/api/template/${encodeURIComponent(id)}/render`, data: model })
 }
 
 export function evaluateTemplate (templateID, templateModel, data) {
@@ -59,7 +60,8 @@ export { normaliseError }
 export async function validateTemplate (id, model, client = axios) {
   const response = await client.post(
     `/api/template/${encodeURIComponent(id)}/validate`,
-    { model }
+    // The body is the model itself (the spec's TemplateModel), not wrapped.
+    model
   )
   return response.data
 }

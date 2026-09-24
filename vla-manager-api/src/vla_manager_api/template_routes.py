@@ -6,11 +6,20 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
+from jsonschema import ValidationError as JSONSchemaValidationError
+from jsonschema import validate as validate_json
 
-from .dependencies import get_requirement_validator, get_template_repo
+from .dependencies import (
+    get_requirement_evaluator,
+    get_requirement_validator,
+    get_template_repo,
+)
 from .errors import http_error
+from .log import get_logger
 from .models import (
     IDDTO,
+    EvaluationFromTemplate,
     RenderResult,
     Template,
     TemplateNew,
@@ -19,7 +28,14 @@ from .models import (
 )
 from .template_repo import TemplateRepo
 from .templates import render_template
-from .validation import RequirementValidator, check_requirement
+from .validation import (
+    ProcessingError,
+    RequirementEvaluator,
+    RequirementValidator,
+    check_requirement,
+)
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -140,3 +156,53 @@ async def validate_template_route(
         )
 
     return await check_requirement(template.evaluation_method, model, validator)
+
+
+@router.post("/evaluate/from-template")
+async def evaluate_from_template(
+    request: EvaluationFromTemplate,
+    repo: TemplateRepo = Depends(get_template_repo),
+    evaluator: RequirementEvaluator = Depends(get_requirement_evaluator),
+) -> JSONResponse:
+    """
+    Run a template, rendered with a model, over sample data.
+
+    The template is rendered here, where it lives, and the finished
+    requirement is sent to DVA Processing's ``/evaluate``; its status and
+    ``EvaluationResult`` are passed back as they are.
+    """
+    template = await repo.by_id(request.template_id)
+    if template is None:
+        raise http_error(
+            status.HTTP_404_NOT_FOUND, "No template with the given ID exists"
+        )
+
+    em = template.evaluation_method
+    try:
+        validate_json(instance=request.template_model, schema=em.variable_schema)
+    except JSONSchemaValidationError as exc:
+        raise http_error(
+            status.HTTP_400_BAD_REQUEST,
+            f"The template input does not match its variable schema: {exc.message}",
+            type="INVALID_TEMPLATE_INPUT",
+        ) from exc
+    try:
+        implementation = render_template(
+            em.implementation_template, request.template_model
+        )
+    # chevron raises no one error type, so this matches the render route above.
+    except Exception as exc:
+        raise http_error(
+            status.HTTP_400_BAD_REQUEST, f"Failed to render template: {exc}"
+        ) from exc
+
+    try:
+        code, body = await evaluator.evaluate(em.engine, implementation, request.data)
+    except ProcessingError as exc:
+        logger.warning("Could not evaluate rendered logic", error=str(exc))
+        raise http_error(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            f"The evaluation service is unavailable: {exc}",
+            type="EVALUATION_UNAVAILABLE",
+        ) from exc
+    return JSONResponse(status_code=code, content=body)

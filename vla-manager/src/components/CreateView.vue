@@ -204,9 +204,10 @@
                     </n-button>
                   </div>
 
-                  <div v-if="testedFragment === frag && testResult !== null" class="mt-3 p-2 bg-green-50 rounded border border-green-200">
-                    <n-text strong type="success" class="text-xs mb-1 block">Test Results:</n-text>
-                    <vue-json-pretty :data="testResult" class="text-xs" />
+                  <div v-if="testedFragment === frag && testOutcome" class="test-outcome" :class="testOutcome.tone" role="status">
+                    <strong>{{ testOutcome.title }}</strong>
+                    <p v-if="testOutcome.message">{{ testOutcome.message }}</p>
+                    <vue-json-pretty v-if="testOutcome.body" :data="testOutcome.body" :deep="2" class="text-xs" />
                   </div>
                 </n-card>
               </div>
@@ -232,7 +233,7 @@
   import SampleModal from './SampleModal.vue'
   import ReqModal from './ReqModal.vue'
   import VlaBuilderAssistant from './VlaBuilderAssistant.vue'
-  import { listTemplates } from '../api/templates.js'
+  import { evaluateTemplate, listTemplates } from '../api/templates.js'
   import {
     applyVlaAssistantDraft,
     createBuilderAssistantContext,
@@ -371,13 +372,13 @@
   }
 
   const testedFragment = ref(null)
-  const testResult = ref(null)
+  const testOutcome = ref(null)
 
   const showSampleModal = () => sampleModal.value?.show()
   const showTestModal = (frag) => {
     testModal.value?.show()
     testedFragment.value = frag
-    testResult.value = null // reset previous results
+    testOutcome.value = null // reset previous results
   }
   const showReqModal = () => reqModal.value?.show()
 
@@ -429,19 +430,25 @@
     message.info(`Creating “${missingTemplateName(item)}”. Your builder work and conversation are kept.`)
   }
 
+  // A test has three outcomes that must not look alike: the data passed,
+  // the data failed the requirement, or the requirement could not be run.
   const handleTestDataSelected = async () => {
-    const body = {
-      templateID: testedFragment.value.data.id,
-      templateModel: testedFragment.value.data.model,
-      data: testData.value
-    }
+    const { id, model } = testedFragment.value.data
     try {
-      const resp = await axios.post('/api/evaluate/from-template', body)
-      testResult.value = resp.data
-      message.success('Evaluation complete')
-    } catch (err) {
-      message.error(err.response?.data?.details || err.response?.data?.title || 'The fragment could not be evaluated.')
-      testResult.value = err.response?.data || { error: err.message }
+      const result = await evaluateTemplate(id, model, testData.value)
+      testOutcome.value = result.success
+        ? { tone: 'passed', title: 'The test data satisfies this requirement', message: result.details, body: result }
+        : { tone: 'failed', title: 'The test data does not satisfy this requirement', message: result.details, body: result }
+    } catch (cause) {
+      // An evaluation the engine could not run still carries its result.
+      const body = cause.details && Object.keys(cause.details).length ? cause.details : null
+      testOutcome.value = {
+        tone: 'error',
+        title: 'The requirement could not be evaluated',
+        message: body?.error || cause.message,
+        body
+      }
+      message.error(testOutcome.value.message || 'The fragment could not be evaluated.')
     }
   }
 
@@ -484,7 +491,7 @@
     participantDraft.value = ''
     tagDraft.value = ''
     testedFragment.value = null
-    testResult.value = null
+    testOutcome.value = null
     assistantOpen.value = false
     assistantKey.value++
   }
@@ -528,6 +535,20 @@
 </script>
 
 <style scoped>
+  .test-outcome {
+    display: grid;
+    gap: 4px;
+    margin-top: 12px;
+    padding: 8px 10px;
+    border: 1px solid;
+    border-radius: 6px;
+    font-size: .75rem;
+  }
+  .test-outcome p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .test-outcome.passed { border-color: #a7f3d0; background: #f0fdf4; color: #065f46; }
+  .test-outcome.failed { border-color: #fcd34d; background: #fffbeb; color: #78350f; }
+  .test-outcome.error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+
   .builder-container {
     display: flex;
     flex-direction: column;

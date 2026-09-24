@@ -37,6 +37,7 @@ deployment: this service is not yet in `test-env/compose.yml`.
 | `DELETE /template` | Admin only | Wipe all templates |
 | `POST /template/{id}/render` | VLA Manager UI | Render a template's `implementationTemplate` with a model |
 | `POST /template/{id}/validate` | VLA Manager UI | Render a template with a model and have DVA Processing check that the logic compiles |
+| `POST /evaluate/from-template` | VLA Manager UI | Render a template with a model and have DVA Processing run it over sample data ("Test fragment") |
 | `POST /assistant/template` | VLA Manager UI | Generate an unsaved template draft from a natural-language request |
 | `POST /assistant/vla` | VLA Manager UI | Draft VLA requirements from the template catalog and the builder's sample data: catalog template IDs with filled-in models, suggested metadata, and the rules no template covers |
 
