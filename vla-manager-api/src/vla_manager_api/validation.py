@@ -1,9 +1,13 @@
 """
-Client for the DVA Processing validation endpoint.
+Client for the DVA Processing validation endpoint, and the requirement check
+built on it.
 
 The client is built once during ``lifespan`` and read off ``app.state``,
 like the repositories; tests swap it through
 ``app.dependency_overrides[get_requirement_validator]``.
+:func:`check_requirement` is shared by ``POST /template/{id}/validate`` and
+``POST /vla/from-templates``, so a requirement the author was told is valid
+is exactly one the VLA can be created from.
 """
 
 from __future__ import annotations
@@ -12,13 +16,17 @@ from types import TracebackType
 from typing import Any, Optional, Protocol
 
 import httpx2
+from jsonschema import ValidationError as JSONSchemaValidationError
+from jsonschema import validate as validate_json
 
 from .log import get_logger
 from .models import (
+    EvaluationMethod,
     QualityEngine,
     TemplateValidationResult,
     ValidationFailureReason,
 )
+from .templates import render_template
 
 logger = get_logger(__name__)
 
@@ -26,16 +34,13 @@ logger = get_logger(__name__)
 # expression is not slow, so a call unanswered by now is not going to be.
 TIMEOUT_SECONDS = 10
 
-# Of processing's `RequirementValidationResult`; `engine` is not among them,
-# because the engine we asked about is the one we report.
-_REQUIRED_FIELDS = frozenset({"valid", "status", "message"})
+# The required fields of processing's `RequirementValidationResult`
+# (docs/spec/dva-processing.yaml): `{valid, reason?, engine, details?}`.
+_REQUIRED_FIELDS = frozenset({"valid", "engine"})
 
-# Processing's `status` narrowed to the two reasons this service reports.
-# `VALID` is absent: a pass carries no reason at all.
-_REASONS = {
-    "INVALID": ValidationFailureReason.invalid_implementation,
-    "UNAVAILABLE": ValidationFailureReason.unavailable_engine,
-}
+# Processing's `reason`, which it gives only when `valid` is false, as the
+# reason this service reports; both sides use the same two values.
+_REASONS = {reason.value: reason for reason in ValidationFailureReason}
 
 
 class ProcessingError(Exception):
@@ -51,16 +56,17 @@ class RequirementValidator(Protocol):
 
 
 def _reason(answer: dict[str, Any]) -> Optional[ValidationFailureReason]:
-    """Narrow processing's ``status`` to the reason this service reports."""
+    """Read processing's ``reason`` as the reason this service reports."""
     if answer["valid"]:
         return None
     try:
-        return _REASONS[answer["status"]]
+        return _REASONS[answer.get("reason")]
     except KeyError as e:
         # A failure we cannot name is not one to pass off as valid, and the
         # spec requires a reason whenever `valid` is false.
         raise ProcessingError(
-            f"DVA Processing reported unknown status {answer['status']}"
+            f"DVA Processing reported an invalid result with unknown reason "
+            f"{answer.get('reason')}"
         ) from e
 
 
@@ -68,15 +74,13 @@ def _to_result(
     engine: QualityEngine, implementation: str, answer: dict[str, Any]
 ) -> TemplateValidationResult:
     """Map processing's answer onto the result this service returns."""
-    details = answer["message"]
-    if answer.get("details"):
-        details = f"{details}\n{answer['details']}"
-
+    # `engine` is not taken from the answer: the engine asked about is the
+    # one reported.
     return TemplateValidationResult(
         valid=answer["valid"],
         reason=_reason(answer),
         engine=engine,
-        details=details,
+        details=answer.get("details"),
         implementation=implementation,
     )
 
@@ -140,3 +144,55 @@ class ProcessingRequirementValidator:
                 f"DVA Processing answered without {', '.join(sorted(missing))}"
             )
         return _to_result(engine, implementation, answer)
+
+
+async def check_requirement(
+    em: EvaluationMethod, model: dict[str, Any], validator: RequirementValidator
+) -> TemplateValidationResult:
+    """
+    Check ``model`` against a template's evaluation method, end to end.
+
+    The input must match the variable schema, the template must render with
+    it, and processing must accept the rendered logic. Every way this can go
+    wrong is reported as a verdict rather than raised, so a caller can
+    decide whether a failure is the author's to fix or an outage. A passing
+    verdict always carries the rendered ``implementation``.
+    """
+    try:
+        validate_json(instance=model, schema=em.variable_schema)
+    except JSONSchemaValidationError as exc:
+        return TemplateValidationResult(
+            valid=False,
+            reason=ValidationFailureReason.invalid_implementation,
+            engine=em.engine,
+            details=(
+                f"The template input does not match its variable schema.\n{exc.message}"
+            ),
+        )
+
+    try:
+        rendered = render_template(em.implementation_template, model)
+    # chevron raises no one error type, so anything it raises is a failure
+    # to render.
+    except Exception as exc:
+        return TemplateValidationResult(
+            valid=False,
+            reason=ValidationFailureReason.invalid_implementation,
+            engine=em.engine,
+            details=f"The template could not be rendered.\n{exc}",
+        )
+
+    try:
+        result = await validator.validate(em.engine, rendered)
+    except ProcessingError as exc:
+        logger.warning("Could not validate rendered logic", error=str(exc))
+        return TemplateValidationResult(
+            valid=False,
+            reason=ValidationFailureReason.unavailable_engine,
+            engine=em.engine,
+            details=f"The evaluation service is unavailable.\n{exc}",
+            implementation=rendered,
+        )
+    if result.implementation is None:
+        result = result.model_copy(update={"implementation": rendered})
+    return result

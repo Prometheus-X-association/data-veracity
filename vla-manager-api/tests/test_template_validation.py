@@ -8,10 +8,12 @@ the ``UNAVAILABLE_ENGINE`` verdict the rest of this relies on.
 """
 
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any, Optional
 
 import httpx2
 import pytest
+import yaml
 from fastapi.testclient import TestClient
 
 from vla_manager_api.dependencies import (
@@ -227,6 +229,25 @@ def test_reports_a_template_that_cannot_be_rendered(
 
 # --- The client that really talks to DVA Processing --------------------
 
+PROCESSING_SPEC = (
+    Path(__file__).resolve().parents[2] / "docs" / "spec" / "dva-processing.yaml"
+)
+
+
+def processing_answer(**answer: Any) -> dict[str, Any]:
+    """
+    An answer DVA Processing could really give: checked against its spec's
+    ``RequirementValidationResult``, so these stubs follow the contract.
+    """
+    schema = yaml.safe_load(PROCESSING_SPEC.read_text())["components"]["schemas"][
+        "RequirementValidationResult"
+    ]
+    assert set(schema["required"]) <= answer.keys()
+    assert answer.keys() <= schema["properties"].keys()
+    reason = answer.get("reason")
+    assert reason is None or reason in schema["properties"]["reason"]["enum"]
+    return answer
+
 
 def validator_over(handler) -> ProcessingRequirementValidator:
     """A validator whose HTTP calls are answered by ``handler``."""
@@ -242,15 +263,15 @@ async def test_the_client_posts_the_requirement_to_processing() -> None:
 
     def handler(request: httpx2.Request) -> httpx2.Response:
         seen.append(request)
+        # Exactly what processing answered in the test environment.
         return httpx2.Response(
             200,
-            json={
-                "valid": True,
-                "status": "VALID",
-                "code": "EVALUATION_LOGIC_VALID",
-                "engine": "JQ",
-                "message": "The evaluation logic is valid.",
-            },
+            json=processing_answer(
+                valid=True,
+                reason=None,
+                engine="JQ",
+                details="The evaluation logic is valid.",
+            ),
         )
 
     async with validator_over(handler) as validator:
@@ -271,12 +292,12 @@ async def test_the_client_reports_rejected_logic_as_a_verdict() -> None:
     def handler(request: httpx2.Request) -> httpx2.Response:
         return httpx2.Response(
             200,
-            json={
-                "valid": False,
-                "status": "INVALID",
-                "message": "The jq implementation could not be compiled.",
-                "details": "syntax error, unexpected '|'",
-            },
+            json=processing_answer(
+                valid=False,
+                reason="INVALID_IMPLEMENTATION",
+                engine="JQ",
+                details="syntax error, unexpected '|'",
+            ),
         )
 
     async with validator_over(handler) as validator:
@@ -284,21 +305,16 @@ async def test_the_client_reports_rejected_logic_as_a_verdict() -> None:
 
     assert result.valid is False
     assert result.reason is ValidationFailureReason.invalid_implementation
-    # Processing's message and its underlying error, joined for the author.
-    assert result.details == (
-        "The jq implementation could not be compiled.\nsyntax error, unexpected '|'"
-    )
+    assert result.details == "syntax error, unexpected '|'"
 
 
 async def test_the_client_reports_an_unloadable_engine_as_unavailable() -> None:
     def handler(request: httpx2.Request) -> httpx2.Response:
         return httpx2.Response(
             200,
-            json={
-                "valid": False,
-                "status": "UNAVAILABLE",
-                "message": "The evaluation engine is unavailable.",
-            },
+            json=processing_answer(
+                valid=False, reason="UNAVAILABLE_ENGINE", engine="JQ"
+            ),
         )
 
     async with validator_over(handler) as validator:
@@ -306,6 +322,7 @@ async def test_the_client_reports_an_unloadable_engine_as_unavailable() -> None:
 
     assert result.valid is False
     assert result.reason is ValidationFailureReason.unavailable_engine
+    assert result.details is None
 
 
 async def test_the_client_raises_when_processing_cannot_be_reached() -> None:
@@ -326,17 +343,19 @@ async def test_the_client_raises_on_an_error_status() -> None:
             await validator.validate(QualityEngine.JQ, ".items | length")
 
 
-async def test_the_client_raises_on_a_status_it_cannot_name() -> None:
+@pytest.mark.parametrize("reason", [None, "SOMETHING_NEW"])
+async def test_the_client_raises_on_a_failure_it_cannot_name(
+    reason: Optional[str],
+) -> None:
     """A failure with no reason to report is not one to pass off as valid."""
 
     def handler(request: httpx2.Request) -> httpx2.Response:
         return httpx2.Response(
-            200,
-            json={"valid": False, "status": "SOMETHING_NEW", "message": "hm"},
+            200, json={"valid": False, "reason": reason, "engine": "JQ"}
         )
 
     async with validator_over(handler) as validator:
-        with pytest.raises(ProcessingError, match="unknown status SOMETHING_NEW"):
+        with pytest.raises(ProcessingError, match="unknown reason"):
             await validator.validate(QualityEngine.JQ, ".items | length")
 
 
@@ -344,8 +363,8 @@ async def test_the_client_raises_on_a_response_it_cannot_map() -> None:
     """A result missing fields must not reach the route as a KeyError."""
 
     def handler(request: httpx2.Request) -> httpx2.Response:
-        return httpx2.Response(200, json={"valid": True})
+        return httpx2.Response(200, json={"details": "no verdict"})
 
     async with validator_over(handler) as validator:
-        with pytest.raises(ProcessingError, match="message, status"):
+        with pytest.raises(ProcessingError, match="engine, valid"):
             await validator.validate(QualityEngine.JQ, ".items | length")

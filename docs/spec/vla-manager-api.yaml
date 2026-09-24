@@ -441,9 +441,12 @@ paths:
       description: >-
         Creates a VLA by rendering a list of VLA templates with supplied
         models.
-        Each entry in `qualityTemplates` is rendered and the resulting quality
+        Each entry in `qualityTemplates` is checked as
+        `POST /template/{id}/validate` would check it – the model must match
+        the template's variable schema, the template must render, and DVA
+        Processing must accept the rendered logic – and the resulting quality
         requirements are merged into the VLA’s `quality` array before
-        persistence.
+        persistence. If any entry fails, nothing is persisted.
       operationId: createVLAFromTemplates
       requestBody:
         required: true
@@ -459,7 +462,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Id'
         '400':
-          description: Failed to render one of the templates.
+          description: >-
+            One of the requirements is invalid: its model does not match the
+            template's variable schema, the template could not be rendered,
+            or DVA Processing rejected the rendered logic. `type` is
+            `INVALID_REQUIREMENT` and `title` names the requirement and why.
           content:
             application/json:
               schema:
@@ -476,6 +483,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationError'
+        '503':
+          description: >-
+            DVA Processing could not be reached to validate a requirement, so
+            the VLA was not created. `type` is `VALIDATION_UNAVAILABLE`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /livez:
     get:
       tags: [Health]

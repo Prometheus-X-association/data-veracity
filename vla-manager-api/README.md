@@ -27,7 +27,7 @@ deployment: this service is not yet in `test-env/compose.yml`.
 | `GET /vla` | VLA Manager UI, admin | List all VLAs |
 | `GET /vla/{id}` | DVA API, UI | Retrieve a VLA by its UUID — used during VLA resolution in the synchronous attestation flow |
 | `POST /vla` | VLA Manager UI | Create a VLA from a partial ODCS payload |
-| `POST /vla/from-templates` | VLA Manager UI | Create a VLA by rendering templates and merging the results into its `quality` array |
+| `POST /vla/from-templates` | VLA Manager UI | Create a VLA by rendering and validating templates (as `/template/{id}/validate` does) and merging the results into its `quality` array |
 | `DELETE /vla` | Admin only | Wipe all VLAs |
 | `GET /template` | VLA Manager UI | List all VLA templates |
 | `GET /template/{id}` | VLA Manager UI | Retrieve a template by its UUID |

@@ -1,3 +1,5 @@
+import { validateTemplate, validationFailureFromError } from './templates.js'
+
 const MAX_SAMPLE_BYTES = 32 * 1024
 const METADATA_FIELDS = ['name', 'description', 'dataReference', 'participants', 'tags']
 
@@ -79,7 +81,41 @@ function duplicateKey (templateId, model) {
   return `${templateId}:${JSON.stringify(model)}`
 }
 
-export function applyVlaAssistantDraft (state, draft, templates = []) {
+// Each requirement goes through `/template/{id}/validate`, exactly as the
+// requirement modal checks one before attaching it. A request that fails
+// outright reads as the service being unavailable, never as a pass.
+export async function checkDraftRequirements (requirements = [], validate = validateTemplate) {
+  return Promise.all((requirements || []).map(async requirement => {
+    try {
+      return await validate(requirement.templateId, requirement.model)
+    } catch (error) {
+      return validationFailureFromError(error)
+    }
+  }))
+}
+
+export function passingRequirements (requirements = [], checks = []) {
+  return (requirements || []).filter((_, index) => checks[index]?.valid === true)
+}
+
+const LIST_FIELDS = new Set(['participants', 'tags'])
+
+function listValue (value) {
+  const items = Array.isArray(value) ? value : String(value).split(',')
+  return items.map(item => String(item).trim()).filter(Boolean)
+}
+
+// Participants and tags are added to, never replaced, matching the builder's
+// own inputs, which ignore case when deciding whether an entry is new.
+function mergeList (existing = [], additions = []) {
+  const merged = [...existing]
+  for (const item of additions) {
+    if (!merged.some(present => present.toLowerCase() === item.toLowerCase())) merged.push(item)
+  }
+  return merged
+}
+
+export function applyVlaAssistantDraft (state, draft, templates = [], { includeMetadata = false } = {}) {
   const current = state || { metadata: {}, fragments: [] }
   const available = new Map((templates || []).map(template => [String(template.id), template]))
   const requirements = Array.isArray(draft?.requirements) ? draft.requirements : []
@@ -105,9 +141,14 @@ export function applyVlaAssistantDraft (state, draft, templates = []) {
   }
 
   const metadata = { ...(clone(current.metadata) || {}) }
-  for (const field of METADATA_FIELDS) {
+  for (const field of includeMetadata ? METADATA_FIELDS : []) {
     const value = draft?.metadata?.[field]
-    if (hasValue(value) && (!Array.isArray(value) || value.length > 0)) metadata[field] = clone(value)
+    if (!hasValue(value)) continue
+    if (LIST_FIELDS.has(field)) {
+      metadata[field] = mergeList(metadata[field] || [], listValue(value))
+    } else if (typeof value === 'string' && value.trim()) {
+      metadata[field] = value.trim()
+    }
   }
   return {
     metadata,

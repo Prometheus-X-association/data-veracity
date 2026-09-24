@@ -381,18 +381,25 @@
     message.success(`Attached requirement: ${req.requirement.name}`)
   }
 
-  const handleAssistantApply = (draft) => {
+  // The drawer hands over only the requirements that passed validation, and
+  // the metadata only when the author opted in.
+  const handleAssistantApply = (selection) => {
     try {
       const next = applyVlaAssistantDraft(
         { metadata: metadata.value, fragments: fragments.value },
-        draft,
-        availableTemplates.value
+        selection,
+        availableTemplates.value,
+        { includeMetadata: selection.includeMetadata }
       )
       const attached = next.fragments.length - fragments.value.length
       metadata.value = next.metadata
       fragments.value = next.fragments
       assistantOpen.value = false
-      message.success(`Attached ${attached} assistant requirement${attached === 1 ? '' : 's'}`)
+      const parts = []
+      if (attached) parts.push(`attached ${attached} requirement${attached === 1 ? '' : 's'}`)
+      if (selection.includeMetadata) parts.push('filled in the metadata')
+      const summary = parts.join(' and ') || 'nothing new to attach'
+      message.success(`Assistant draft applied: ${summary}.`)
     } catch (cause) {
       message.error(cause.message || 'The assistant draft could not be applied.')
     }

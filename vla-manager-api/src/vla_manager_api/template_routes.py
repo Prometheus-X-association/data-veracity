@@ -6,27 +6,20 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
-from jsonschema import ValidationError as JSONSchemaValidationError
-from jsonschema import validate as validate_json
 
 from .dependencies import get_requirement_validator, get_template_repo
 from .errors import http_error
-from .log import get_logger
 from .models import (
     IDDTO,
-    EvaluationMethod,
     RenderResult,
     Template,
     TemplateNew,
     TemplatePatch,
     TemplateValidationResult,
-    ValidationFailureReason,
 )
 from .template_repo import TemplateRepo
 from .templates import render_template
-from .validation import ProcessingError, RequirementValidator
-
-logger = get_logger(__name__)
+from .validation import RequirementValidator, check_requirement
 
 router = APIRouter()
 
@@ -146,38 +139,4 @@ async def validate_template_route(
             status.HTTP_404_NOT_FOUND, "No template with the given ID exists"
         )
 
-    em: EvaluationMethod = template.evaluation_method
-    try:
-        validate_json(instance=model, schema=em.variable_schema)
-    except JSONSchemaValidationError as exc:
-        return TemplateValidationResult(
-            valid=False,
-            reason=ValidationFailureReason.invalid_implementation,
-            engine=em.engine,
-            details=(
-                f"The template input does not match its variable schema.\n{exc.message}"
-            ),
-        )
-
-    try:
-        rendered = render_template(em.implementation_template, model)
-    # chevron raises no one error type, so this matches the render route above.
-    except Exception as exc:
-        return TemplateValidationResult(
-            valid=False,
-            reason=ValidationFailureReason.invalid_implementation,
-            engine=em.engine,
-            details=f"The template could not be rendered.\n{exc}",
-        )
-
-    try:
-        return await validator.validate(em.engine, rendered)
-    except ProcessingError as exc:
-        logger.warning("Could not validate rendered logic", error=str(exc))
-        return TemplateValidationResult(
-            valid=False,
-            reason=ValidationFailureReason.unavailable_engine,
-            engine=em.engine,
-            details=f"The evaluation service is unavailable.\n{exc}",
-            implementation=rendered,
-        )
+    return await check_requirement(template.evaluation_method, model, validator)

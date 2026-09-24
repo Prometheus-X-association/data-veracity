@@ -5,23 +5,61 @@ covers): list, get-by-id, create, get-not-found. Adds an explicit
 ``DELETE /vla`` test covering the bulk wipe.
 
 The tests override the ``get_repo`` dependency with an in-memory
-``FakeVLARepo`` so no Postgres is required.
+``FakeVLARepo`` so no Postgres is required, and the requirement validator
+with a fake so no DVA Processing is either.
 """
 
 from __future__ import annotations
 
 import asyncio
 from collections.abc import Iterator
+from typing import Any, Optional
 from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
 
-from vla_manager_api.dependencies import get_repo, get_template_repo
+from vla_manager_api.dependencies import (
+    get_repo,
+    get_requirement_validator,
+    get_template_repo,
+)
 from vla_manager_api.main import create_app
-from vla_manager_api.models import TemplateNew
+from vla_manager_api.models import (
+    QualityEngine,
+    TemplateNew,
+    TemplateValidationResult,
+    ValidationFailureReason,
+)
 from vla_manager_api.template_repo import FakeTemplateRepo
+from vla_manager_api.validation import ProcessingError
 from vla_manager_api.vla_repo import FakeVLARepo
+
+
+class FakeRequirementValidator:
+    """Accepts everything unless told to reject or to be unreachable."""
+
+    def __init__(self) -> None:
+        self.implementations: list[str] = []
+        self.reject: set[str] = set()
+        self.unavailable = False
+
+    async def validate(
+        self, engine: QualityEngine, implementation: str
+    ) -> TemplateValidationResult:
+        self.implementations.append(implementation)
+        if self.unavailable:
+            raise ProcessingError("processing service is unavailable")
+        reason: Optional[ValidationFailureReason] = None
+        if implementation in self.reject:
+            reason = ValidationFailureReason.invalid_implementation
+        return TemplateValidationResult(
+            valid=reason is None,
+            reason=reason,
+            engine=engine,
+            details="compile error" if reason else None,
+            implementation=implementation,
+        )
 
 
 @pytest.fixture
@@ -35,13 +73,20 @@ def fake_template_repo() -> FakeTemplateRepo:
 
 
 @pytest.fixture
+def fake_validator() -> FakeRequirementValidator:
+    return FakeRequirementValidator()
+
+
+@pytest.fixture
 def client(
     fake_repo: FakeVLARepo,
     fake_template_repo: FakeTemplateRepo,
+    fake_validator: FakeRequirementValidator,
 ) -> Iterator[TestClient]:
     app = create_app()
     app.dependency_overrides[get_repo] = lambda: fake_repo
     app.dependency_overrides[get_template_repo] = lambda: fake_template_repo
+    app.dependency_overrides[get_requirement_validator] = lambda: fake_validator
     # As a context manager TestClient runs the lifespan, which is what
     # builds the repos onto app.state.
     with TestClient(app) as test_client:
@@ -181,6 +226,109 @@ def test_vla_from_templates_creates_vla_with_rendered_quality(
     assert vla["description"] == "rendered VLA"
     assert len(vla["quality"]) == 1
     assert vla["quality"][0]["engine"] == "JQ"
+
+
+def _add_range_template(repo: FakeTemplateRepo) -> str:
+    template_id = asyncio.run(
+        repo.add(
+            TemplateNew.model_validate(
+                {
+                    "name": "Range check",
+                    "criterionType": "IN_RANGE",
+                    "targetAspect": "ACCURACY",
+                    "evaluationMethod": {
+                        "engine": "JQ",
+                        "variableSchema": {
+                            "type": "object",
+                            "properties": {"max": {"type": "integer"}},
+                            "required": ["max"],
+                        },
+                        "implementationTemplate": "{success: (.value <= {{max}})}",
+                    },
+                }
+            )
+        )
+    )
+    return str(template_id)
+
+
+def _from_templates(client: TestClient, *models: tuple[str, dict[str, Any]]):
+    return client.post(
+        "/vla/from-templates",
+        json={
+            "description": "checked VLA",
+            "qualityTemplates": [{"id": tid, "model": m} for tid, m in models],
+        },
+    )
+
+
+def test_vla_from_templates_persists_the_validated_implementation(
+    client: TestClient,
+    fake_template_repo: FakeTemplateRepo,
+    fake_validator: FakeRequirementValidator,
+) -> None:
+    template_id = _add_range_template(fake_template_repo)
+
+    r = _from_templates(client, (template_id, {"max": 10}))
+
+    assert r.status_code == 201, r.text
+    assert fake_validator.implementations == ["{success: (.value <= 10)}"]
+    vla = client.get(f"/vla/{r.json()['id']}").json()
+    assert vla["quality"] == [
+        {"engine": "JQ", "implementation": "{success: (.value <= 10)}"}
+    ]
+
+
+def test_vla_from_templates_rejects_input_outside_the_variable_schema(
+    client: TestClient,
+    fake_template_repo: FakeTemplateRepo,
+    fake_validator: FakeRequirementValidator,
+) -> None:
+    template_id = _add_range_template(fake_template_repo)
+
+    r = _from_templates(client, (template_id, {"max": "ten"}))
+
+    assert r.status_code == 400
+    assert r.json()["type"] == "INVALID_REQUIREMENT"
+    assert "Requirement 1 (Range check" in r.json()["title"]
+    assert "variable schema" in r.json()["title"]
+    # Input that does not fit the schema never reaches processing.
+    assert fake_validator.implementations == []
+    assert client.get("/vla").json() == []
+
+
+def test_vla_from_templates_rejects_logic_processing_cannot_compile(
+    client: TestClient,
+    fake_template_repo: FakeTemplateRepo,
+    fake_validator: FakeRequirementValidator,
+) -> None:
+    template_id = _add_range_template(fake_template_repo)
+    fake_validator.reject.add("{success: (.value <= 20)}")
+
+    r = _from_templates(client, (template_id, {"max": 10}), (template_id, {"max": 20}))
+
+    assert r.status_code == 400
+    assert r.json()["type"] == "INVALID_REQUIREMENT"
+    assert r.json()["title"].startswith("Requirement 2 (Range check")
+    assert "compile error" in r.json()["title"]
+    # The first requirement was fine, but the VLA is created whole or not
+    # at all.
+    assert client.get("/vla").json() == []
+
+
+def test_vla_from_templates_refuses_when_processing_is_unavailable(
+    client: TestClient,
+    fake_template_repo: FakeTemplateRepo,
+    fake_validator: FakeRequirementValidator,
+) -> None:
+    template_id = _add_range_template(fake_template_repo)
+    fake_validator.unavailable = True
+
+    r = _from_templates(client, (template_id, {"max": 10}))
+
+    assert r.status_code == 503
+    assert r.json()["type"] == "VALIDATION_UNAVAILABLE"
+    assert client.get("/vla").json() == []
 
 
 def test_create_vla_with_schema_field_round_trips(client: TestClient) -> None:

@@ -220,6 +220,38 @@ export const handlers = [
     }
   }),
 
+  // Stands in for DVA Processing: a model that fills every required variable
+  // and renders is treated as valid logic.
+  http.post('/api/template/:id/validate', async ({ params, request }) => {
+    const template = findTemplate(params.id)
+    if (!template) return responseForFixture(templateFailureFixtures.missingTemplate)
+
+    const body = await request.json()
+    const model = body.model || body
+    const engine = template.evaluationMethod.engine
+    const required = template.evaluationMethod.variableSchema?.required || []
+    const missing = required.filter(name => model[name] === undefined || model[name] === null || model[name] === '')
+    if (missing.length) {
+      return HttpResponse.json({
+        valid: false,
+        reason: 'INVALID_IMPLEMENTATION',
+        engine,
+        details: `The template input does not match its variable schema.\nMissing: ${missing.join(', ')}`
+      })
+    }
+    try {
+      const { implementation } = renderTemplate(template, model)
+      return HttpResponse.json({ valid: true, engine, implementation })
+    } catch (error) {
+      return HttpResponse.json({
+        valid: false,
+        reason: 'INVALID_IMPLEMENTATION',
+        engine,
+        details: `The template could not be rendered.\n${error.message}`
+      })
+    }
+  }),
+
   http.get('/api/vla', () => {
     console.log('Returning mock VLA list')
     return HttpResponse.json(vlas)

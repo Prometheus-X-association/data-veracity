@@ -2,8 +2,8 @@
 FastAPI routes for the VLA Manager API.
 
 VLA CRUD routes plus POST /vla/from-templates which fetches VLA
-templates, renders each with a model, and merges the rendered quality
-requirements into the VLA before persistence.
+templates, renders and validates each with a model, and merges the
+rendered quality requirements into the VLA before persistence.
 """
 
 from __future__ import annotations
@@ -13,11 +13,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
-from .dependencies import get_repo, get_template_repo
+from .dependencies import get_repo, get_requirement_validator, get_template_repo
 from .errors import http_error
-from .models import IDDTO, VLANew, VLANewFromTemplates
+from .models import IDDTO, ValidationFailureReason, VLANew, VLANewFromTemplates
 from .template_repo import TemplateRepo
-from .templates import render_template
+from .validation import RequirementValidator, check_requirement
 from .vla_repo import VLARepo
 
 router = APIRouter()
@@ -69,29 +69,42 @@ async def create_vla_from_templates(
     vla_req: VLANewFromTemplates,
     repo: VLARepo = Depends(get_repo),
     template_repo: TemplateRepo = Depends(get_template_repo),
+    validator: RequirementValidator = Depends(get_requirement_validator),
 ) -> IDDTO:
     base_vla = _wrap_vla(vla_req)
     base_vla.pop("qualityTemplates", None)
 
+    # Every requirement is checked before anything is persisted, so a VLA
+    # is either created whole or not at all.
     rendered_quality: list[dict[str, Any]] = []
-    for qt in vla_req.quality_templates:
+    for index, qt in enumerate(vla_req.quality_templates, start=1):
         template = await template_repo.by_id(qt.id)
         if template is None:
             raise http_error(
                 status.HTTP_404_NOT_FOUND, f"No template with ID {qt.id} exists"
             )
         em = template.evaluation_method
-        try:
-            implementation = render_template(em.implementation_template, qt.model)
-        except Exception as exc:
+        result = await check_requirement(em, qt.model, validator)
+        if not result.valid:
+            where = f"Requirement {index} ({template.name}, template {qt.id})"
+            # An outage is not the author's to fix, so it is not reported
+            # as a bad request; the VLA is still refused, as the builder
+            # refuses to attach a requirement it could not validate.
+            if result.reason == ValidationFailureReason.unavailable_engine:
+                raise http_error(
+                    status.HTTP_503_SERVICE_UNAVAILABLE,
+                    f"{where} could not be validated: {result.details}",
+                    type="VALIDATION_UNAVAILABLE",
+                )
             raise http_error(
                 status.HTTP_400_BAD_REQUEST,
-                f"Failed to render template {qt.id}",
-            ) from exc
+                f"{where} is invalid: {result.details}",
+                type="INVALID_REQUIREMENT",
+            )
         # The VLA is persisted as a plain document, so the engine goes in as
         # its value rather than as the enum member.
         rendered_quality.append(
-            {"engine": em.engine.value, "implementation": implementation}
+            {"engine": em.engine.value, "implementation": result.implementation}
         )
 
     existing_quality = base_vla.get("quality") or []
