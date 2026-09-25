@@ -1,0 +1,474 @@
+<!doctype html>
+<!--
+  One-off demo page: send POST /attestation to the provider DVA API in the
+  test network, standing in for the Data Connector.
+  Serve it with `python3 serve.py` (the DVA API sends no CORS headers).
+  _Authored by Claude Code_ – 2026-09-25, branch yassine-refactor.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attestation Request Demo</title>
+<style>
+  :root {
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface-2: #f8f9fb;
+    --text: #1b1f2a;
+    --muted: #667085;
+    --border: #dfe3ea;
+    --accent: #3b5bdb;
+    --on-accent: #ffffff;
+    --accent-soft: #e8edff;
+    --ok: #1f8a4c;
+    --ok-soft: #e3f5ea;
+    --bad: #c92a2a;
+    --bad-soft: #fdecec;
+    --ghost: #9aa3b2;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 8px 24px rgba(16, 24, 40, .06);
+    --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1218; --surface: #171b24; --surface-2: #1d2230; --text: #e6e9ef;
+      --muted: #98a2b3; --border: #2a3142; --accent: #7c93ff; --accent-soft: #232b48; --on-accent: #0f1218;
+      --ok: #4cc38a; --ok-soft: #173326; --bad: #ff6b6b; --bad-soft: #3a1c1f;
+      --ghost: #5d6678; --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1218; --surface: #171b24; --surface-2: #1d2230; --text: #e6e9ef;
+    --muted: #98a2b3; --border: #2a3142; --accent: #7c93ff; --accent-soft: #232b48; --on-accent: #0f1218;
+    --ok: #4cc38a; --ok-soft: #173326; --bad: #ff6b6b; --bad-soft: #3a1c1f;
+    --ghost: #5d6678; --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1240px; margin: 0 auto; padding: 40px 16px 64px; }
+  header { margin-bottom: 36px; }
+  header h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: -.01em; }
+  header p { margin: 0; color: var(--muted); max-width: 70ch; }
+  code, .mono { font-family: var(--mono); font-size: .92em; }
+
+  /* ---------- flow diagram ---------- */
+  .flow {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) 56px minmax(0, 2.6fr) 56px minmax(150px, 1fr);
+    align-items: start;
+    padding-top: 44px;
+  }
+  /* Ends sit over the side nodes' centres: half of one 1fr column (see grid above). */
+  .normal-path {
+    position: absolute; top: 4px; left: calc((100% - 112px) / 9.2); right: calc((100% - 112px) / 9.2); height: 38px;
+    border: 2px dashed var(--ghost); border-bottom: none; border-radius: 14px 14px 0 0;
+  }
+  .normal-path span {
+    position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+    background: var(--bg); padding: 0 10px; color: var(--muted); font-size: 13px; white-space: nowrap;
+  }
+  .normal-path::after {
+    content: ""; position: absolute; right: -7px; bottom: -8px;
+    border: 6px solid transparent; border-top: 8px solid var(--ghost);
+  }
+
+  .node {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px; box-shadow: var(--shadow); text-align: center; min-height: 190px;
+  }
+  .node .icon { font-size: 28px; line-height: 1; margin-bottom: 8px; }
+  .node h2 { margin: 0 0 4px; font-size: 16px; }
+  .node p { margin: 0; color: var(--muted); font-size: 13px; }
+  .node.bypassed { background: transparent; border: 2px dashed var(--ghost); box-shadow: none; color: var(--muted); }
+  .node.bypassed h2 { color: var(--muted); }
+  .tag {
+    display: inline-block; margin-top: 10px; padding: 2px 9px; border-radius: 99px;
+    font-size: 12px; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted);
+  }
+  .tag.live { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+  .tag.down { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+
+  .arrow { position: relative; height: 2px; background: var(--accent); margin: 95px 6px 0; }
+  .arrow::after {
+    content: ""; position: absolute; right: -2px; top: -6px;
+    border: 7px solid transparent; border-left: 10px solid var(--accent); border-right: none;
+  }
+  .arrow.ghost { background: repeating-linear-gradient(90deg, var(--ghost) 0 6px, transparent 6px 11px); }
+  .arrow.ghost::after { border-left-color: var(--ghost); }
+
+  /* ---------- the form (the "wire") ---------- */
+  .wire {
+    background: var(--surface); border: 2px solid var(--accent); border-radius: 16px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .wire-head {
+    display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between;
+    padding: 12px 18px; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  }
+  .verb { font-family: var(--mono); font-weight: 700; color: var(--accent); }
+  .wire-head .note { color: var(--muted); font-size: 13px; }
+  .wire-body { padding: 18px; display: grid; gap: 16px; }
+
+  label.field { display: grid; gap: 6px; }
+  .label-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .label-row b { font-size: 13px; font-weight: 600; }
+  .hint { font-size: 12.5px; color: var(--muted); }
+  .hint.ok { color: var(--ok); }
+  .hint.bad { color: var(--bad); }
+  input[type=text], textarea {
+    width: 100%; font: 13.5px/1.45 var(--mono); color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+    outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  input[type=text]:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  textarea { min-height: 220px; resize: vertical; tab-size: 2; }
+  textarea.invalid { border-color: var(--bad); }
+
+  .auto {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 6px 12px; align-items: center;
+    padding: 12px 14px; border-radius: 10px; background: var(--surface-2); border: 1px dashed var(--border);
+  }
+  .auto .title { grid-column: 1 / -1; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .auto .k { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .auto .v { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+
+  button {
+    font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); padding: 6px 12px;
+  }
+  button:hover { border-color: var(--accent); }
+  button.link { border: none; background: none; color: var(--accent); padding: 0; font-size: 12.5px; }
+  button.primary {
+    background: var(--accent); color: var(--on-accent); border: none; font-weight: 600; padding: 11px 18px; font-size: 15px;
+  }
+  button.primary:disabled { opacity: .55; cursor: progress; }
+  .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  details { border-top: 1px solid var(--border); }
+  details > summary { cursor: pointer; padding: 10px 18px; color: var(--muted); font-size: 13px; }
+  details pre { margin: 0; padding: 0 18px 16px; }
+  pre { font: 12.5px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .endpoint { display: flex; gap: 8px; align-items: center; padding: 0 18px 14px; }
+  .endpoint input { flex: 1; }
+
+  /* ---------- response ---------- */
+  #response { margin-top: 28px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 20px; }
+  .verdict { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+  .badge { font-weight: 700; padding: 6px 14px; border-radius: 99px; font-size: 14px; }
+  .badge.ok { background: var(--ok-soft); color: var(--ok); }
+  .badge.bad { background: var(--bad-soft); color: var(--bad); }
+  .results { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .results li {
+    display: grid; grid-template-columns: 22px 1fr; gap: 4px 10px; padding: 10px 12px;
+    border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border);
+  }
+  .results .mark { font-weight: 700; }
+  .results .mark.ok { color: var(--ok); }
+  .results .mark.bad { color: var(--bad); }
+  .results .meta { color: var(--muted); font-size: 12.5px; }
+  .results pre { grid-column: 2; margin: 4px 0 0; color: var(--muted); max-height: 160px; overflow: auto; }
+  .jws { margin-top: 16px; }
+  .jws h3 { font-size: 13px; margin: 0 0 6px; }
+  .jws pre { margin: 0; padding: 10px 12px; background: var(--surface-2); border-radius: 10px; border: 1px solid var(--border); max-height: 280px; overflow: auto; }
+
+  @media (max-width: 900px) {
+    .flow { grid-template-columns: 1fr; padding-top: 0; }
+    .normal-path { display: none; }
+    .node { min-height: 0; }
+    .arrow { width: 2px; height: 32px; margin: 6px auto; }
+    .arrow::after { right: -6px; top: auto; bottom: -2px; border: 7px solid transparent; border-top: 10px solid var(--accent); border-bottom: none; }
+    .arrow.ghost { background: repeating-linear-gradient(180deg, var(--ghost) 0 6px, transparent 6px 11px); }
+    .arrow.ghost::after { border-top-color: var(--ghost); border-left-color: transparent; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Attestation of Veracity – manual request</h1>
+    <p>During a data exchange, the <b>Data Connector</b> asks the provider's DVA to check the exchanged data
+      against a VLA and attest to the result. Here we take the Connector's place and send that request ourselves.</p>
+  </header>
+
+  <section class="flow" aria-label="Request flow">
+    <div class="normal-path"><span>normally: Connector → Provider DVA API, on every data exchange</span></div>
+
+    <div class="node bypassed">
+      <div class="icon">🔌</div>
+      <h2>Data Connector</h2>
+      <p>Would send this request during the exchange</p>
+      <span class="tag">replaced by this page</span>
+    </div>
+
+    <div class="arrow ghost" aria-hidden="true"></div>
+
+    <form class="wire" id="form" autocomplete="off">
+      <div class="wire-head">
+        <span><span class="verb">POST</span> <code>/attestation</code></span>
+        <span class="note">We play the Connector: this is exactly the body it would send.</span>
+      </div>
+
+      <div class="wire-body">
+        <label class="field">
+          <span class="label-row"><b>VLA ID</b><span class="hint" id="vlaHint">Loading VLAs from the VLA Manager…</span></span>
+          <input type="text" id="vlaID" list="vlaList" placeholder="00000000-0000-0000-0000-000000000000" spellcheck="false" required>
+          <datalist id="vlaList"></datalist>
+        </label>
+
+        <label class="field">
+          <span class="label-row">
+            <b>Data</b>
+            <span><span class="hint" id="dataHint"></span> &nbsp;<button type="button" class="link" id="example">Insert xAPI example</button></span>
+          </span>
+          <textarea id="data" spellcheck="false" placeholder='{ "statement": { … } }' required></textarea>
+        </label>
+
+        <div class="auto">
+          <span class="title">Filled in automatically (a new exchange per send)</span>
+          <span class="k">exchangeID</span><span class="v" id="exchangeID"></span>
+          <button type="button" class="link" id="regen" title="Generate new IDs">regenerate</button>
+          <span class="k">contractID</span><span class="v" id="contractID"></span><span></span>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="send" type="submit">Send attestation request →</button>
+          <span class="hint" id="status"></span>
+        </div>
+      </div>
+
+      <details>
+        <summary>Request body preview</summary>
+        <pre id="preview"></pre>
+      </details>
+      <details>
+        <summary>Endpoint settings</summary>
+        <div class="endpoint">
+          <span class="hint">Provider DVA API base</span>
+          <input type="text" id="base" spellcheck="false">
+        </div>
+        <div class="endpoint">
+          <span class="hint">VLA Manager API base</span>
+          <input type="text" id="vlaBase" spellcheck="false">
+        </div>
+      </details>
+    </form>
+
+    <div class="arrow" aria-hidden="true"></div>
+
+    <div class="node">
+      <div class="icon">🛡️</div>
+      <h2>Provider DVA API</h2>
+      <p>Checks the data against the VLA and issues an attestation credential if it passes</p>
+      <span class="tag" id="health">checking…</span>
+    </div>
+  </section>
+
+  <section id="response" hidden></section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const served = location.protocol.startsWith("http");
+// Behind serve.py everything is same-origin; opened from disk, try the ports directly.
+const defaults = served
+  ? { base: "/provider", vlaBase: "/vla-manager" }
+  : { base: "http://localhost:9091", vlaBase: "http://localhost:8000" };
+
+const EXAMPLE = {
+  statement: {
+    actor: { account: { name: "3f324ffd4112ed63", homePage: "https://www.inokufu.com/" }, objectType: "Agent" },
+    verb: { id: "https://w3id.org/xapi/netc/verbs/accessed" },
+    object: {
+      objectType: "Activity",
+      id: "https://www.inokufu.com/",
+      definition: { type: "https://w3id.org/xapi/acrossx/activities/webpage", name: { en: "Inokufu | Better data for better learning" } }
+    },
+    version: "1.0.0",
+    timestamp: "2024-09-04T17:01:06.887Z",
+    id: "c68c9086-fdfe-405e-aeac-fc5fa6e6bcc9",
+    stored: "2024-09-06T14:41:14.979Z"
+  }
+};
+
+function uuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const api = (key, path) => $(key).value.replace(/\/+$/, "") + path;
+
+let vlas = [];
+
+function regenerate() {
+  $("exchangeID").textContent = uuid();
+  $("contractID").textContent = uuid();
+  refresh();
+}
+
+function parsedData() {
+  try { return { ok: true, value: JSON.parse($("data").value) }; }
+  catch (e) { return { ok: false, error: e.message }; }
+}
+
+function body() {
+  const d = parsedData();
+  return {
+    exchangeID: $("exchangeID").textContent,
+    contractID: $("contractID").textContent,
+    vlaID: $("vlaID").value.trim(),
+    data: d.ok ? d.value : "<invalid JSON>"
+  };
+}
+
+function refresh() {
+  $("preview").textContent = JSON.stringify(body(), null, 2);
+
+  const text = $("data").value.trim();
+  const d = parsedData();
+  $("data").classList.toggle("invalid", text !== "" && !d.ok);
+  $("dataHint").className = "hint " + (text === "" ? "" : d.ok ? "ok" : "bad");
+  $("dataHint").textContent = text === "" ? "" : d.ok ? "valid JSON" : "invalid JSON";
+
+  const id = $("vlaID").value.trim();
+  const match = vlas.find((v) => v.id === id);
+  if (match) { $("vlaHint").className = "hint ok"; $("vlaHint").textContent = "✓ " + (match.name || match.dataProduct || "VLA found"); }
+  else if (id && vlas.length) { $("vlaHint").className = "hint bad"; $("vlaHint").textContent = "not in the VLA Manager"; }
+  else if (vlas.length) { $("vlaHint").className = "hint"; $("vlaHint").textContent = `${vlas.length} VLA(s) available – pick or paste one`; }
+}
+
+async function loadVlas() {
+  try {
+    const r = await fetch(api("vlaBase", "/vla"));
+    if (!r.ok) throw new Error(r.status);
+    vlas = await r.json();
+    $("vlaList").innerHTML = vlas
+      .map((v) => `<option value="${esc(v.id)}">${esc(v.name || v.dataProduct || "")}</option>`)
+      .join("");
+    if (!$("vlaID").value && vlas.length) $("vlaID").value = vlas[vlas.length - 1].id;
+  } catch {
+    $("vlaHint").className = "hint";
+    $("vlaHint").textContent = "VLA list unavailable – paste an ID";
+  }
+  refresh();
+}
+
+async function checkHealth() {
+  const tag = $("health");
+  try {
+    const r = await fetch(api("base", "/readyz"));
+    tag.className = "tag " + (r.ok ? "live" : "down");
+    tag.textContent = r.ok ? "● ready" : `● not ready (${r.status})`;
+  } catch {
+    tag.className = "tag down";
+    tag.textContent = "● unreachable";
+  }
+}
+
+function decodeJws(jws) {
+  try {
+    const part = jws.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const bytes = Uint8Array.from(atob(part), (c) => c.charCodeAt(0));
+    return JSON.stringify(JSON.parse(new TextDecoder().decode(bytes)), null, 2);
+  } catch { return null; }
+}
+
+function showResponse(html) {
+  const out = $("response");
+  out.hidden = false;
+  out.innerHTML = `<div class="card">${html}</div>`;
+  out.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function renderSuccess(res, ms) {
+  const results = (res.evaluationResults || []).map((r) => `
+    <li>
+      <span class="mark ${r.success ? "ok" : "bad"}">${r.success ? "✓" : "✕"}</span>
+      <span><b>${esc(r.engine)}</b> <span class="meta">${esc(r.timestamp || "")}</span></span>
+      ${r.error ? `<pre>${esc(r.error)}</pre>` : ""}
+      ${r.details ? `<pre>${esc(r.details)}</pre>` : ""}
+    </li>`).join("");
+  const decoded = res.jws ? decodeJws(res.jws) : null;
+  showResponse(`
+    <div class="verdict">
+      <span class="badge ${res.evaluationPassing ? "ok" : "bad"}">${res.evaluationPassing ? "✓ Data passes the VLA" : "✕ Data fails the VLA"}</span>
+      <span class="hint">200 OK · ${ms} ms · ${res.evaluationResults?.length ?? 0} requirement(s) evaluated</span>
+    </div>
+    <ul class="results">${results}</ul>
+    ${res.jws ? `
+      <div class="jws">
+        <h3>Attestation of Veracity (JWS) <button type="button" class="link" id="copyJws">copy</button></h3>
+        <pre>${esc(res.jws)}</pre>
+      </div>
+      ${decoded ? `<details class="jws" open><summary>Decoded credential payload</summary><pre>${esc(decoded)}</pre></details>` : ""}`
+    : `<p class="hint">No credential issued – one is only issued when every requirement passes.</p>`}
+  `);
+  const copy = $("copyJws");
+  if (copy) copy.onclick = () => navigator.clipboard.writeText(res.jws).then(() => (copy.textContent = "copied"));
+}
+
+function renderError(status, text, ms) {
+  let detail = text;
+  try {
+    const j = JSON.parse(text);
+    detail = [j.title, j.detail].filter(Boolean).join(" – ") || JSON.stringify(j, null, 2);
+  } catch {}
+  showResponse(`
+    <div class="verdict"><span class="badge bad">✕ Request rejected</span><span class="hint">${status} · ${ms} ms</span></div>
+    <pre>${esc(detail)}</pre>`);
+}
+
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const d = parsedData();
+  if (!d.ok) { $("data").focus(); return; }
+  const btn = $("send");
+  btn.disabled = true;
+  $("status").textContent = "Evaluating…";
+  const t0 = performance.now();
+  try {
+    const r = await fetch(api("base", "/attestation"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body())
+    });
+    const ms = Math.round(performance.now() - t0);
+    const text = await r.text();
+    if (r.ok) renderSuccess(JSON.parse(text), ms);
+    else renderError(`${r.status} ${r.statusText}`, text, ms);
+    regenerate();
+  } catch (err) {
+    showResponse(`
+      <div class="verdict"><span class="badge bad">✕ Could not reach the provider DVA API</span></div>
+      <p>${esc(err.message)}</p>
+      ${served ? "" : `<p class="hint">Opened from disk, the browser blocks this call: the DVA API sends no CORS headers.
+        Run <code>python3 serve.py</code> next to this file and open <code>http://localhost:8765</code>.</p>`}`);
+  } finally {
+    btn.disabled = false;
+    $("status").textContent = "";
+  }
+});
+
+$("example").onclick = () => { $("data").value = JSON.stringify(EXAMPLE, null, 2); refresh(); };
+$("regen").onclick = regenerate;
+$("data").addEventListener("input", refresh);
+$("vlaID").addEventListener("input", refresh);
+$("base").addEventListener("change", () => { refresh(); checkHealth(); });
+$("vlaBase").addEventListener("change", loadVlas);
+
+$("base").value = defaults.base;
+$("vlaBase").value = defaults.vlaBase;
+regenerate();
+loadVlas();
+checkHealth();
+</script>
+</body>
+</html>
