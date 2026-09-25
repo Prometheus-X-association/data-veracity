@@ -147,12 +147,16 @@ class RequestContextMiddleware:
             return
 
         headers: dict[bytes, bytes] = dict(scope["headers"])
-        request_id = headers.get(REQUEST_ID_HEADER, b"").decode("latin-1") or uuid4().hex
+        request_id = (
+            headers.get(REQUEST_ID_HEADER, b"").decode("latin-1") or uuid4().hex
+        )
 
         async def send_with_id(message: Message) -> None:
             if message["type"] == "http.response.start":
                 response_headers: list[Any] = list(message.get("headers", []))
-                response_headers.append((REQUEST_ID_HEADER, request_id.encode("latin-1")))
+                response_headers.append(
+                    (REQUEST_ID_HEADER, request_id.encode("latin-1"))
+                )
                 message = {**message, "headers": response_headers}
             await send(message)
 

@@ -80,7 +80,9 @@ def _as_result(engine: QualityEngine, code: int, body: Any) -> dict[str, Any]:
     """
     if isinstance(body, dict) and isinstance(body.get("success"), bool):
         return body
-    reason = (body.get("title") or body.get("detail")) if isinstance(body, dict) else None
+    reason = (
+        (body.get("title") or body.get("detail")) if isinstance(body, dict) else None
+    )
     return {
         "engine": engine.value,
         "timestamp": datetime.now(timezone.utc).isoformat(),

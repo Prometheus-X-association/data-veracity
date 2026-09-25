@@ -20,7 +20,7 @@ from vla_manager_api.validation import ProcessingError
 from vla_manager_api.vla_repo import FakeVLARepo
 
 QUALITY = [
-    {"engine": "JQ", "implementation": "{success: (.id != null), details: \"id\"}"},
+    {"engine": "JQ", "implementation": '{success: (.id != null), details: "id"}'},
     {"engine": "SCHEMA", "implementation": '{"type": "object"}'},
 ]
 

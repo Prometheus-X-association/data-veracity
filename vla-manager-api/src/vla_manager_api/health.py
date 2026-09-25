@@ -28,7 +28,9 @@ router = APIRouter(tags=["Health"])
 def _health(
     status: Literal["pass", "warn", "fail"], output: Optional[str] = None
 ) -> JSONResponse:
-    body = {"status": status} if output is None else {"status": status, "output": output}
+    body = (
+        {"status": status} if output is None else {"status": status, "output": output}
+    )
     return JSONResponse(
         body,
         status_code=503 if status == "fail" else 200,
