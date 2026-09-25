@@ -23,3 +23,8 @@ vlaManager:
 
 vcManager:
   url: "$DVA_VC_MANAGER_URL:http://localhost:8000"
+
+# The logical issuer this DVA names in the AoVs it has issued (the credential's
+# `issuer_id` claim; the signing did:key is the VC Manager's own).
+issuer:
+  id: "$DVA_ISSUER_ID:dva-api"

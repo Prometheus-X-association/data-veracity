@@ -2,6 +2,7 @@
 
 package hu.bme.mit.ftsrg.dva.api.route
 
+import hu.bme.mit.ftsrg.dva.api.Issuer
 import hu.bme.mit.ftsrg.dva.api.err.ErrType
 import hu.bme.mit.ftsrg.dva.api.testutil.*
 import hu.bme.mit.ftsrg.dva.api.upstream.Endpoint
@@ -49,6 +50,8 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import java.net.ConnectException
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
@@ -64,7 +67,10 @@ private val emptyVLA = buildJsonObject {}
 
 private val passingData = buildJsonObject { putJsonObject("result") { put("success", true) } }
 
+private const val recordID = "rec-0001"
+
 private val attestationRequest = AttestationRequest(
+    id = recordID,
     exchangeID = xchgUUID,
     contractID = contractUUID,
     vlaID = vlaUUID,
@@ -82,8 +88,17 @@ private val failingEvalResult = EvaluationResult(
     error = "test engine failed due to foo bar baz"
 )
 
-private val testJWS = "jws_placeholder"
-private val successfullyIssuedAoV = AoVIssueResponse(jws = testJWS, vcID = Uuid.random())
+private val testIssuer = Issuer(id = "test-issuer")
+
+@OptIn(ExperimentalEncodingApi::class)
+private fun compactJWS(claims: String): String {
+    val b64 = Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT)
+    return listOf("""{"alg":"EdDSA"}""", claims, "signature").joinToString(".") { b64.encode(it.encodeToByteArray()) }
+}
+
+private val testVcID = Uuid.random()
+private val testJWS = compactJWS("""{"credentialSubject":{"vc_id":"$testVcID"}}""")
+private val successfullyIssuedAoV = AoVIssueResponse(jws = testJWS)
 
 private val successfullyVerifiedAoV = AoVVerificationResponse(verified = true)
 
@@ -96,7 +111,7 @@ private val expectedLog = RequestLog(
     evaluationPassing = true,
     evaluationResults = listOf(passingEvalResult),
     receivedDate = FixedClock.now(),
-    vcID = successfullyIssuedAoV.vcID,
+    vcID = testVcID,
 )
 
 private val verificationRequest = AttestationVerificationRequest(jws = testJWS)
@@ -180,15 +195,52 @@ class AoVRoutesTest {
         val vcRequestSent: AoVIssueRequest = sentBody(Endpoint.AOV_ISSUE)
         assertEquals(
             AoVIssueRequest(
+                validSince = FixedClock.now(),
                 subject = hash(passingData),
+                issuerId = testIssuer.id,
+                recordId = recordID,
                 contractId = contractUUID,
                 dataExchangeId = xchgUUID,
+                payload = "checksum:sha256:${hash(passingData)}",
                 evaluationResults = listOf(passingEvalResult)
             ), vcRequestSent
         )
 
         // Assert db logging
         assertLogged(expectedLog)
+    }
+
+    @Test
+    fun `attestation names a fresh record ID when the request gives none`() = testApplication {
+        // Arrange
+        setupApplication(upstreams())
+        val client = createTestClient()
+
+        // Act
+        client.postAttestation(attestationRequest.copy(id = null)).apply { assertEquals(OK, status) }
+
+        // Assert
+        val vcRequestSent: AoVIssueRequest = sentBody(Endpoint.AOV_ISSUE)
+        Uuid.parse(vcRequestSent.recordId)
+    }
+
+    @Test
+    fun `attestation returns 502 when the issued JWS names no credential`() = testApplication {
+        // Arrange
+        val noVcID = AoVIssueResponse(jws = compactJWS("""{"credentialSubject":{}}"""))
+        setupApplication(upstreams(issue = { jsonResponse(noVcID) }))
+        val client = createTestClient()
+
+        // Act
+        // Assert response payload
+        client.postAttestation().apply {
+            assertEquals(BadGateway, status)
+            assertTrue(bodyAsText().contains("credential ID"), bodyAsText())
+        }
+
+        // Assert db logging
+        assertErrorLogged()
+        assertNull(capturedLog().vcID)
     }
 
     @Test
@@ -447,6 +499,7 @@ class AoVRoutesTest {
             val testModule = module {
                 single<RequestLogRepo> { reqsRepo }
                 single<Clock> { FixedClock }
+                single<Issuer> { testIssuer }
                 single<HttpClient> {
                     HttpClient(
                         MockEngine { req -> sentRequests += req; handle(req) }) { configureForUpstreams() }

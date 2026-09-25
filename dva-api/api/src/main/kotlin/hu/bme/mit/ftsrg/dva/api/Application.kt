@@ -69,7 +69,9 @@ fun Application.installPlugins() {
 fun Application.configureKoin() {
     val upstreamURLs: Map<Upstream, String> =
         Upstream.entries.associateWith { environment.config.property(it.configKey).getString() }
+    val issuer = Issuer(id = environment.config.property("issuer.id").getString())
     val appModule = module {
+        single<Issuer> { issuer }
         single<HttpClient> { HttpClient(CIO) { configureForUpstreams() } }
         single<RequestLogRepo> { PgRequestLogRepo() }
         single<Clock> { Clock.System }

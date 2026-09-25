@@ -9,6 +9,7 @@ services:
     environment:
       DVA_PROCESSING_URL: http://dva-processing-provider:5000
       DVA_VC_MANAGER_URL: http://dva-vc-manager-provider:8000
+      DVA_ISSUER_ID: dva-api-provider
       DVA_POSTGRES_URL: postgresql://postgres-provider:5432/dva
       DVA_VLA_MANAGER_URL: http://vlamanager-backend:8000
     ports: [9091:9090]
@@ -26,6 +27,7 @@ services:
     environment:
       DVA_PROCESSING_URL: http://dva-processing-consumer:5000
       DVA_VC_MANAGER_URL: http://dva-vc-manager-consumer:8000
+      DVA_ISSUER_ID: dva-api-consumer
       DVA_POSTGRES_URL: postgresql://postgres-consumer:5432/dva
       DVA_VLA_MANAGER_URL: http://vlamanager-backend:8000
     ports: [9092:9090]

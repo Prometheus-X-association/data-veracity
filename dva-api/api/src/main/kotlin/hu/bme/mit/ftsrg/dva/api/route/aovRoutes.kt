@@ -2,6 +2,7 @@
 
 package hu.bme.mit.ftsrg.dva.api.route
 
+import hu.bme.mit.ftsrg.dva.api.Issuer
 import hu.bme.mit.ftsrg.dva.api.err.MissingVLAErr
 import hu.bme.mit.ftsrg.dva.api.err.toRequestLogError
 import hu.bme.mit.ftsrg.dva.api.resource.Attestations
@@ -10,6 +11,7 @@ import hu.bme.mit.ftsrg.dva.api.upstream.Upstream
 import hu.bme.mit.ftsrg.dva.api.upstream.UpstreamClient
 import hu.bme.mit.ftsrg.dva.api.upstream.UpstreamErr
 import hu.bme.mit.ftsrg.dva.api.util.hash
+import hu.bme.mit.ftsrg.dva.api.util.vcIDOf
 import hu.bme.mit.ftsrg.dva.dto.api.AttestationRequest
 import hu.bme.mit.ftsrg.dva.dto.api.AttestationResponse
 import hu.bme.mit.ftsrg.dva.dto.api.AttestationVerificationRequest
@@ -37,12 +39,14 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalTime::class, ExperimentalUuidApi::class)
 fun Application.aovRoutes() {
     val reqsRepo by inject<RequestLogRepo>()
     val upstreams by inject<UpstreamClient>()
     val clock by inject<Clock>()
+    val issuer by inject<Issuer>()
 
     routing {
         post<Attestations> {
@@ -82,22 +86,36 @@ fun Application.aovRoutes() {
 
                 // TODO: Is it correct to only create VC when every check passes?
                 val vcIssueResult: AoVIssueResponse? = if (allSuccess) {
+                    val checksum = hash(request.data)
                     upstreams.call(
                         endpoint = Endpoint.AOV_ISSUE,
                         method = HttpMethod.Post,
                     ) {
                         setBody(
                             AoVIssueRequest(
+                                validSince = now,
                                 // TODO: Determine what the subject should be
-                                subject = hash(request.data),
+                                subject = checksum,
+                                issuerId = issuer.id,
+                                // The caller's own ID for the record, if it gave one
+                                recordId = request.id ?: Uuid.random().toString(),
                                 contractId = request.contractID,
                                 dataExchangeId = request.exchangeID,
+                                // Commits the AoV to the exact data it attests
+                                payload = "checksum:sha256:$checksum",
                                 evaluationResults = results,
                             )
                         )
                     }
                 } else null
-                log = log.copy(vcID = vcIssueResult?.vcID)
+                val vcID = vcIssueResult?.let {
+                    try {
+                        vcIDOf(it.jws)
+                    } catch (e: IllegalArgumentException) {
+                        throw UpstreamErr.UnexpectedBody(Upstream.VC_MANAGER, "JWS without a credential ID: ${e.message}")
+                    }
+                }
+                log = log.copy(vcID = vcID)
 
                 call.respond<AttestationResponse>(
                     OK,
