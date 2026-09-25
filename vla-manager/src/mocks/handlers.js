@@ -2,35 +2,46 @@ import { http, HttpResponse } from 'msw'
 import { v4 as uuid } from 'uuid'
 import { renderTemplate } from './templates'
 import { responseForFixture, templateFailureFixtures } from './failureFixtures'
+import { vlaRequirements } from '../api/vla.js'
 
 const vlas = [
   {
     id: uuid(),
     name: 'Customer events quality',
-    description: 'Mocked VLA one',
+    description: { purpose: 'Mocked VLA one' },
     participants: ['analytics-team', 'customer-data-provider'],
     dataReference: 'customer-events',
     tags: ['freshness', 'schema'],
-    quality: [
-      {
-        engine: 'JQ',
-        implementation: '.foo == .bar'
-      }
-    ]
+    schema: [{
+      name: 'data',
+      logicalType: 'object',
+      quality: [
+        {
+          type: 'custom',
+          engine: 'JQ',
+          implementation: '.foo == .bar'
+        }
+      ]
+    }]
   },
   {
     id: uuid(),
     name: 'Learning record quality',
-    description: 'Mocked VLA two',
+    description: { purpose: 'Mocked VLA two' },
     participants: ['learning-platform'],
     dataReference: 'xapi-statements',
     tags: ['accuracy'],
-    quality: [
-      {
-        engine: 'GREAT_EXPECTATIONS',
-        implementation: '... great expectations yaml ...'
-      }
-    ]
+    schema: [{
+      name: 'data',
+      logicalType: 'object',
+      quality: [
+        {
+          type: 'custom',
+          engine: 'GREAT_EXPECTATIONS',
+          implementation: '... great expectations yaml ...'
+        }
+      ]
+    }]
   }
 ]
 
@@ -309,6 +320,17 @@ export const handlers = [
     console.log('Mock backend received VLA from-templates request:')
     console.log(body)
 
+    const rendered = (body.qualityTemplates || []).map(({ id, model }) => {
+      const template = findTemplate(id)
+      if (template === undefined) {
+        throw new Error(`Template ${id} was not found`)
+      }
+
+      return { type: 'custom', ...renderTemplate(template, model) }
+    })
+    // As the service does: rendered requirements join the first schema
+    // object, one being added when the VLA declares none.
+    const [first = { name: 'data', logicalType: 'object' }, ...rest] = body.schema || []
     const vla = {
       id: uuid(),
       name: body.name || `Mock-generated VLA ${vlaCounter++}`,
@@ -316,14 +338,7 @@ export const handlers = [
       participants: body.participants || [],
       dataReference: body.dataReference || '',
       tags: body.tags || [],
-      quality: (body.qualityTemplates || []).map(({ id, model }) => {
-        const template = findTemplate(id)
-        if (template === undefined) {
-          throw new Error(`Template ${id} was not found`)
-        }
-
-        return renderTemplate(template, model)
-      })
+      schema: [{ ...first, quality: [...(first.quality || []), ...rendered] }, ...rest]
     }
     vlas.push(vla)
     console.log('Returning mock response for /api/vla/from-templates request:')
@@ -344,7 +359,7 @@ export const handlers = [
 
     // As for a single fragment: a status of invalid or failed fails every check.
     const failed = data?.status === 'invalid' || data?.status === 'failed'
-    const resp = (vla.quality || []).map(({ engine }) => ({
+    const resp = vlaRequirements(vla).map(({ engine }) => ({
       engine,
       timestamp: new Date().toISOString(),
       success: !failed,

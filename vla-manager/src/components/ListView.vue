@@ -52,13 +52,13 @@
       <div v-if="vlas.length > 0">
         <n-grid x-gap="16" y-gap="16" cols="1 s:2 m:3 l:4" responsive="screen">
           <n-grid-item v-for="vla in vlas" :key="vla.id">
-            <n-card :title="vla.name || vla.description || 'Unnamed VLA'" hoverable class="vla-card">
+            <n-card :title="vla.name || vlaPurpose(vla) || 'Unnamed VLA'" hoverable class="vla-card">
               <template #header-extra>
                 <n-tag type="info" size="small" round>VLA</n-tag>
               </template>
 
               <div class="vla-content">
-                <n-text depth="3" class="vla-desc">{{ vla.description || 'No description provided' }}</n-text>
+                <n-text depth="3" class="vla-desc">{{ vlaPurpose(vla) || 'No description provided' }}</n-text>
 
                 <div class="metadata-list">
                   <div v-if="vla.dataReference" class="metadata-row">
@@ -87,7 +87,7 @@
                   <n-text strong class="block mb-2">Engines:</n-text>
                   <n-space size="small">
                     <n-tag
-                      v-for="engine in new Set(vla.quality.map(q => q.engine))"
+                      v-for="engine in new Set(vlaRequirements(vla).map(q => q.engine))"
                       :key="engine"
                       type="success"
                       size="small"
@@ -142,6 +142,7 @@
   import SampleModal from './SampleModal.vue'
   import EngineBadge from './EngineBadge.vue'
   import { evaluateVla } from '../api/templates.js'
+  import { vlaPurpose, vlaRequirements } from '../api/vla.js'
 
   // We define a simple SVG icon for Add to avoid external icon dependencies
   const AddIcon = defineComponent({
@@ -175,8 +176,8 @@
   const onDataSelected = async (newData) => {
     const vla = selectedVLA.value
     if (!vla) return
-    const quality = vla.quality || []
-    trial.value = { name: vla.name || vla.description || 'VLA', loading: true, rows: [], error: null }
+    const quality = vlaRequirements(vla)
+    trial.value = { name: vla.name || vlaPurpose(vla) || 'VLA', loading: true, rows: [], error: null }
     trialOpen.value = true
     try {
       const results = await evaluateVla(vla.id, newData)

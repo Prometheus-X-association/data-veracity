@@ -188,6 +188,7 @@
   import VlaBuilderAssistant from './VlaBuilderAssistant.vue'
   import { evaluateTemplate, listTemplates, renderTemplate } from '../api/templates.js'
   import { templateBugReport } from '../api/templatePresentation.js'
+  import { vlaFromTemplatesBody } from '../api/vla.js'
   import {
     applyVlaAssistantDraft,
     planDraftChanges,
@@ -364,19 +365,11 @@
   }
 
   const handleCreateVLA = async () => {
-    const description = metadata.value.description.trim()
-    const body = {
-      name: metadata.value.name.trim(),
-      // Optional, so left out rather than sent empty.
-      ...(description ? { description } : {}),
-      schema: {
-        properties: {
-          timestamp: { type: "string" },
-          result: { type: "integer" }
-        }
-      },
+    const body = vlaFromTemplatesBody({
+      name: metadata.value.name,
+      description: metadata.value.description,
       qualityTemplates: [...toRaw(fragments.value.map((f) => f.data))]
-    }
+    })
 
     try {
       await axios.post('/api/vla/from-templates', body)
