@@ -1,14 +1,23 @@
 {
-  "description": "Data is recent and valid",
-  "schema": {
-    "properties": {
-      "timestamp": {
-        "type": "string"
-      },
-      "result": {
-        "type": "integer"
-      }
-    }
+  "name": "Recent and valid data",
+  "description": {
+    "purpose": "Data is recent and valid"
   },
+  "schema": [
+    {
+      "name": "data",
+      "logicalType": "object",
+      "properties": [
+        {
+          "name": "timestamp",
+          "logicalType": "string"
+        },
+        {
+          "name": "result",
+          "logicalType": "integer"
+        }
+      ]
+    }
+  ],
   "qualityTemplates": []
 }

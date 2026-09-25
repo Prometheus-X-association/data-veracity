@@ -1,23 +1,34 @@
 {
-  "description": "Data is recent and valid",
-  "schema": {
-    "properties": {
-      "timestamp": {
-        "type": "string"
-      },
-      "result": {
-        "type": "integer"
-      }
-    }
+  "name": "Recent and valid data",
+  "description": {
+    "purpose": "Data is recent and valid"
   },
-  "quality": [
+  "schema": [
     {
-      "engine": "JQ",
-      "implementation": "{ success: .timestamp >= '20250101T0000Z' }"
-    },
-    {
-      "engine": "JQ",
-      "implementation": "{ success: .result >= 1 and .result <= 5 }"
+      "name": "data",
+      "logicalType": "object",
+      "properties": [
+        {
+          "name": "timestamp",
+          "logicalType": "string"
+        },
+        {
+          "name": "result",
+          "logicalType": "integer"
+        }
+      ],
+      "quality": [
+        {
+          "type": "custom",
+          "engine": "JQ",
+          "implementation": "{ success: .timestamp >= '20250101T0000Z' }"
+        },
+        {
+          "type": "custom",
+          "engine": "JQ",
+          "implementation": "{ success: .result >= 1 and .result <= 5 }"
+        }
+      ]
     }
   ]
 }

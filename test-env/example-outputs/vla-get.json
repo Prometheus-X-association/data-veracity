@@ -4,25 +4,35 @@
     "kind": "DataContract",
     "version": "0.1.0",
     "status": "active",
-    "description": "Data is recent and valid",
-    "schema": {
-      "properties": {
-        "timestamp": {
-          "type": "string"
-        },
-        "result": {
-          "type": "integer"
-        }
-      }
+    "description": {
+      "purpose": "Data is recent and valid"
     },
-    "quality": [
+    "schema": [
       {
-        "engine": "JQ",
-        "implementation": "{ success: .timestamp >= '20250101T0000Z' }"
-      },
-      {
-        "engine": "JQ",
-        "implementation": "{ success: .result >= 1 and .result <= 5 }"
+        "name": "data",
+        "logicalType": "object",
+        "properties": [
+          {
+            "name": "timestamp",
+            "logicalType": "string"
+          },
+          {
+            "name": "result",
+            "logicalType": "integer"
+          }
+        ],
+        "quality": [
+          {
+            "type": "custom",
+            "engine": "JQ",
+            "implementation": "{ success: .timestamp >= '20250101T0000Z' }"
+          },
+          {
+            "type": "custom",
+            "engine": "JQ",
+            "implementation": "{ success: .result >= 1 and .result <= 5 }"
+          }
+        ]
       }
     ]
   },
@@ -31,21 +41,30 @@
     "kind": "DataContract",
     "version": "0.1.0",
     "status": "active",
-    "description": "Data has given timestmap",
-    "schema": {
-      "properties": {
-        "timestamp": {
-          "type": "string"
-        },
-        "result": {
-          "type": "integer"
-        }
-      }
+    "description": {
+      "purpose": "Data has given timestmap"
     },
-    "quality": [
+    "schema": [
       {
-        "engine": "JQ",
-        "implementation": "{ success: .date == \"20250101\" }"
+        "name": "data",
+        "logicalType": "object",
+        "properties": [
+          {
+            "name": "timestamp",
+            "logicalType": "string"
+          },
+          {
+            "name": "result",
+            "logicalType": "integer"
+          }
+        ],
+        "quality": [
+          {
+            "type": "custom",
+            "engine": "JQ",
+            "implementation": "{ success: .date == \"20250101\" }"
+          }
+        ]
       }
     ]
   }
