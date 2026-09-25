@@ -18,6 +18,7 @@ from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
+from open_data_contract_standard.model import OpenDataContractStandard
 
 from vla_manager_api.dependencies import (
     get_repo,
@@ -107,12 +108,13 @@ def test_get_vla_not_found(client: TestClient) -> None:
 def test_create_vla_returns_id_and_appears_in_subsequent_gets(
     client: TestClient,
 ) -> None:
-    payload = {
-        "description": "Test VLA",
-        "quality": [
-            {"engine": "JQ", "implementation": "{ success: true }"},
-        ],
-    }
+    schema = [
+        {
+            "name": "data",
+            "quality": [{"engine": "JQ", "implementation": "{ success: true }"}],
+        }
+    ]
+    payload = {"description": {"purpose": "Test VLA"}, "schema": schema}
     r = client.post("/vla", json=payload)
     assert r.status_code == 201
     body = r.json()
@@ -124,14 +126,12 @@ def test_create_vla_returns_id_and_appears_in_subsequent_gets(
     assert r2.status_code == 200
     persisted = r2.json()
     assert persisted["id"] == str(new_id)
-    assert persisted["description"] == "Test VLA"
+    assert persisted["description"] == {"purpose": "Test VLA"}
     assert persisted["apiVersion"] == "v3.0.2"
     assert persisted["kind"] == "DataContract"
     assert persisted["version"] == "0.1.0"
     assert persisted["status"] == "active"
-    assert persisted["quality"] == [
-        {"engine": "JQ", "implementation": "{ success: true }"}
-    ]
+    assert persisted["schema"] == schema
 
 
 def test_create_vla_with_minimal_body_persists(client: TestClient) -> None:
@@ -148,7 +148,7 @@ def test_create_vla_with_minimal_body_persists(client: TestClient) -> None:
 
 def test_created_vla_then_listed(client: TestClient) -> None:
     # Create one
-    r = client.post("/vla", json={"description": "My first VLA"})
+    r = client.post("/vla", json={"name": "My first VLA"})
     assert r.status_code == 201
     new_id = UUID(r.json()["id"])
 
@@ -156,12 +156,12 @@ def test_created_vla_then_listed(client: TestClient) -> None:
     listing = client.get("/vla").json()
     assert len(listing) == 1
     assert listing[0]["id"] == str(new_id)
-    assert listing[0]["description"] == "My first VLA"
+    assert listing[0]["name"] == "My first VLA"
 
 
 def test_delete_all_removes_every_vla(client: TestClient) -> None:
-    client.post("/vla", json={"description": "one"})
-    client.post("/vla", json={"description": "two"})
+    client.post("/vla", json={"name": "one"})
+    client.post("/vla", json={"name": "two"})
     assert len(client.get("/vla").json()) == 2
 
     r = client.delete("/vla")
@@ -170,7 +170,7 @@ def test_delete_all_removes_every_vla(client: TestClient) -> None:
 
 
 def test_vla_id_is_a_real_uuid_v4(client: TestClient) -> None:
-    r = client.post("/vla", json={"description": "x"})
+    r = client.post("/vla", json={"name": "x"})
     new_id = UUID(r.json()["id"])
     # Version nibble of a UUIDv4 is 4 in the 13th hex digit.
     assert str(new_id)[14] == "4"
@@ -216,16 +216,20 @@ def test_vla_from_templates_creates_vla_with_rendered_quality(
     r = client.post(
         "/vla/from-templates",
         json={
-            "description": "rendered VLA",
+            "name": "rendered VLA",
             "qualityTemplates": [{"id": str(template_id), "model": {"value": "ok"}}],
         },
     )
     assert r.status_code == 201
     new_id = UUID(r.json()["id"])
     vla = client.get(f"/vla/{new_id}").json()
-    assert vla["description"] == "rendered VLA"
-    assert len(vla["quality"]) == 1
-    assert vla["quality"][0]["engine"] == "JQ"
+    assert vla["name"] == "rendered VLA"
+    # Without a schema of its own, the VLA gets one to hold its requirements.
+    [schema_object] = vla["schema"]
+    assert schema_object["name"] == "data"
+    assert [q["engine"] for q in schema_object["quality"]] == ["JQ"]
+    # Processing parses the VLA with this model during attestation.
+    OpenDataContractStandard.model_validate(vla)
 
 
 def _add_range_template(repo: FakeTemplateRepo) -> str:
@@ -252,11 +256,16 @@ def _add_range_template(repo: FakeTemplateRepo) -> str:
     return str(template_id)
 
 
-def _from_templates(client: TestClient, *models: tuple[str, dict[str, Any]]):
+def _from_templates(
+    client: TestClient,
+    *models: tuple[str, dict[str, Any]],
+    **fields: Any,
+):
     return client.post(
         "/vla/from-templates",
         json={
-            "description": "checked VLA",
+            "name": "checked VLA",
+            **fields,
             "qualityTemplates": [{"id": tid, "model": m} for tid, m in models],
         },
     )
@@ -274,9 +283,32 @@ def test_vla_from_templates_persists_the_validated_implementation(
     assert r.status_code == 201, r.text
     assert fake_validator.implementations == ["{success: (.value <= 10)}"]
     vla = client.get(f"/vla/{r.json()['id']}").json()
-    assert vla["quality"] == [
-        {"engine": "JQ", "implementation": "{success: (.value <= 10)}"}
+    assert vla["schema"][0]["quality"] == [
+        {
+            "type": "custom",
+            "engine": "JQ",
+            "implementation": "{success: (.value <= 10)}",
+        }
     ]
+
+
+def test_vla_from_templates_adds_to_the_first_schema_object(
+    client: TestClient,
+    fake_template_repo: FakeTemplateRepo,
+) -> None:
+    template_id = _add_range_template(fake_template_repo)
+    own = {"type": "custom", "engine": "SCHEMA", "implementation": "{}"}
+    schema = [
+        {"name": "statement", "logicalType": "object", "quality": [own]},
+        {"name": "other"},
+    ]
+
+    r = _from_templates(client, (template_id, {"max": 10}), schema=schema)
+
+    assert r.status_code == 201, r.text
+    vla = client.get(f"/vla/{r.json()['id']}").json()
+    assert [q["engine"] for q in vla["schema"][0]["quality"]] == ["SCHEMA", "JQ"]
+    assert vla["schema"][1] == {"name": "other"}
 
 
 def test_vla_from_templates_rejects_input_outside_the_variable_schema(
@@ -335,15 +367,107 @@ def test_create_vla_with_schema_field_round_trips(client: TestClient) -> None:
     # The JSON key is literally ``schema`` (not ``schema_``); pydantic
     # field alias must accept it and persist it under that key.
     payload = {
-        "description": "with-schema",
-        "schema": {"name": "xapi_statement", "logicalType": "object"},
+        "name": "with-schema",
+        "schema": [{"name": "xapi_statement", "logicalType": "object"}],
     }
     r = client.post("/vla", json=payload)
     assert r.status_code == 201
     new_id = UUID(r.json()["id"])
 
     persisted = client.get(f"/vla/{new_id}").json()
-    assert persisted["description"] == "with-schema"
-    assert persisted["schema"] == {"name": "xapi_statement", "logicalType": "object"}
+    assert persisted["name"] == "with-schema"
+    assert persisted["schema"] == [{"name": "xapi_statement", "logicalType": "object"}]
     # The internal pydantic field name ``schema_`` must never leak out.
     assert "schema_" not in persisted
+
+
+# --- VLAs that are not ODCS, or that processing could not run ----------
+
+
+@pytest.mark.parametrize(
+    ("payload", "where"),
+    [
+        # The pre-ODCS shape, which attestation's processing refuses.
+        (
+            {"quality": [{"engine": "JQ", "implementation": "{success: true}"}]},
+            "quality",
+        ),
+        ({"schema": [{"name": "data", "properties": "id"}]}, "schema.0.properties"),
+        (
+            {"schema": [{"quality": [{"engine": "SQL", "implementation": "x"}]}]},
+            "schema.0.quality.0.engine",
+        ),
+        (
+            {"schema": [{"quality": [{"engine": "JQ"}]}]},
+            "schema.0.quality.0.implementation",
+        ),
+        (
+            {
+                "schema": [
+                    {
+                        "properties": [
+                            {
+                                "name": "id",
+                                "quality": [{"engine": "JQ", "implementation": "true"}],
+                            }
+                        ]
+                    }
+                ]
+            },
+            "schema.0.properties.0.quality",
+        ),
+    ],
+)
+def test_create_vla_refuses_what_attestation_could_not_evaluate(
+    client: TestClient, payload: dict[str, Any], where: str
+) -> None:
+    r = client.post("/vla", json=payload)
+
+    assert r.status_code == 400, r.text
+    assert r.json()["type"] == "INVALID_VLA"
+    assert where in r.json()["title"]
+    assert client.get("/vla").json() == []
+
+
+def test_create_vla_refuses_a_plain_text_description(client: TestClient) -> None:
+    # ODCS describes a contract with an object ({purpose, usage, …}).
+    r = client.post("/vla", json={"description": "just text"})
+
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["loc"] == ["body", "description"]
+
+
+def test_a_vla_stored_in_the_pre_odcs_shape_is_read_as_odcs(
+    client: TestClient, fake_repo: FakeVLARepo
+) -> None:
+    # Stored directly: the API no longer accepts this shape.
+    legacy_id = asyncio.run(
+        fake_repo.add(
+            {
+                "apiVersion": "v3.0.2",
+                "kind": "DataContract",
+                "version": "0.1.0",
+                "status": "active",
+                "name": "Test VLA",
+                "description": "Asserts the year.",
+                "schema": {"properties": {"timestamp": {"type": "string"}}},
+                "quality": [{"engine": "JQ", "implementation": "{success: true}"}],
+            }
+        )
+    )
+
+    vla = client.get(f"/vla/{legacy_id}").json()
+
+    assert vla["description"] == {"purpose": "Asserts the year."}
+    assert vla["schema"] == [
+        {
+            "name": "data",
+            "logicalType": "object",
+            "properties": [{"name": "timestamp", "logicalType": "string"}],
+            "quality": [
+                {"type": "custom", "engine": "JQ", "implementation": "{success: true}"}
+            ],
+        }
+    ]
+    assert "quality" not in vla
+    OpenDataContractStandard.model_validate(vla)

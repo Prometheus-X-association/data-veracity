@@ -66,8 +66,11 @@ class VLANew(BaseModel):
     """
     Body of ``POST /vla``. All fields optional — partial ODCS payload.
 
-    ``additionalProperties`` is true in the spec, so unrecognised ODCS
-    fields are kept and persisted rather than dropped.
+    ``additionalProperties`` is true in the spec, so other ODCS fields are
+    kept and persisted rather than dropped; the assembled document is then
+    checked against ODCS as a whole (see :mod:`vla_manager_api.odcs`), so
+    one that is not ODCS is refused rather than stored. Requirements go in
+    the ``quality`` of a ``schema`` object, as ODCS places them.
 
     The ``schema`` field carries an explicit alias because ``schema`` is a
     reserved attribute name on pydantic BaseModel. Inputs and outputs use
@@ -76,10 +79,10 @@ class VLANew(BaseModel):
 
     model_config = _CAMEL_OPEN
 
-    description: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[dict[str, Any]] = None
     servers: Optional[list[Any]] = None
-    schema_: Optional[dict[str, Any]] = Field(default=None, alias="schema")
-    quality: Optional[list[DataQuality]] = None
+    schema_: Optional[list[dict[str, Any]]] = Field(default=None, alias="schema")
     price: Optional[dict[str, Any]] = None
     team: Optional[list[Any]] = None
     roles: Optional[list[Any]] = None

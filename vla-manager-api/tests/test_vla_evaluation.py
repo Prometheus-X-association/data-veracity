@@ -71,7 +71,12 @@ def client(evaluator: FakeEvaluator) -> Iterator[TestClient]:
 
 
 def _vla(client: TestClient, quality: list[dict[str, Any]] = QUALITY) -> str:
-    response = client.post("/vla", json={"name": "Sample VLA", "quality": quality})
+    # Split over two schema objects, so the order across them is covered.
+    schema = [
+        {"name": "first", "quality": quality[:1]},
+        {"name": "rest", "quality": quality[1:]},
+    ]
+    response = client.post("/vla", json={"name": "Sample VLA", "schema": schema})
     assert response.status_code == 201, response.text
     return response.json()["id"]
 

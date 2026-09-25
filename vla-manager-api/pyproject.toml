@@ -17,6 +17,7 @@ dependencies = [
     "structlog>=25.1.0",
     "uvicorn>=0.34.3",
     "chevron>=0.14",
+    "open-data-contract-standard>=3.2.0",
 ]
 classifiers = ["Private :: Do Not Upload"]
 

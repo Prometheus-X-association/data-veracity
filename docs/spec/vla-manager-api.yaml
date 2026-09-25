@@ -362,6 +362,8 @@ paths:
       description: >-
         Create a new Veracity Level Agreement.
         An ID is generated automatically and injected into the stored document.
+        The document is refused unless it is a valid ODCS data contract whose
+        requirements DVA Processing can evaluate during attestation.
       operationId: createVLA
       requestBody:
         required: true
@@ -373,24 +375,27 @@ paths:
               XapiLearningTrace:
                 summary: E2E VLA – xAPI learning trace
                 value:
-                  description: E2E VLA – xAPI learning trace.
+                  name: xAPI learning trace
+                  description:
+                    purpose: E2E VLA – xAPI learning trace.
                   schema:
-                    name: xapi_statement
-                    logicalType: object
-                    properties:
-                      - name: actor
-                        logicalType: object
-                        required: true
-                      - name: verb
-                        logicalType: object
-                        required: true
-                  quality:
-                    - engine: JQ
-                      implementation: >-
-                        {
-                          success: (.actor.name | length > 0),
-                          details: "actor name non-empty"
-                        }
+                    - name: xapi_statement
+                      logicalType: object
+                      properties:
+                        - name: actor
+                          logicalType: object
+                          required: true
+                        - name: verb
+                          logicalType: object
+                          required: true
+                      quality:
+                        - type: custom
+                          engine: JQ
+                          implementation: >-
+                            {
+                              success: (.actor.name | length > 0),
+                              details: "actor name non-empty"
+                            }
       responses:
         '201':
           description: VLA successfully created.
@@ -398,6 +403,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Id'
+        '400':
+          description: >-
+            The document is not a VLA attestation can evaluate: it is not
+            valid ODCS, or a requirement names an engine the DVA does not
+            implement, lacks its implementation, or sits on a property rather
+            than a schema object. `type` is `INVALID_VLA` and `title` names
+            the offending field and why.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           description: Invalid request body.
           content:
@@ -557,8 +573,10 @@ paths:
         `POST /template/{id}/validate` would check it – the model must match
         the template's variable schema, the template must render, and DVA
         Processing must accept the rendered logic – and the resulting quality
-        requirements are merged into the VLA’s `quality` array before
-        persistence. If any entry fails, nothing is persisted.
+        requirements are appended to the `quality` of the VLA’s first schema
+        object, one named `data` being added if the VLA declares none. The
+        VLA is then checked as `POST /vla` checks it. If any entry fails,
+        nothing is persisted.
       operationId: createVLAFromTemplates
       requestBody:
         required: true
@@ -579,6 +597,8 @@ paths:
             template's variable schema, the template could not be rendered,
             or DVA Processing rejected the rendered logic. `type` is
             `INVALID_REQUIREMENT` and `title` names the requirement and why.
+            Or the VLA itself is refused as `POST /vla` refuses one, with
+            `type` `INVALID_VLA`.
           content:
             application/json:
               schema:
@@ -666,11 +686,15 @@ components:
       additionalProperties: true
       required: [id]
       description: >-
-        A Veracity Level Agreement document following the Open Data
-        Contract Standard (ODCS).
+        A Veracity Level Agreement: an Open Data Contract Standard (ODCS)
+        v3.0.2 data contract. Its requirements are the `quality` entries of
+        its `schema` objects, which is where DVA Processing reads them during
+        attestation.
         The service generates `id` and injects it into the stored document
         on read, alongside the `apiVersion`, `kind`, `version` and `status`
-        headers it wraps every VLA with.
+        headers it wraps every VLA with. A VLA stored before the service
+        enforced ODCS (string `description`, single `schema` object,
+        top-level `quality`) is returned rewritten as ODCS.
       properties:
         id:
           type: string
@@ -692,21 +716,46 @@ components:
       additionalProperties: true
       description: >-
         Payload used to create a new VLA.
-        All fields are optional; any subset of an ODCS data contract may be
-        supplied.
+        All fields are optional; any subset of an ODCS v3.0.2 data contract
+        may be supplied, and the whole must be valid ODCS.
         An `id` is generated by the service and must not be set by the client.
       properties:
-        description:
+        name:
           type: string
+        description:
+          type: object
+          description: >-
+            The ODCS contract description; free text about the VLA goes in
+            `purpose`.
+          properties:
+            purpose:
+              type: string
+            usage:
+              type: string
+            limitations:
+              type: string
         servers:
           type: array
         schema:
-          type: object
-          description: An ODCS schema block (object or list of properties).
-        quality:
           type: array
+          description: >-
+            ODCS schema objects. A requirement goes in a schema object's
+            `quality`; one on a property is refused, as attestation does not
+            evaluate those.
           items:
-            $ref: '#/components/schemas/DataQuality'
+            type: object
+            additionalProperties: true
+            properties:
+              name:
+                type: string
+              logicalType:
+                type: string
+              properties:
+                type: array
+              quality:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataQuality'
         price:
           type: object
         team:
@@ -724,8 +773,8 @@ components:
       description: >-
         Payload used to create a new VLA given a list of templates.
         Extends `VLACreate` with a `qualityTemplates` array.
-        Each entry is rendered and the result is merged into the
-        VLA’s `quality` array.
+        Each entry is rendered and the result is appended to the `quality`
+        of the VLA’s first schema object.
       allOf:
         - $ref: '#/components/schemas/VLACreate'
       required: [qualityTemplates]
@@ -750,10 +799,16 @@ components:
                 value: ok
     DataQuality:
       type: object
-      description: A single data quality requirement.
+      description: >-
+        A single data quality requirement: an ODCS `DataQuality` entry run by
+        one of the DVA's engines.
       required: [engine, implementation]
-      additionalProperties: false
+      additionalProperties: true
       properties:
+        type:
+          type: string
+          description: The ODCS quality type; engine-run requirements are `custom`.
+          examples: [custom]
         engine:
           $ref: '#/components/schemas/QualityEngine'
         implementation:

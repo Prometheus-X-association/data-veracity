@@ -14,6 +14,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
+from . import odcs
 from .dependencies import (
     get_repo,
     get_requirement_evaluator,
@@ -55,6 +56,24 @@ def _wrap_vla(vla_req: VLANew) -> dict[str, Any]:
     data = vla_req.model_dump(exclude_none=True, by_alias=True, mode="json")
     base.update(data)
     return base
+
+
+async def _store(vla: dict[str, Any], repo: VLARepo) -> IDDTO:
+    """Persist ``vla`` once it is known to be one attestation can evaluate."""
+    try:
+        odcs.check(vla)
+    except odcs.InvalidVLA as exc:
+        raise http_error(
+            status.HTTP_400_BAD_REQUEST, str(exc), type="INVALID_VLA"
+        ) from exc
+    new_id = await repo.add(vla)
+    if new_id is None:
+        raise http_error(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "Failed to create VLA",
+            type="UNKNOWN",
+        )
+    return IDDTO(id=new_id)
 
 
 @router.get("/vla")
@@ -101,16 +120,17 @@ async def evaluate_vla(
     """
     Try a stored VLA out on sample data, without attesting anything.
 
-    Each requirement in the VLA's ``quality`` is run through DVA
-    Processing's ``/evaluate``, as "Test fragment" runs one in the builder.
+    Each requirement in the VLA's schema objects is run through DVA
+    Processing's ``/evaluate``, as "Test fragment" runs one in the builder,
+    and in the order attestation's ``/evaluate-batch`` runs them.
     """
     vla = await repo.by_id(id)
     if vla is None:
         raise http_error(status.HTTP_404_NOT_FOUND, "No VLA with the given ID exists")
 
     results: list[dict[str, Any]] = []
-    for requirement in vla.get("quality") or []:
-        # Stored requirements came through `DataQuality`, so this holds.
+    for requirement in odcs.requirements(vla):
+        # Stored requirements passed `odcs.check`, so this holds.
         engine = QualityEngine(requirement["engine"])
         try:
             code, body = await evaluator.evaluate(
@@ -129,15 +149,7 @@ async def evaluate_vla(
 
 @router.post("/vla", status_code=status.HTTP_201_CREATED, response_model=IDDTO)
 async def create_vla(vla_req: VLANew, repo: VLARepo = Depends(get_repo)) -> IDDTO:
-    vla = _wrap_vla(vla_req)
-    new_id = await repo.add(vla)
-    if new_id is None:
-        raise http_error(
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
-            "Failed to create VLA",
-            type="UNKNOWN",
-        )
-    return IDDTO(id=new_id)
+    return await _store(_wrap_vla(vla_req), repo)
 
 
 @router.post(
@@ -179,23 +191,10 @@ async def create_vla_from_templates(
                 f"{where} is invalid: {result.details}",
                 type="INVALID_REQUIREMENT",
             )
-        # The VLA is persisted as a plain document, so the engine goes in as
-        # its value rather than as the enum member.
-        rendered_quality.append(
-            {"engine": em.engine.value, "implementation": result.implementation}
-        )
+        rendered_quality.append(odcs.requirement(em.engine, result.implementation))
 
-    existing_quality = base_vla.get("quality") or []
-    base_vla["quality"] = list(existing_quality) + rendered_quality
-
-    new_id = await repo.add(base_vla)
-    if new_id is None:
-        raise http_error(
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
-            "Failed to create VLA",
-            type="UNKNOWN",
-        )
-    return IDDTO(id=new_id)
+    odcs.add_requirements(base_vla, rendered_quality)
+    return await _store(base_vla, repo)
 
 
 @router.delete("/vla", status_code=status.HTTP_204_NO_CONTENT)

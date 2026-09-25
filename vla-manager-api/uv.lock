@@ -278,6 +278,19 @@ wheels = [
 ]
 
 [[package]]
+name = "open-data-contract-standard"
+version = "3.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/01/5d/11fcaf438c29e66d3f3eb40fa8e10fb53930f6346bce323624e139e0e301/open_data_contract_standard-3.2.0.tar.gz", hash = "sha256:37589b1e98ea519de51366e0efc2e02dbc87e1da68f07fd9385e49ab5df76763", size = 26890, upload-time = "2026-09-02T14:16:17.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/3a/8b7eacd298d76cc4777c9195f43d744a55bfda84060fd1c33fe8431fe6ea/open_data_contract_standard-3.2.0-py3-none-any.whl", hash = "sha256:a7e05dfc52b94a77b54f81a9033dd7a718133cf37bf66f3eb7d0eefd2fd33d4f", size = 20894, upload-time = "2026-09-02T14:16:15.799Z" },
+]
+
+[[package]]
 name = "packaging"
 version = "26.2"
 source = { registry = "https://pypi.org/simple" }
@@ -979,6 +992,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "httpx2" },
     { name = "jsonschema" },
+    { name = "open-data-contract-standard" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyyaml" },
@@ -1001,6 +1015,7 @@ requires-dist = [
     { name = "fastapi", specifier = "~=0.136.3" },
     { name = "httpx2", specifier = ">=2.9.1" },
     { name = "jsonschema", specifier = ">=4.23.0" },
+    { name = "open-data-contract-standard", specifier = ">=3.2.0" },
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "pydantic-settings", specifier = ">=2.5.0" },
     { name = "pyyaml", specifier = ">=6.0" },

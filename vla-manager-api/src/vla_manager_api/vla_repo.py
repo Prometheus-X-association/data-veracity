@@ -22,6 +22,8 @@ import json
 from typing import Any, Optional, Protocol
 from uuid import UUID, uuid4
 
+from .odcs import upgrade_legacy
+
 
 class VLARepo(Protocol):
     """Minimal contract for VLA persistence."""
@@ -36,8 +38,13 @@ class VLARepo(Protocol):
 
 
 def _with_id(odcs_text: str, id: UUID) -> dict[str, Any]:
-    """Inject the ``id`` field into a deserialised ODCS object."""
-    obj: dict[str, Any] = json.loads(odcs_text)
+    """
+    Inject the ``id`` field into a deserialised ODCS object.
+
+    A VLA stored in the pre-ODCS shape is upgraded on the way out, so every
+    reader – attestation included – sees ODCS.
+    """
+    obj: dict[str, Any] = upgrade_legacy(json.loads(odcs_text))
     obj["id"] = str(id)
     return obj
 
