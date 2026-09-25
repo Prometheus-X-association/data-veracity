@@ -13,8 +13,15 @@ server {
         return 200 '{"status":"pass"}';
     }
 
+    # Resolve the backend through Docker's DNS on each request rather than
+    # once at startup, so a recreated backend container is still found.
+    # A variable in proxy_pass is what makes nginx re-resolve.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
     location /api/ {
-        proxy_pass ${VLA_MANAGER_BACKEND_URL}/;
+        set $backend ${VLA_MANAGER_BACKEND_URL};
+        rewrite ^/api/(.*)$ /$1 break;
+        proxy_pass $backend;
         # A template assistant request can take two model calls plus a run of
         # the proposal over its examples – well past nginx's default 60s.
         proxy_read_timeout 180s;

@@ -12,8 +12,16 @@ server {
         return 200 '{"status":"pass"}';
     }
 
+    # Resolve upstreams through Docker's DNS on each request rather than once
+    # at startup: a recreated container can come back on another address –
+    # even the one the other DVA API had, crossing the two dashboards.
+    # A variable in proxy_pass is what makes nginx re-resolve.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
     location /api/vla {
-        proxy_pass ${DVA_VLA_MANAGER_URL}/vla;
+        set $vla_manager ${DVA_VLA_MANAGER_URL};
+        rewrite ^/api/(.*)$ /$1 break;
+        proxy_pass $vla_manager;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -21,7 +29,9 @@ server {
     }
 
     location /api/ {
-        proxy_pass ${DVA_API_URL}/;
+        set $dva_api ${DVA_API_URL};
+        rewrite ^/api/(.*)$ /$1 break;
+        proxy_pass $dva_api;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
