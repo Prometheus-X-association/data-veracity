@@ -144,13 +144,13 @@ fi
 	fi
 }
 
-vla_1="$(curl_get "$backend_url/vla" | jq -r '[.[] | select(.description == "Sample VLA 1")][0].id')"
+vla_1="$(curl_get "$backend_url/vla" | jq -r '[.[] | select(.description.purpose == "Sample VLA 1")][0].id')"
 if [ "$vla_1" = null ]; then
 	vla_1="$(
 		curl_post -d @- "$backend_url/vla/from-templates" <<EOF | jq -r .id
 {
-  "description": "Sample VLA 1",
-  "schema": {},
+  "name": "Sample VLA 1",
+  "description": { "purpose": "Sample VLA 1" },
   "qualityTemplates": [
     {
       "id": "$template_schema",
@@ -167,13 +167,13 @@ else
 	log "ℹ️ VLA already seems to exist as $vla_1"
 fi
 
-vla_2="$(curl_get "$backend_url/vla" | jq -r '[.[] | select(.description == "Sample VLA 2")][0].id')"
+vla_2="$(curl_get "$backend_url/vla" | jq -r '[.[] | select(.description.purpose == "Sample VLA 2")][0].id')"
 if [ "$vla_2" = null ]; then
 	vla_2="$(
 		curl_post -d @- "$backend_url/vla/from-templates" <<EOF | jq -r .id
 {
-  "description": "Sample VLA 2",
-  "schema": {},
+  "name": "Sample VLA 2",
+  "description": { "purpose": "Sample VLA 2" },
   "qualityTemplates": [
     {
       "id": "$template_jq",
