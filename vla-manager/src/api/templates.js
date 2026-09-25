@@ -1,9 +1,22 @@
 import axios from 'axios'
 
+// A request body the service refuses to parse comes back as FastAPI's 422,
+// whose `detail` is a list of `{loc, msg}` entries rather than a sentence.
+function validationMessage (detail) {
+  return detail
+    .map((entry) => {
+      const where = (entry?.loc || []).filter((part) => part !== 'body').join('.')
+      return where ? `${where}: ${entry?.msg}` : entry?.msg
+    })
+    .filter(Boolean)
+    .join('; ')
+}
+
 function normaliseError (error) {
   const response = error?.response
   const body = response?.data || {}
-  const message = body.details || body.detail || body.title || error?.message || 'The template service could not complete the request.'
+  const detail = Array.isArray(body.detail) ? validationMessage(body.detail) : body.detail
+  const message = body.details || detail || body.title || error?.message || 'The template service could not complete the request.'
   return {
     status: response?.status || 0,
     code: body.type || body.code || 'GATEWAY_UNAVAILABLE',

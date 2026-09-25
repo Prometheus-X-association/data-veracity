@@ -9,6 +9,20 @@ export const templateFailureFixtures = {
       details: 'The selected template is not available in this gateway.'
     }
   },
+  // As the real service answers a PATCH body without an `id`.
+  missingID: {
+    status: 422,
+    body: {
+      detail: [{ type: 'missing', loc: ['body', 'id'], msg: 'Field required' }]
+    }
+  },
+  idMismatch: {
+    status: 400,
+    body: {
+      type: 'BAD_REQUEST',
+      title: 'ID path parameter does not match ID in body'
+    }
+  },
   invalidModel: {
     status: 400,
     body: {

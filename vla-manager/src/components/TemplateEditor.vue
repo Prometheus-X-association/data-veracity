@@ -146,9 +146,11 @@ function validate () {
   errors.value = next
   return Object.keys(next).length === 0
 }
+// A new template gets its id from the service; an edit must carry it, as
+// PATCH refuses a body whose id is missing or differs from the path.
 function payload () {
   const value = clone(form.value)
-  delete value.id
+  if (!isEditing.value) delete value.id
   return value
 }
 function applyAssistantProposal (proposal) {

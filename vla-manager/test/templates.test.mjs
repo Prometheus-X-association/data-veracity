@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   coerceTemplateValue,
+  normaliseError,
   validateTemplate,
   validationFailureFromError,
   validationTone
@@ -46,6 +47,18 @@ test('leaves a number input that will not convert as it was typed', () => {
   assert.equal(coerceTemplateValue('integer', '   '), '   ')
   assert.equal(coerceTemplateValue('number', 'abc'), 'abc')
   assert.equal(coerceTemplateValue('integer', '0'), 0)
+})
+
+test('reads a request validation failure as the fields it names', () => {
+  const error = normaliseError({
+    response: {
+      status: 422,
+      data: { detail: [{ type: 'missing', loc: ['body', 'id'], msg: 'Field required' }] }
+    }
+  })
+
+  assert.equal(error.status, 422)
+  assert.equal(error.message, 'id: Field required')
 })
 
 test('keeps service failures separate from invalid evaluation logic', () => {

@@ -231,7 +231,9 @@ export const handlers = [
     if (index === -1) return responseForFixture(templateFailureFixtures.missingTemplate)
 
     const body = await request.json()
-    const nextTemplate = { ...templates[index], ...body, id: params.id }
+    if (body.id === undefined) return responseForFixture(templateFailureFixtures.missingID)
+    if (body.id !== params.id) return responseForFixture(templateFailureFixtures.idMismatch)
+    const nextTemplate = { ...templates[index], ...body }
     const invalid = validateTemplateModel(nextTemplate)
     if (invalid) return responseForFixture(invalid)
 
