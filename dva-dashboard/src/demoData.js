@@ -2,10 +2,11 @@ import { attestationFailureScenarios, verificationFailureScenarios } from './fai
 
 const participants = ['Acme Analytics', 'Northwind Logistics', 'Contoso Energy']
 
-const vla = (id, name, description, reference, tags) => ({
+// VLAs are ODCS data contracts, so the description is the contract purpose.
+const vla = (id, name, purpose, reference, tags) => ({
   id,
   name,
-  description,
+  description: { purpose },
   dataReference: reference,
   participants,
   tags
