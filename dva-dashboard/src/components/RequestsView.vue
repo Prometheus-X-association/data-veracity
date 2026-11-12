@@ -13,7 +13,7 @@
       <div class="view-switch"><button :class="{ active: viewMode === 'grid' }" title="Grid view" @click="viewMode = 'grid'"><v-icon name="fa-th-large" /></button><button :class="{ active: viewMode === 'table' }" title="Table view" @click="viewMode = 'table'"><v-icon name="fa-list" /></button></div>
     </div>
     <div v-if="viewMode === 'grid'" class="card-container"><p class="placeholder" v-if="!pagedReqs.length">No requests match your filters.</p><RequestCard v-for="req in pagedReqs" :key="req.requestID" :req="req" /></div>
-    <div v-else class="table-shell"><table><thead><tr><th>Exchange</th><th>Contract</th><th>Attester</th><th>Received</th><th>Evaluation</th><th>Result</th><th>State</th></tr></thead><tbody><tr v-for="req in pagedReqs" :key="req.requestID"><td><strong>{{ req.exchangeID }}</strong><small>{{ req.requestID }}</small></td><td>{{ req.contractID }}</td><td>{{ req.attesterID || 'Not available' }}</td><td>{{ formatDate(req.receivedDate) }}</td><td>{{ formatDate(req.evaluationDate) }}</td><td class="failure-cell"><strong>{{ failureFor(req).title }}</strong><small>{{ failureFor(req).code || 'PASS' }}</small></td><td><span class="table-status" :class="statusOf(req)"><i></i>{{ labelOf(req) }}</span></td></tr></tbody></table><p class="placeholder" v-if="!pagedReqs.length">No requests match your filters.</p></div>
+    <div v-else class="table-shell"><table><thead><tr><th class="toggle-col"><span class="sr-only">Details</span></th><th>Exchange</th><th>Contract</th><th>Attester</th><th>Received</th><th>Evaluation</th><th>Result</th><th>State</th></tr></thead><tbody><template v-for="req in pagedReqs" :key="req.requestID"><tr :class="{ open: isOpen(req) }"><td class="toggle-col"><button class="row-toggle" :aria-expanded="isOpen(req)" :aria-controls="detailId(req)" :title="isOpen(req) ? 'Hide details' : 'Show data and evaluation'" @click="toggle(req)"><v-icon :name="isOpen(req) ? 'fa-chevron-up' : 'fa-chevron-down'" /></button></td><td><strong>{{ req.exchangeID }}</strong><small>{{ req.requestID }}</small></td><td>{{ req.contractID }}</td><td>{{ req.attesterID || 'Not available' }}</td><td>{{ formatDate(req.receivedDate) }}</td><td>{{ formatDate(req.evaluationDate) }}</td><td class="failure-cell"><strong>{{ failureFor(req).title }}</strong><small>{{ failureFor(req).code || 'PASS' }}</small></td><td><span class="table-status" :class="statusOf(req)"><i></i>{{ labelOf(req) }}</span></td></tr><tr v-if="isOpen(req)" :id="detailId(req)" class="detail-row"><td colspan="8"><div class="detail-panel"><FailureExplanation v-if="failureFor(req).status !== 'passed'" :failure="failureFor(req)" heading="Why this request is not complete" /><RequestDetails :req="req" :data-height="180" :results-height="220" /></div></td></tr></template></tbody></table><p class="placeholder" v-if="!pagedReqs.length">No requests match your filters.</p></div>
     <div class="pagination" v-if="filteredReqs.length"><span>Showing {{ startIndex + 1 }}–{{ Math.min(startIndex + pageSize, filteredReqs.length) }} of {{ filteredReqs.length }}</span><div><button :disabled="page === 1" @click="page--"><v-icon name="fa-chevron-left" /></button><button v-for="number in pageCount" :key="number" :class="{ active: page === number }" @click="page = number">{{ number }}</button><button :disabled="page === pageCount" @click="page++"><v-icon name="fa-chevron-right" /></button></div></div>
   </section>
 </template>
@@ -22,11 +22,14 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import RequestCard from './RequestCard.vue'
+import RequestDetails from './RequestDetails.vue'
+import FailureExplanation from './FailureExplanation.vue'
 import { demoRequests, demoVLAs } from '../demoData'
 import { demoMode } from '../dataMode'
 import { normalizeAttestationRecord } from '../failures/failureModel.js'
 import { fromRequestLogs } from '../requestLog.js'
 const reqs = ref([]), query = ref(''), status = ref('all'), sortBy = ref('received'), viewMode = ref('grid'), page = ref(1), pageSize = 9
+const openRows = ref({}), isOpen = req => !!openRows.value[req.requestID], toggle = req => { openRows.value = { ...openRows.value, [req.requestID]: !isOpen(req) } }, detailId = req => `details-${req.requestID}`
 const failureFor = req => normalizeAttestationRecord(req).failure
 const statusOf = req => failureFor(req).status === 'passed' ? 'pass' : failureFor(req).status === 'pending' ? 'pending' : 'fail'
 const labelOf = req => ({ pass: 'Passed', fail: 'Failed', pending: 'Pending' })[statusOf(req)]
@@ -46,4 +49,6 @@ onMounted(loadRequests); watch(demoMode, loadRequests)
 @media(max-width:760px){.toolbar-panel{gap:8px}.toolbar-panel select,.search-wrap{width:100%;height:44px}.search-wrap input{height:42px;line-height:42px}.clear-button{min-height:44px}.view-switch button,.pagination button{min-width:40px;height:40px}.table-shell{box-shadow:none}.table-shell table{min-width:720px}td{white-space:normal;overflow-wrap:anywhere}}
 @media(max-width:560px){.stat-grid{grid-template-columns:1fr}.pagination{align-items:flex-start;gap:10px;flex-direction:column}}
 .failure-cell{max-width:230px;white-space:normal}.failure-cell strong{font-size:.7rem}
+.toggle-col{width:42px;padding-right:0}.row-toggle{display:grid;place-items:center;box-sizing:border-box;width:28px;height:28px;padding:0;line-height:0;border:1px solid #bae6fd;border-radius:8px;color:#0e7490;background:#f0f9ff;cursor:pointer}.row-toggle:hover{background:#e0f2fe}.row-toggle svg{display:block;margin:0;vertical-align:baseline}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.detail-row td{padding:0 16px 16px;white-space:normal;background:#f8fafc}.detail-row:hover{background:#f8fafc}.detail-panel{min-width:0;max-width:100%}tr.open td{border-bottom-color:transparent}
 </style>
