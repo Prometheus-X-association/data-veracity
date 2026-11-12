@@ -1,5 +1,6 @@
 <template>
   <SampleModal v-model="data" ref="sampleModal" @update:modelValue="onDataSelected" title="Try VLA with Sample Data" />
+  <VlaDetailsModal v-model:show="detailsOpen" :vla="detailsVla" />
   <div class="page-container">
     <n-page-header
       title="View VLAs"
@@ -101,6 +102,7 @@
 
               <template #action>
                 <n-space justify="end">
+                  <n-button secondary @click.stop="showDetails(vla)">View details</n-button>
                   <n-tooltip trigger="hover">
                     <template #trigger>
                       <n-button
@@ -141,6 +143,7 @@
   } from 'naive-ui'
   import SampleModal from './SampleModal.vue'
   import EngineBadge from './EngineBadge.vue'
+  import VlaDetailsModal from './VlaDetailsModal.vue'
   import { evaluateVla } from '../api/templates.js'
   import { vlaPurpose, vlaRequirements } from '../api/vla.js'
 
@@ -161,6 +164,13 @@
   const sampleModal = ref(null)
 
   const selectedVLA = ref(null)
+
+  const detailsVla = ref(null)
+  const detailsOpen = ref(false)
+  const showDetails = (vla) => {
+    detailsVla.value = vla
+    detailsOpen.value = true
+  }
 
   const showModalAndSetFields = (vla) => {
     selectedVLA.value = vla

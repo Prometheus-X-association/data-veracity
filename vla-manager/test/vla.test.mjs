@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { vlaFromTemplatesBody, vlaPurpose, vlaRequirements } from '../src/api/vla.js'
+import { requirementImplementation, vlaFromTemplatesBody, vlaPurpose, vlaRequirements, vlaSchemaObjects } from '../src/api/vla.js'
 
 test('reads the requirements of every schema object, in order', () => {
   const vla = {
@@ -34,4 +34,36 @@ test('builds an ODCS VLA body, leaving an empty description out', () => {
   assert.deepEqual(body.qualityTemplates, templates)
 
   assert.equal('description' in vlaFromTemplatesBody({ name: 'x', description: '  ', qualityTemplates: [] }), false)
+})
+
+test('shows an implementation as readable text, indenting JSON', () => {
+  assert.equal(requirementImplementation({ implementation: '{ success: .a > 1 }' }), '{ success: .a > 1 }')
+  assert.equal(requirementImplementation({ implementation: '{"type":"object"}' }), '{\n  "type": "object"\n}')
+  assert.equal(requirementImplementation({ implementation: { type: 'object' } }), '{\n  "type": "object"\n}')
+  assert.equal(requirementImplementation({}), '')
+  assert.equal(requirementImplementation(undefined), '')
+})
+
+test('lists the schema objects of a VLA with their properties and requirements', () => {
+  const vla = {
+    schema: [{
+      name: 'data',
+      logicalType: 'object',
+      properties: [
+        { name: 'timestamp', logicalType: 'string' },
+        { schemaElement: { name: 'result' }, logicalType: 'integer', required: true }
+      ],
+      quality: [{ engine: 'JQ' }]
+    }, {}]
+  }
+
+  const [data, unnamed] = vlaSchemaObjects(vla)
+  assert.deepEqual(data.properties, [
+    { name: 'timestamp', logicalType: 'string', required: false },
+    { name: 'result', logicalType: 'integer', required: true }
+  ])
+  assert.equal(data.requirements.length, 1)
+  assert.equal(unnamed.name, 'Unnamed')
+  assert.deepEqual(unnamed.properties, [])
+  assert.deepEqual(vlaSchemaObjects(null), [])
 })

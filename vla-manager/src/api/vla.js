@@ -30,3 +30,31 @@ export function vlaFromTemplatesBody ({ name, description, qualityTemplates }) {
     qualityTemplates
   }
 }
+
+// A requirement's implementation as readable text: jq arrives as a string, a
+// JSON schema as an object or as JSON text, which is shown indented.
+export function requirementImplementation (requirement) {
+  const implementation = requirement?.implementation
+  if (implementation === undefined || implementation === null || implementation === '') return ''
+  if (typeof implementation !== 'string') return JSON.stringify(implementation, null, 2)
+  try {
+    const parsed = JSON.parse(implementation)
+    if (parsed !== null && typeof parsed === 'object') return JSON.stringify(parsed, null, 2)
+  } catch { /* not JSON: a jq program or an expectation, shown as written */ }
+  return implementation
+}
+
+// The schema objects of a VLA – the data the contract describes – with their
+// properties and requirements, for a read-only view.
+export function vlaSchemaObjects (vla) {
+  return (vla?.schema || []).map((schemaObject) => ({
+    name: schemaObject?.name || 'Unnamed',
+    logicalType: schemaObject?.logicalType || '',
+    properties: (schemaObject?.properties || []).map((property) => ({
+      name: property?.name ?? property?.schemaElement?.name ?? '',
+      logicalType: property?.logicalType || '',
+      required: property?.required === true
+    })),
+    requirements: schemaObject?.quality || []
+  }))
+}
