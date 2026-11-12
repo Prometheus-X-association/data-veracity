@@ -25,6 +25,7 @@ import RequestCard from './RequestCard.vue'
 import { demoRequests, demoVLAs } from '../demoData'
 import { demoMode } from '../dataMode'
 import { normalizeAttestationRecord } from '../failures/failureModel.js'
+import { fromRequestLogs } from '../requestLog.js'
 const reqs = ref([]), query = ref(''), status = ref('all'), sortBy = ref('received'), viewMode = ref('grid'), page = ref(1), pageSize = 9
 const failureFor = req => normalizeAttestationRecord(req).failure
 const statusOf = req => failureFor(req).status === 'passed' ? 'pass' : failureFor(req).status === 'pending' ? 'pending' : 'fail'
@@ -34,7 +35,7 @@ const pageCount = computed(() => Math.max(1, Math.ceil(filteredReqs.value.length
 watch([query, status, sortBy], () => { page.value = 1 }); watch(pageCount, count => { if (page.value > count) page.value = count })
 function resetFilters () { query.value = ''; status.value = 'all'; sortBy.value = 'received' }
 function formatDate (value) { return value ? new Date(value).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Pending' }
-async function loadRequests () { if (demoMode.value) { reqs.value = demoRequests.map(req => ({ ...req, vla: demoVLAs.find(vla => vla.id === req.vlaID) })); return } try { const [requests, vlas] = await Promise.all([axios.get('/api/info/requests'), axios.get('/api/vla').catch(() => ({ data: [] }))]); const map = new Map(vlas.data.map(vla => [String(vla.id).toLowerCase(), vla])); reqs.value = requests.data.map(req => ({ ...req, vla: req.vlaID ? map.get(String(req.vlaID).toLowerCase()) : undefined })) } catch { reqs.value = [] } }
+async function loadRequests () { if (demoMode.value) { reqs.value = demoRequests.map(req => ({ ...req, vla: demoVLAs.find(vla => vla.id === req.vlaID) })); return } try { const [requests, vlas] = await Promise.all([axios.get('/api/info/requests'), axios.get('/api/vla').catch(() => ({ data: [] }))]); const map = new Map(vlas.data.map(vla => [String(vla.id).toLowerCase(), vla])); reqs.value = fromRequestLogs(requests.data).map(req => ({ ...req, vla: req.vlaID ? map.get(String(req.vlaID).toLowerCase()) : undefined })) } catch { reqs.value = [] } }
 onMounted(loadRequests); watch(demoMode, loadRequests)
 </script>
 

@@ -66,6 +66,12 @@ The selected template is not available in the current gateway.
 It may have been deleted, belong to another environment, or have become unavailable.
 Refresh the template list and choose an available template.
 
+### `VLA_NOT_FOUND`
+
+The attestation request refers to a VLA that the VLA Manager does not know.
+The request ended before any evaluation ran, so no conclusion about the data should be drawn from it.
+Check the VLA ID in the request, or create the VLA before attesting data against it.
+
 ### `MISSING_REQUIRED_DATA`
 
 The request does not contain all data required by the contract.

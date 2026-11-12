@@ -41,6 +41,13 @@ const DEFINITIONS = {
     nextAction: 'Fill in the highlighted fields with values that match the template definition.',
     retryable: false
   },
+  VLA_NOT_FOUND: {
+    status: 'unavailable',
+    title: 'VLA was not found',
+    summary: 'The attestation request refers to a VLA that the VLA Manager does not know.',
+    nextAction: 'Check the VLA ID in the request, or create the VLA before attesting data against it.',
+    retryable: false
+  },
   UNKNOWN_TEMPLATE: {
     status: 'unavailable',
     title: 'Template was not found',
@@ -196,13 +203,24 @@ function parseResults (value) {
   }
 }
 
+// A request the API logged together with an `error` ({ title, detail }) ended
+// before any evaluation finished, so it is neither pending nor a failed check.
+function failureFromLoggedError (record) {
+  const error = record.error
+  const detail = asText(error.detail) || asText(error.title)
+  const code = /^VLA\b.*\bnot found/i.test(detail) ? 'VLA_NOT_FOUND' : 'UNKNOWN_FAILURE'
+  return failureFromCode(code, { ...record, evidence: detail, error: undefined })
+}
+
 export function normalizeAttestationRecord (record = {}) {
-  const isPending = !record.evaluationDate && record.evaluationPassing !== true
+  const isPending = !record.evaluationDate && record.evaluationPassing !== true && !record.error
   const results = parseResults(record.evaluationResults)
   const failedResult = results.find(result => result?.success === false) || results[0] || {}
   const failure = record.failureCode
     ? failureFromCode(record.failureCode, record)
-    : isPending
+    : record.error
+      ? failureFromLoggedError(record)
+      : isPending
       ? failureFromCode('EVALUATION_PENDING', record)
       : record.evaluationPassing === true
         ? normalizeEvaluationResult({ success: true, details: record.evaluationResults })

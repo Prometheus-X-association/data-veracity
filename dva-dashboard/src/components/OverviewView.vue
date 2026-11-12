@@ -46,6 +46,7 @@ import axios from 'axios'
 import { demoRequests } from '../demoData'
 import { demoMode } from '../dataMode'
 import { normalizeAttestationRecord } from '../failures/failureModel.js'
+import { fromRequestLogs } from '../requestLog.js'
 import { fetchHealthRows } from '../health/fetchHealth.js'
 import { checkingRows, demoRows, overallLabel as labelFor, overallTone as toneOf, statusLabel } from '../health/healthModel.js'
 
@@ -68,7 +69,7 @@ async function loadRequests () {
   }
   try {
     const [response, vlaResponse] = await Promise.all([axios.get('/api/info/requests'), axios.get('/api/vla').catch(() => ({ data: [] }))])
-    requests.value = Array.isArray(response.data) ? response.data : []
+    requests.value = fromRequestLogs(response.data)
     contracts.value = Array.isArray(vlaResponse.data) ? vlaResponse.data : []
     lastUpdated.value = new Date()
   } catch { requests.value = []; contracts.value = []; lastUpdated.value = new Date() }
@@ -85,9 +86,10 @@ async function checkServices () {
 }
 onMounted(checkServices)
 watch(demoMode, checkServices)
-const passing = computed(() => requests.value.filter(item => item.evaluationPassing).length)
-const pendingCount = computed(() => requests.value.filter(item => !item.evaluationDate).length)
-const failedCount = computed(() => requests.value.filter(item => item.evaluationDate && item.evaluationPassing !== true).length)
+const statusOf = item => normalizeAttestationRecord(item).status
+const passing = computed(() => requests.value.filter(item => statusOf(item) === 'passed').length)
+const pendingCount = computed(() => requests.value.filter(item => statusOf(item) === 'pending').length)
+const failedCount = computed(() => requests.value.filter(item => !['passed', 'pending'].includes(statusOf(item))).length)
 const evaluatedCount = computed(() => passing.value + failedCount.value)
 const passRate = computed(() => evaluatedCount.value ? Math.round((passing.value / evaluatedCount.value) * 100) : 0)
 const lastUpdatedLabel = computed(() => lastUpdated.value ? `Updated ${lastUpdated.value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Loading live data')
@@ -97,7 +99,7 @@ const metrics = computed(() => [
   { label: 'Pending evaluations', value: pendingCount.value, detail: 'Awaiting processing', icon: 'fa-clock', tone: 'amber' },
   { label: 'Active data contracts', value: contracts.value.length, detail: demoMode.value ? 'Seeded contracts' : 'From DVA API gateway', icon: 'fa-file-contract', tone: 'blue' }
 ])
-const recentActivity = computed(() => requests.value.slice(0, 5).map(item => { const state = !item.evaluationDate ? 'pending' : item.evaluationPassing === true ? 'pass' : 'fail'; return { id: item.requestID, title: `${item.type === 'pov' ? 'Proof' : 'Attestation'} ${state === 'pending' ? 'received' : 'evaluated'}`, exchange: item.exchangeID, time: formatRelativeTime(item.evaluationDate || item.receivedDate), state, label: state === 'pass' ? 'Passed' : state === 'pending' ? 'Pending' : 'Failed' } }))
+const recentActivity = computed(() => requests.value.slice(0, 5).map(item => { const status = statusOf(item); const state = status === 'pending' ? 'pending' : status === 'passed' ? 'pass' : 'fail'; return { id: item.requestID, title: `${item.type === 'pov' ? 'Proof' : 'Attestation'} ${state === 'pending' ? 'received' : 'evaluated'}`, exchange: item.exchangeID, time: formatRelativeTime(item.evaluationDate || item.receivedDate), state, label: state === 'pass' ? 'Passed' : state === 'pending' ? 'Pending' : 'Failed' } }))
 const failureItems = computed(() => requests.value.map(item => ({ id: item.requestID, exchange: item.exchangeID, failure: normalizeAttestationRecord(item).failure })).filter(item => item.failure.status !== 'passed').slice(0, 4))
 function formatRelativeTime (value) { if (!value) return 'Time unavailable'; const diff = Math.max(0, Date.now() - new Date(value).getTime()); const minutes = Math.floor(diff / 60000); if (minutes < 1) return 'Just now'; if (minutes < 60) return `${minutes} min ago`; const hours = Math.floor(minutes / 60); if (hours < 24) return `${hours} hr ago`; return `${Math.floor(hours / 24)} days ago` }
 const refresh = () => window.location.reload()
