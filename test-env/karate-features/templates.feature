@@ -3,8 +3,8 @@ Feature: Veracity Level Agreement (VLA) template management
   I want to create/update/delete available templates that can be used in VLAs
 
   Background:
-    # Could be any DVA service, we just use provider
-    Given url 'http://dva-api-provider:9090/template'
+    # Served by the VLA Manager API, not the DVA API
+    Given url 'http://vlamanager-backend:8000/template'
     * def exampleTemplate = read('../test-data/vla-template/template.json')
 
   Scenario: get all VLA templates

@@ -3,8 +3,8 @@ Feature: Veracity Level Agreement (VLA) management
   I want to create/query VLAs for my data exchanges
 
   Background:
-    # Could be any DVA service, we just use provider
-    Given url 'http://dva-api-provider:9090'
+    # Served by the VLA Manager API, not the DVA API
+    Given url 'http://vlamanager-backend:8000'
     * def exampleTemplate = read('../test-data/vla-template/template.json')
     * def exampleVLARequest = read('../test-data/vla-request/request.json')
     * def exampleVLARequestFromTemplates = read('../test-data/vla-request/request-from-templates.json')

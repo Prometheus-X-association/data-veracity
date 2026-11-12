@@ -21,7 +21,7 @@ Feature: Health endpoints
       | http://dva-api-provider:9090        |
       | http://dva-api-consumer:9090        |
       | http://dva-processing-provider:5000 |
-      | http://dva-vc-manager:8000          |
-      | http://vla-manager-api:8000         |
+      | http://dva-vc-manager-provider:8000 |
+      | http://vlamanager-backend:8000      |
       | http://dva-dashboard-provider       |
-      | http://vla-manager                  |
+      | http://vlamanager-frontend          |
