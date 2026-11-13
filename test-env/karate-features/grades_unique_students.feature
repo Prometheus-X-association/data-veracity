@@ -10,8 +10,9 @@ Feature: Student grades cover enough unique students
   Background:
     * def provider = 'http://dva-api-provider:9090'
     * def uuid = function() { return java.util.UUID.randomUUID() + '' }
-    # `rows` grade records spread over `students` distinct students (rows >= students)
-    * def grades = function(students, rows) { var r = []; for (var i = 0; i < rows; i++) { r.push({ studentId: 's' + (i % students), course: 'math', grade: 3 + (i % 3) }) } return r }
+    # `rows` xAPI statements spread over `students` distinct students (rows >= students); the
+    # student is identified by actor.account.name
+    * def grades = function(students, rows) { var r = []; for (var i = 0; i < rows; i++) { r.push({ id: java.util.UUID.randomUUID() + '', actor: { objectType: 'Agent', account: { homePage: 'https://neptun.example.edu', name: 's' + (i % students) } }, verb: { id: 'http://adlnet.gov/expapi/verbs/passed' }, result: { score: { raw: 3 + (i % 3) } } }) } return r }
 
     # The template and the VLA are created once for all scenarios below
     * def template = read('../test-data/vla-template/min-unique-values.json')
@@ -29,7 +30,7 @@ Feature: Student grades cover enough unique students
     And match response.evaluationPassing == <passes>
     And match response.evaluationResults == '#[1]'
     And match response.evaluationResults[0] contains { engine: 'JQ', success: <passes> }
-    And match response.evaluationResults[0].details contains 'found <students> distinct studentId values, need at least 25'
+    And match response.evaluationResults[0].details contains 'found <students> distinct actor.account.name values, need at least 25'
     # An AoV is issued only when the requirement is satisfied
     And match response.jws == (<passes> ? '#string' : '#notpresent')
 

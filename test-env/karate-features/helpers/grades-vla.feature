@@ -13,7 +13,7 @@ Feature: Set up the "25 unique students" VLA
 
     Given url 'http://vlamanager-backend:8000'
     And path 'vla', 'from-templates'
-    And request { name: 'Grades cover 25 students', description: { purpose: 'At least 25 unique students' }, qualityTemplates: [{ id: '#(templateID)', model: { field: 'studentId', minimum: 25 } }] }
+    And request { name: 'Grades cover 25 students', description: { purpose: 'At least 25 unique students' }, qualityTemplates: [{ id: '#(templateID)', model: { field: 'actor.account.name', minimum: 25 } }] }
     When method post
     Then status 201
     * def vlaID = response.id

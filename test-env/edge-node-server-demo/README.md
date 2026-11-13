@@ -59,7 +59,10 @@ stable UUID derived from it (the same PDC identifier always gives the same UUID)
 ## Example
 
 A service chain request, with the VLA named in `params` and the exchange and contract identified in the
-headers. The list has 25 distinct students, so a VLA that requires at least 25 passes it:
+headers. The data are xAPI statements, and the student is identified by `actor.account.name`: this list has
+25 distinct students, so a VLA that requires at least 25 of them passes it. (Such a VLA is built from the
+"Minimum unique values" template, `test-data/vla-template/min-unique-values.json`, with
+`field: actor.account.name` and `minimum: 25`.)
 
 ```console
 curl -s -X POST http://localhost:8090/analyse \
@@ -69,31 +72,31 @@ curl -s -X POST http://localhost:8090/analyse \
   -d '{
     "params": { "vlaID": "<vla id>" },
     "data": [
-        {"studentId": "s0", "course": "math", "grade": 3},
-        {"studentId": "s1", "course": "math", "grade": 3},
-        {"studentId": "s2", "course": "math", "grade": 3},
-        {"studentId": "s3", "course": "math", "grade": 3},
-        {"studentId": "s4", "course": "math", "grade": 3},
-        {"studentId": "s5", "course": "math", "grade": 3},
-        {"studentId": "s6", "course": "math", "grade": 3},
-        {"studentId": "s7", "course": "math", "grade": 3},
-        {"studentId": "s8", "course": "math", "grade": 3},
-        {"studentId": "s9", "course": "math", "grade": 3},
-        {"studentId": "s10", "course": "math", "grade": 3},
-        {"studentId": "s11", "course": "math", "grade": 3},
-        {"studentId": "s12", "course": "math", "grade": 3},
-        {"studentId": "s13", "course": "math", "grade": 3},
-        {"studentId": "s14", "course": "math", "grade": 3},
-        {"studentId": "s15", "course": "math", "grade": 3},
-        {"studentId": "s16", "course": "math", "grade": 3},
-        {"studentId": "s17", "course": "math", "grade": 3},
-        {"studentId": "s18", "course": "math", "grade": 3},
-        {"studentId": "s19", "course": "math", "grade": 3},
-        {"studentId": "s20", "course": "math", "grade": 3},
-        {"studentId": "s21", "course": "math", "grade": 3},
-        {"studentId": "s22", "course": "math", "grade": 3},
-        {"studentId": "s23", "course": "math", "grade": 3},
-        {"studentId": "s24", "course": "math", "grade": 3}
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s0"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s1"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s2"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s3"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s4"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s5"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s6"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s7"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s8"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s9"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s10"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s11"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s12"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s13"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s14"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s15"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s16"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s17"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s18"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s19"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s20"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s21"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s22"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s23"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}},
+        {"actor": {"account": {"homePage": "https://neptun.example.edu", "name": "s24"}}, "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"}, "result": {"score": {"raw": 3}}}
     ]
   }'
 ```

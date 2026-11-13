@@ -56,7 +56,16 @@ def run(services: Services, data, headers=None, vla_id=VLA_ID, **settings) -> ht
         app.dependency_overrides.clear()
 
 
-GRADES = [{"studentId": "s1", "grade": 4}, {"studentId": "s2", "grade": 5}]
+def statement(student: str, raw: int) -> dict:
+    """An xAPI statement; the student is identified by actor.account.name."""
+    return {
+        "actor": {"objectType": "Agent", "account": {"homePage": "https://neptun.example.edu", "name": student}},
+        "verb": {"id": "http://adlnet.gov/expapi/verbs/passed"},
+        "result": {"score": {"raw": raw}},
+    }
+
+
+GRADES = [statement("s1", 4), statement("s2", 5)]
 
 
 def test_anonymizes_then_attests_the_anonymized_data_against_the_configured_vla_then_forwards_it():

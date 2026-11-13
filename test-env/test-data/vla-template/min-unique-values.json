@@ -1,6 +1,6 @@
 {
   "name": "Minimum unique values",
-  "description": "Data is a list of records; the field named by <field> must hold at least <minimum> distinct values.",
+  "description": "Data is a list of records; the field named by <field> (a jq path, e.g. actor.account.name) must hold at least <minimum> distinct values.",
   "criterionType": "GREATER_THAN",
   "targetAspect": "COMPLETENESS",
   "evaluationMethod": {
