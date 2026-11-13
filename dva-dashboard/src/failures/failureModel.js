@@ -15,7 +15,7 @@ const DEFINITIONS = {
   },
   JQ_CHECK_FAILED: {
     status: 'failed',
-    title: 'JQ quality check failed',
+    title: 'Rulebook check failed',
     summary: 'The JQ expression returned a failed result for this data.',
     nextAction: 'Review the expression and the referenced values before sending the data again.',
     retryable: false
