@@ -1,8 +1,9 @@
 """
 Orchestrates the edge node demo.
 
-The Dataspace Connector (PDC) POSTs the data to analyse to `/analyse`.  The
-data is
+The Dataspace Connector (PDC) POSTs the data to analyse to `/analyse`: the data
+itself, or, in a service chain, an envelope `{"data": ..., "contract": ..., "params": {...}}`.
+The data is
 
  1. anonymized by the anonymization service,
  2. attested by the DVA (Data Veracity Assurance) against a fixed VLA, and
@@ -10,7 +11,8 @@ data is
 
 Configuration (environment variables):
 
-  VLA_ID          ID of the VLA to attest against (required; the same for every request)
+  VLA_ID          ID of the VLA to attest against, unless the request names one in
+                  `params.vlaID` (which wins). At least one of the two is needed.
   DVA_URL         base URL of the DVA API (default: http://dva-api-provider:9090)
   ANONYMIZER_URL  endpoint of the anonymization service; not set: a mock is used, which
                   leaves the data as it is (the real service is provided separately)
@@ -39,7 +41,7 @@ _ID_NAMESPACE = uuid.UUID("6f1c2d8e-4a57-4c0b-9a3e-2d7b5f0e8c11")
 
 @dataclass(frozen=True)
 class Settings:
-    vla_id: str
+    vla_id: Optional[str] = None
     dva_url: str = "http://dva-api-provider:9090"
     anonymizer_url: Optional[str] = None
     forward_url: Optional[str] = None
@@ -47,11 +49,8 @@ class Settings:
 
     @staticmethod
     def from_env() -> "Settings":
-        vla_id = os.environ.get("VLA_ID", "").strip()
-        if not vla_id:
-            raise RuntimeError("VLA_ID is not set: the VLA to attest against is required")
         return Settings(
-            vla_id=vla_id,
+            vla_id=os.environ.get("VLA_ID", "").strip() or None,
             dva_url=os.environ.get("DVA_URL", Settings.dva_url).rstrip("/"),
             anonymizer_url=os.environ.get("ANONYMIZER_URL") or None,
             forward_url=os.environ.get("FORWARD_URL") or None,
@@ -71,8 +70,9 @@ async def get_client(settings: Settings = Depends(get_settings)) -> AsyncIterato
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    # Fail at startup, not on the first request, if the configuration is incomplete
-    app.dependency_overrides.get(get_settings, get_settings)()
+    settings = app.dependency_overrides.get(get_settings, get_settings)()
+    if settings.vla_id is None:
+        logger.warning("VLA_ID is not set: every request has to name its VLA in params.vlaID")
     yield
 
 
@@ -136,14 +136,37 @@ async def anonymize(client: httpx.AsyncClient, settings: Settings, data: Any) ->
         raise UpstreamError("anonymization", "the anonymization service did not answer with JSON") from e
 
 
+def unwrap(body: Any) -> tuple[Any, dict[str, Any], Optional[str]]:
+    """The data, the params and the contract of a request body.
+
+    In a service chain the PDC wraps the data: an object with `data` and `params` and/or
+    `contract`.  Any other body is the data itself, without params.
+    """
+    if isinstance(body, dict) and "data" in body and ("params" in body or "contract" in body):
+        params = body.get("params")
+        return body["data"], params if isinstance(params, dict) else {}, body.get("contract")
+    return body, {}, None
+
+
+def vla_id_for(settings: Settings, params: dict[str, Any]) -> str:
+    """The VLA to attest against: the one named in the request's params, else the configured one."""
+    vla_id = params.get("vlaID") or settings.vla_id
+    if not vla_id:
+        raise HTTPException(status_code=422, detail="no VLA to attest against: set VLA_ID or send params.vlaID")
+    try:
+        return str(uuid.UUID(str(vla_id)))
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"the VLA ID {vla_id!r} is not a valid UUID") from None
+
+
 async def attest(
-    client: httpx.AsyncClient, settings: Settings, exchange_id: str, contract_id: str, data: Any
+    client: httpx.AsyncClient, settings: Settings, exchange_id: str, contract_id: str, vla_id: str, data: Any
 ) -> dict[str, Any]:
     response = await _post(
         client,
         "attestation",
         f"{settings.dva_url}/attestation",
-        {"exchangeID": exchange_id, "contractID": contract_id, "vlaID": settings.vla_id, "data": data},
+        {"exchangeID": exchange_id, "contractID": contract_id, "vlaID": vla_id, "data": data},
     )
     try:
         return response.json()
@@ -154,18 +177,22 @@ async def attest(
 @app.post("/analyse")
 async def analyse(
     request: Request,
-    data: Any = Body(...),
+    body: Any = Body(...),
     settings: Settings = Depends(get_settings),
     client: httpx.AsyncClient = Depends(get_client),
 ) -> JSONResponse:
     """Anonymize the data, attest it, and forward it if the attestation succeeds."""
-    # The PDC sends the identifiers of the exchange and the contract along with the data
+    data, params, contract = unwrap(body)
+    vla_id = vla_id_for(settings, params)
+
+    # The PDC identifies the exchange and the contract in its headers (the contract
+    # also in the body, in a service chain)
     exchange_id = as_uuid(request.headers.get("x-ptx-dataExchangeId"))
-    contract_id = as_uuid(request.headers.get("x-ptx-contractId"))
+    contract_id = as_uuid(request.headers.get("x-ptx-contractId") or contract)
 
     anonymized, anonymization = await anonymize(client, settings, data)
 
-    attestation = await attest(client, settings, exchange_id, contract_id, anonymized)
+    attestation = await attest(client, settings, exchange_id, contract_id, vla_id, anonymized)
     passing = bool(attestation.get("evaluationPassing")) and bool(attestation.get("jws"))
     if not passing:
         logger.info("exchange %s: the data does not satisfy the VLA, not forwarded", exchange_id)
@@ -186,14 +213,12 @@ async def analyse(
 
     return JSONResponse(
         content={
-            "anonymization": anonymization,
-            "attestation": {
+            "data": {
                 "exchangeID": exchange_id,
                 "contractID": contract_id,
-                "vlaID": settings.vla_id,
+                "vlaID": vla_id,
                 "jws": attestation["jws"],
                 "evaluationResults": attestation.get("evaluationResults", []),
-            },
-            "forwarded": forwarded,
+            }
         }
     )

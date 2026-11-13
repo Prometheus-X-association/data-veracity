@@ -40,8 +40,8 @@ class Services:
         return [body for called, body in self.calls if called == url]
 
 
-def run(services: Services, data, headers=None, **settings) -> httpx.Response:
-    configured = Settings(vla_id=VLA_ID, dva_url=DVA, **settings)
+def run(services: Services, data, headers=None, vla_id=VLA_ID, **settings) -> httpx.Response:
+    configured = Settings(vla_id=vla_id, dva_url=DVA, **settings)
 
     async def client():
         async with httpx.AsyncClient(transport=httpx.MockTransport(services.handler)) as c:
@@ -140,6 +140,87 @@ def test_a_failing_forward_is_reported():
     assert response.json()["stage"] == "forward"
 
 
+OTHER_VLA = "0b8d4c6e-5f1a-4e0f-9d2b-7a3c1e9f6b52"
+CHAIN = {"data": GRADES, "contract": "https://contract.test/contracts/7", "params": {"foo": "bar"}}
+
+
+def test_a_service_chain_envelope_is_unwrapped_and_only_its_data_is_attested():
+    services = Services()
+
+    response = run(services, CHAIN, forward_url=FORWARD)
+
+    assert response.status_code == 200
+    assert services.bodies(f"{DVA}/attestation")[0]["data"] == GRADES
+    assert services.bodies(FORWARD) == [GRADES]
+
+
+def test_the_vla_in_the_params_wins_over_the_configured_one():
+    services = Services()
+
+    response = run(services, {**CHAIN, "params": {"vlaID": OTHER_VLA}})
+
+    assert response.status_code == 200
+    assert services.bodies(f"{DVA}/attestation")[0]["vlaID"] == OTHER_VLA
+
+
+def test_the_params_alone_name_the_vla_when_none_is_configured():
+    services = Services()
+
+    response = run(services, {**CHAIN, "params": {"vlaID": OTHER_VLA}}, vla_id=None)
+
+    assert response.status_code == 200
+    assert services.bodies(f"{DVA}/attestation")[0]["vlaID"] == OTHER_VLA
+
+
+def test_without_params_the_configured_vla_is_used():
+    services = Services()
+
+    run(services, CHAIN)
+
+    assert services.bodies(f"{DVA}/attestation")[0]["vlaID"] == VLA_ID
+
+
+@pytest.mark.parametrize("body", [GRADES, CHAIN])
+def test_no_vla_anywhere_is_rejected_before_any_service_is_called(body):
+    services = Services()
+
+    response = run(services, body, vla_id=None, anonymizer_url=ANONYMIZER)
+
+    assert response.status_code == 422
+    assert "VLA" in response.json()["detail"]
+    assert services.calls == []
+
+
+def test_a_vla_id_that_is_not_a_uuid_is_rejected():
+    services = Services()
+
+    response = run(services, {**CHAIN, "params": {"vlaID": "not-a-uuid"}})
+
+    assert response.status_code == 422
+    assert "not a valid UUID" in response.json()["detail"]
+    assert services.calls == []
+
+
+def test_the_contract_in_a_service_chain_envelope_identifies_the_contract_unless_the_header_does():
+    services = Services()
+
+    run(services, CHAIN)
+    run(services, CHAIN, headers={"x-ptx-contractId": "https://contract.test/contracts/other"})
+
+    from_body, from_header = [call["contractID"] for call in services.bodies(f"{DVA}/attestation")]
+    assert from_body == as_uuid("https://contract.test/contracts/7")
+    assert from_header == as_uuid("https://contract.test/contracts/other")
+
+
+def test_an_object_that_merely_has_a_data_field_is_still_the_data_itself():
+    services = Services()
+    plain = {"data": [1, 2, 3], "note": "not an envelope"}
+
+    run(services, plain)
+
+    assert services.bodies(f"{DVA}/attestation")[0]["data"] == plain
+
+
 def test_the_pdc_identifiers_become_stable_uuids():
     services = Services()
     headers = {"x-ptx-dataExchangeId": "66e84e6fa000b970362d952e", "x-ptx-contractId": "https://contract.test/contracts/1"}
@@ -160,11 +241,10 @@ def test_an_identifier_that_already_is_a_uuid_is_kept():
     assert as_uuid(known.upper()) == known
 
 
-def test_the_service_does_not_start_without_a_vla(monkeypatch):
+def test_the_vla_is_optional_in_the_settings(monkeypatch):
     monkeypatch.delenv("VLA_ID", raising=False)
 
-    with pytest.raises(RuntimeError, match="VLA_ID"):
-        Settings.from_env()
+    assert Settings.from_env().vla_id is None
 
 
 def test_the_settings_are_read_from_the_environment(monkeypatch):

@@ -1,6 +1,6 @@
 ---
 services:
-
+  # ports must be exposed: 3020, 3011, you can find the vlaID on the 3020
 
   dva-api-provider:
     extends:
@@ -178,8 +178,8 @@ services:
       dva-processing-consumer: {condition: service_started}
 
 
-  # The edge node demo's orchestrator.  Only started with the `demo` profile, because
-  # it needs the ID of the VLA to attest against:
+  # The edge node demo's orchestrator.  Only started with the `demo` profile.  The VLA to
+  # attest against is `params.vlaID` of each request, or else VLA_ID (optional):
   #   VLA_ID=<vla id> docker compose --profile demo up -d
   edge-node-server-demo:
     profiles: [demo]
