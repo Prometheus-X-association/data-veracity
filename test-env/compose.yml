@@ -176,3 +176,21 @@ services:
       dva-api-consumer: {condition: service_healthy}
       dva-processing-provider: {condition: service_started}
       dva-processing-consumer: {condition: service_started}
+
+
+  # The edge node demo's orchestrator.  Only started with the `demo` profile, because
+  # it needs the ID of the VLA to attest against:
+  #   VLA_ID=<vla id> docker compose --profile demo up -d
+  edge-node-server-demo:
+    profiles: [demo]
+    extends:
+      file: common-services.yml
+      service: edge-node-server-demo
+    environment:
+      VLA_ID: ${VLA_ID:-}
+      DVA_URL: http://dva-api-provider:9090
+      ANONYMIZER_URL: ${ANONYMIZER_URL:-}
+      FORWARD_URL: ${FORWARD_URL:-}
+    ports: [8090:8090]
+    depends_on:
+      dva-api-provider: {condition: service_healthy}

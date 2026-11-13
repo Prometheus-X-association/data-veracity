@@ -21,6 +21,8 @@ services:
       dockerfile: ./dva-vc-manager/Dockerfile
   dva-dashboard:
     build: ../dva-dashboard/
+  edge-node-server-demo:
+    build: ./edge-node-server-demo/
   postgres:
     image: postgres:17-alpine
     environment:
