@@ -1,0 +1,19 @@
+@ignore
+Feature: Set up the "25 unique students" VLA
+  # Called once by grades_unique_students.feature (callonce); not a test itself.
+  # Called with { template }, the template definition; returns { templateID, vlaID }.
+
+  Scenario: create the template and the VLA built from it
+    Given url 'http://vlamanager-backend:8000'
+    And path 'template'
+    And request __arg.template
+    When method post
+    Then status 201
+    * def templateID = response.id
+
+    Given url 'http://vlamanager-backend:8000'
+    And path 'vla', 'from-templates'
+    And request { name: 'Grades cover 25 students', description: { purpose: 'At least 25 unique students' }, qualityTemplates: [{ id: '#(templateID)', model: { field: 'studentId', minimum: 25 } }] }
+    When method post
+    Then status 201
+    * def vlaID = response.id

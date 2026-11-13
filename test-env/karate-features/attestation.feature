@@ -8,41 +8,18 @@ Feature: Attestation of Veracity (AoV) issuance and verification
   #   POST /attestation        -> { jws?, evaluationPassing, evaluationResults }
   #   POST /attestation/verify -> { verified, reason? }
   # Verification only succeeds when the consumer's VC Manager trusts the
-  # provider's did:key, which the Background sets up (idempotent).
+  # provider's did:key; the Background sets that up once, together with the
+  # VLA shared by every scenario (helpers/attestation-setup.feature).
 
   Background:
     * def provider = 'http://dva-api-provider:9090'
     * def consumer = 'http://dva-api-consumer:9090'
-    * def vlaManager = 'http://vlamanager-backend:8000'
-    * def vcProvider = 'http://dva-vc-manager-provider:8000'
-    * def vcConsumer = 'http://dva-vc-manager-consumer:8000'
     * def uuid = function() { return java.util.UUID.randomUUID() + '' }
 
-    # The consumer's VC Manager has to trust the provider's signing key
-    Given url vcProvider
-    And path 'admin', 'keys'
-    When method get
-    Then status 200
-    * def providerDidKey = response.issuer_did_key
-
-    Given url vcConsumer
-    And path 'admin', 'whitelist'
-    And request { did_key: '#(providerDidKey)', label: 'provider' }
-    When method post
-    Then status 201
-
-    # A VLA with two JQ checks: recent timestamp, and result in [1, 5].
-    # Defined here rather than read from test-data/vla-request/request.json,
-    # whose JQ is not evaluable (single-quoted string, no `details`).
-    * def recentCheck = { type: 'custom', engine: 'JQ', implementation: '{ success: (.timestamp >= \"20250101T0000Z\"), details: \"timestamp must not be before 2025-01-01\" }' }
-    * def rangeCheck = { type: 'custom', engine: 'JQ', implementation: '{ success: (.result >= 1 and .result <= 5), details: \"result must be between 1 and 5\" }' }
-    * def vla = { name: 'Recent and valid data', description: { purpose: 'Attestation test' }, schema: [{ name: 'data', logicalType: 'object', properties: [{ name: 'timestamp', logicalType: 'string' }, { name: 'result', logicalType: 'integer' }], quality: ['#(recentCheck)', '#(rangeCheck)'] }] }
-    Given url vlaManager
-    And path 'vla'
-    And request vla
-    When method post
-    Then status 201
-    * def vlaID = response.id
+    # The provider's key is whitelisted on the consumer and the VLA is created
+    # once, for all scenarios below
+    * def setup = callonce read('helpers/attestation-setup.feature')
+    * def vlaID = setup.vlaID
 
     * def goodData = { timestamp: '20250301T0000Z', result: 3 }
     * def badData = { timestamp: '20240101T0000Z', result: 9 }

@@ -1,0 +1,17 @@
+{
+  "name": "Minimum unique values",
+  "description": "Data is a list of records; the field named by <field> must hold at least <minimum> distinct values.",
+  "criterionType": "GREATER_THAN",
+  "targetAspect": "COMPLETENESS",
+  "evaluationMethod": {
+    "engine": "JQ",
+    "variableSchema": {
+      "properties": {
+        "field": { "type": "string" },
+        "minimum": { "type": "integer" }
+      },
+      "required": ["field", "minimum"]
+    },
+    "implementationTemplate": "([.[].{{ field }}] | unique | length) as $n | { success: ($n >= {{ minimum }}), details: (\"found \\($n) distinct {{ field }} values, need at least {{ minimum }}\") }"
+  }
+}
