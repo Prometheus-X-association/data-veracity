@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import axios from 'axios'
 import { OhVueIcon, addIcons } from 'oh-vue-icons'
 import * as FaIcons from 'oh-vue-icons/icons/fa'
 import VueSidebarMenu from 'vue-sidebar-menu'
@@ -16,8 +17,11 @@ import ApiStatusView from './components/ApiStatusView.vue'
 const Fa = Object.values({ ...FaIcons })
 addIcons(...Fa)
 
+// Resolve API calls like '/api/...' relative to the app's base path
+axios.defaults.baseURL = import.meta.env.BASE_URL
+
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', redirect: '/overview' },
     { path: '/overview', component: OverviewView },
