@@ -9,15 +9,7 @@ WORKDIR /srv
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Non-root user with UID 1000 (matches the default WSL user, so the
-# mounted ./output folder stays writable from both sides).
-RUN useradd --uid 1000 --create-home --shell /usr/sbin/nologin app \
-    && mkdir -p /srv/output \
-    && chown app:app /srv/output
-
 COPY app/ ./app/
-
-USER app
 
 EXPOSE 8001
 
