@@ -1,28 +1,51 @@
 ---
 services:
+
   dva-api:
     build:
       context: ../
       dockerfile: ./dva-api/Dockerfile
+
   dva-processing:
     build:
       context: ../
       dockerfile: ./dva-processing/Dockerfile
     init: true
+
   vla-manager-api:
     build:
       context: ../
       dockerfile: ./vla-manager-api/Dockerfile
+
   vla-manager:
-    build: ../vla-manager/
+    build:
+      context: ../vla-manager
+      dockerfile: ./Dockerfile
+      args:
+        BASE_PATH_ARG: ${BASE_PATH_VLA_MANAGER:-/}
+
   dva-vc-manager:
     build:
       context: ../
       dockerfile: ./dva-vc-manager/Dockerfile
-  dva-dashboard:
-    build: ../dva-dashboard/
+
+  dva-dashboard-provider:
+    build: 
+      context: ../dva-dashboard
+      dockerfile: ./Dockerfile
+      args:
+        BASE_PATH_ARG: ${BASE_PATH_DASHBOARD_PROVIDER:-/}
+
+  dva-dashboard-consumer:
+    build: 
+      context: ../dva-dashboard
+      dockerfile: ./Dockerfile
+      args:
+        BASE_PATH_ARG: ${BASE_PATH_DASHBOARD_CONSUMER:-/}
+
   edge-node-server-demo:
     build: ./edge-node-server-demo/
+
   postgres:
     image: postgres:17-alpine
     environment:
@@ -33,6 +56,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      
   karate:
     build: karate/
     volumes:

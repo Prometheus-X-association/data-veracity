@@ -145,7 +145,7 @@ services:
   dva-dashboard-provider:
     extends:
       file: common-services.yml
-      service: dva-dashboard
+      service: dva-dashboard-provider
     environment:
       DVA_API_URL: http://dva-api-provider:9090
       DVA_VLA_MANAGER_URL: http://vlamanager-backend:8000
@@ -157,7 +157,7 @@ services:
   dva-dashboard-consumer:
     extends:
       file: common-services.yml
-      service: dva-dashboard
+      service: dva-dashboard-consumer
     environment:
       DVA_API_URL: http://dva-api-consumer:9090
       DVA_VLA_MANAGER_URL: http://vlamanager-backend:8000
