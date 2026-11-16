@@ -13,10 +13,15 @@ server {
         return 200 '{"status":"pass"}';
     }
 
-    # Resolve the backend through Docker's DNS on each request rather than
+    # Resolve the backend through the container's DNS on each request rather than
     # once at startup, so a recreated backend container is still found.
     # A variable in proxy_pass is what makes nginx re-resolve.
-    resolver 127.0.0.11 valid=10s ipv6=off;
+    # The nameserver(s) come from the container's /etc/resolv.conf (filled in by
+    # the nginx image when NGINX_ENTRYPOINT_LOCAL_RESOLVERS is set), so this works
+    # with Docker's embedded DNS as well as with Kubernetes' cluster DNS.
+    # Note: nginx's resolver ignores DNS search domains, so in Kubernetes the
+    # upstream URLs must use fully qualified names (<svc>.<ns>.svc.cluster.local).
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
 
     location /api/ {
         set $backend ${VLA_MANAGER_BACKEND_URL};
