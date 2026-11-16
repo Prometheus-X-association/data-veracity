@@ -1,0 +1,12 @@
+# Local notes (not pushed)
+README.local.md
+
+# Local environment and caches
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Generated output and test datasets (may contain personal data)
+output/
+xapi_statements.json
+szoftech_pseudo_statements.json

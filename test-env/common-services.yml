@@ -45,6 +45,10 @@ services:
 
   edge-node-server-demo:
     build: ./edge-node-server-demo/
+  xapi-anonymizer:
+    build: ./xapi-anonymizer/
+  xapi-aggregation:
+    build: ./xapi-aggregation/
 
   postgres:
     image: postgres:17-alpine

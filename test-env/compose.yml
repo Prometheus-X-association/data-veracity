@@ -178,19 +178,41 @@ services:
       dva-processing-consumer: {condition: service_started}
 
 
-  # The edge node demo's orchestrator.  Only started with the `demo` profile.  The VLA to
-  # attest against is `params.vlaID` of each request, or else VLA_ID (optional):
-  #   VLA_ID=<vla id> docker compose --profile demo up -d
+  # The edge node demo: the orchestrator and the two services it uses.  Only started with
+  # the `demo` profile.  The VLAs the anonymized and the aggregated data are attested against
+  # are `params.anonymizedVlaID` and `params.aggregatedVlaID` of each request, or else:
+  #   ANONYMIZED_VLA_ID=<vla id> AGGREGATED_VLA_ID=<vla id> docker compose --profile demo up -d
   edge-node-server-demo:
     profiles: [demo]
     extends:
       file: common-services.yml
       service: edge-node-server-demo
     environment:
-      VLA_ID: ${VLA_ID:-}
+      ANONYMIZED_VLA_ID: ${ANONYMIZED_VLA_ID:-}
+      AGGREGATED_VLA_ID: ${AGGREGATED_VLA_ID:-}
       DVA_URL: http://dva-api-provider:9090
-      ANONYMIZER_URL: ${ANONYMIZER_URL:-}
-      FORWARD_URL: ${FORWARD_URL:-}
+      ANONYMIZER_URL: http://xapi-anonymizer:8001/api/anonymize
+      AGGREGATOR_URL: http://xapi-aggregation:8002/api/aggregate
     ports: [8090:8090]
     depends_on:
       dva-api-provider: {condition: service_healthy}
+      xapi-anonymizer: {condition: service_started}
+      xapi-aggregation: {condition: service_started}
+
+
+  # Copies of the services of the same names (see their SOURCE.md); published on 8101 and
+  # 8102 because the VC Managers use 8001 and 8002
+  xapi-anonymizer:
+    profiles: [demo]
+    extends:
+      file: common-services.yml
+      service: xapi-anonymizer
+    ports: [8101:8001]
+
+
+  xapi-aggregation:
+    profiles: [demo]
+    extends:
+      file: common-services.yml
+      service: xapi-aggregation
+    ports: [8102:8002]

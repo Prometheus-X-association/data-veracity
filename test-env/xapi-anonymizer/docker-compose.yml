@@ -1,0 +1,12 @@
+services:
+  anonymizer:
+    build: .
+    container_name: xapi-anonymizer
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./output:/srv/output:rw
+    environment:
+      NEXT_URL: ""
+   
+    restart: unless-stopped

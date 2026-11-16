@@ -2,28 +2,32 @@
 Orchestrates the edge node demo.
 
 The Dataspace Connector (PDC) POSTs the data to analyse to `/analyse`: the data
-itself, or, in a service chain, an envelope `{"data": ..., "contract": ..., "params": {...}}`.
-The data is
+itself (a list of xAPI statements), or, in a service chain, an envelope
+`{"data": ..., "contract": ..., "params": {...}}`.  The data goes through
 
- 1. anonymized by the anonymization service,
- 2. attested by the DVA (Data Veracity Assurance) against a fixed VLA, and
- 3. if the attestation succeeds, forwarded to the next endpoint.
+ 1. the anonymization service,
+ 2. the DVA (Data Veracity Assurance), which attests the anonymized data against a VLA,
+ 3. the aggregation service, which gets the attested, anonymized data,
+ 4. the DVA again, which attests the aggregated data against a second VLA,
+
+and the aggregated data is sent back, together with the two attestations (AoVs).  If
+either attestation fails, the flow stops there and nothing is returned but the reason.
 
 Configuration (environment variables):
 
-  VLA_ID          ID of the VLA to attest against, unless the request names one in
-                  `params.vlaID` (which wins). At least one of the two is needed.
-  DVA_URL         base URL of the DVA API (default: http://dva-api-provider:9090)
-  ANONYMIZER_URL  endpoint of the anonymization service; not set: a mock is used, which
-                  leaves the data as it is (the real service is provided separately)
-  FORWARD_URL     endpoint the attested data is forwarded to; not set: not forwarded
-  TIMEOUT_SECONDS timeout of each call to another service (default: 30)
+  ANONYMIZED_VLA_ID  VLA the anonymized data is attested against, unless the request names
+                     one in `params.anonymizedVlaID` (which wins)
+  AGGREGATED_VLA_ID  VLA the aggregated data is attested against, unless the request names
+                     one in `params.aggregatedVlaID` (which wins)
+  DVA_URL            base URL of the DVA API (default: http://dva-api-provider:9090)
+  ANONYMIZER_URL     anonymization endpoint (default: http://xapi-anonymizer:8001/api/anonymize)
+  AGGREGATOR_URL     aggregation endpoint (default: http://xapi-aggregation:8002/api/aggregate)
+  TIMEOUT_SECONDS    timeout of each call to another service (default: 30)
 """
 
 import logging
 import os
 import uuid
-from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any, AsyncIterator, Optional
@@ -38,22 +42,30 @@ logger = logging.getLogger("edge-node-server-demo")
 # namespace, because the DVA wants UUIDs for the exchange and the contract.
 _ID_NAMESPACE = uuid.UUID("6f1c2d8e-4a57-4c0b-9a3e-2d7b5f0e8c11")
 
+# The steps of the flow, as reported in errors
+ANONYMIZATION = "anonymization"
+ATTESTATION_ANONYMIZED = "attestation-anonymized"
+AGGREGATION = "aggregation"
+ATTESTATION_AGGREGATED = "attestation-aggregated"
+
 
 @dataclass(frozen=True)
 class Settings:
-    vla_id: Optional[str] = None
+    anonymized_vla_id: Optional[str] = None
+    aggregated_vla_id: Optional[str] = None
     dva_url: str = "http://dva-api-provider:9090"
-    anonymizer_url: Optional[str] = None
-    forward_url: Optional[str] = None
+    anonymizer_url: str = "http://xapi-anonymizer:8001/api/anonymize"
+    aggregator_url: str = "http://xapi-aggregation:8002/api/aggregate"
     timeout_seconds: float = 30.0
 
     @staticmethod
     def from_env() -> "Settings":
         return Settings(
-            vla_id=os.environ.get("VLA_ID", "").strip() or None,
+            anonymized_vla_id=os.environ.get("ANONYMIZED_VLA_ID", "").strip() or None,
+            aggregated_vla_id=os.environ.get("AGGREGATED_VLA_ID", "").strip() or None,
             dva_url=os.environ.get("DVA_URL", Settings.dva_url).rstrip("/"),
-            anonymizer_url=os.environ.get("ANONYMIZER_URL") or None,
-            forward_url=os.environ.get("FORWARD_URL") or None,
+            anonymizer_url=os.environ.get("ANONYMIZER_URL", Settings.anonymizer_url),
+            aggregator_url=os.environ.get("AGGREGATOR_URL", Settings.aggregator_url),
             timeout_seconds=float(os.environ.get("TIMEOUT_SECONDS", Settings.timeout_seconds)),
         )
 
@@ -68,15 +80,7 @@ async def get_client(settings: Settings = Depends(get_settings)) -> AsyncIterato
         yield client
 
 
-@asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    settings = app.dependency_overrides.get(get_settings, get_settings)()
-    if settings.vla_id is None:
-        logger.warning("VLA_ID is not set: every request has to name its VLA in params.vlaID")
-    yield
-
-
-app = FastAPI(title="Edge node server demo", lifespan=lifespan)
+app = FastAPI(title="Edge node server demo")
 
 
 class UpstreamError(Exception):
@@ -88,10 +92,32 @@ class UpstreamError(Exception):
         self.message = message
 
 
+class AttestationRefused(Exception):
+    """The DVA found that the data does not satisfy the VLA."""
+
+    def __init__(self, stage: str, evaluation_results: list[Any]):
+        super().__init__(stage)
+        self.stage = stage
+        self.evaluation_results = evaluation_results
+
+
 @app.exception_handler(UpstreamError)
 async def upstream_error_handler(_: Request, error: UpstreamError) -> JSONResponse:
     logger.error("%s failed: %s", error.stage, error.message)
     return JSONResponse(status_code=502, content={"stage": error.stage, "detail": error.message})
+
+
+@app.exception_handler(AttestationRefused)
+async def attestation_refused_handler(_: Request, refusal: AttestationRefused) -> JSONResponse:
+    logger.info("%s: the data does not satisfy the VLA, the flow stops here", refusal.stage)
+    return JSONResponse(
+        status_code=422,
+        content={
+            "stage": refusal.stage,
+            "detail": "the data does not satisfy the VLA",
+            "evaluationResults": refusal.evaluation_results,
+        },
+    )
 
 
 def as_uuid(value: Optional[str]) -> str:
@@ -104,36 +130,36 @@ def as_uuid(value: Optional[str]) -> str:
         return str(uuid.uuid5(_ID_NAMESPACE, value))
 
 
-async def _post(client: httpx.AsyncClient, stage: str, url: str, body: Any) -> httpx.Response:
+async def _post(client: httpx.AsyncClient, stage: str, url: str, body: Any) -> Any:
+    """The JSON the service at `url` answers with."""
     try:
         response = await client.post(url, json=body)
     except httpx.HTTPError as e:
         raise UpstreamError(stage, f"{url} could not be reached: {e!r}") from e
     if response.is_error:
         raise UpstreamError(stage, f"{url} answered {response.status_code}: {response.text[:500]}")
-    return response
-
-
-def mock_anonymize(data: Any) -> Any:
-    """Stands in for the anonymization service until it is available: changes nothing."""
-    return data
-
-
-async def anonymize(client: httpx.AsyncClient, settings: Settings, data: Any) -> tuple[Any, str]:
-    """The anonymized data, and how it was anonymized: "applied" by the anonymization
-    service, or "mock" by the stand-in that leaves the data as it is.
-
-    Assumed contract of the anonymization service (to be confirmed): the data is
-    POSTed as the JSON body, and the anonymized data is the JSON body of the answer.
-    """
-    if settings.anonymizer_url is None:
-        logger.warning("ANONYMIZER_URL is not set: using the MOCK anonymizer, the data is not anonymized")
-        return mock_anonymize(data), "mock"
-    response = await _post(client, "anonymization", settings.anonymizer_url, data)
     try:
-        return response.json(), "applied"
+        return response.json()
     except ValueError as e:
-        raise UpstreamError("anonymization", "the anonymization service did not answer with JSON") from e
+        raise UpstreamError(stage, f"{url} did not answer with JSON") from e
+
+
+async def anonymize(client: httpx.AsyncClient, settings: Settings, data: Any) -> list[Any]:
+    """The anonymized statements: the data is POSTed as the JSON body, and the anonymized
+    statements are the JSON list the anonymization service answers with."""
+    anonymized = await _post(client, ANONYMIZATION, settings.anonymizer_url, data)
+    if not isinstance(anonymized, list):
+        raise UpstreamError(ANONYMIZATION, f"{settings.anonymizer_url} did not answer with a list")
+    return anonymized
+
+
+async def aggregate(client: httpx.AsyncClient, settings: Settings, statements: list[Any]) -> list[Any]:
+    """The aggregated data (one row per student): the statements are POSTed as the JSON
+    body, and the rows are the JSON list the aggregation service answers with."""
+    rows = await _post(client, AGGREGATION, settings.aggregator_url, statements)
+    if not isinstance(rows, list):
+        raise UpstreamError(AGGREGATION, f"{settings.aggregator_url} did not answer with a list")
+    return rows
 
 
 def unwrap(body: Any) -> tuple[Any, dict[str, Any], Optional[str]]:
@@ -148,30 +174,57 @@ def unwrap(body: Any) -> tuple[Any, dict[str, Any], Optional[str]]:
     return body, {}, None
 
 
-def vla_id_for(settings: Settings, params: dict[str, Any]) -> str:
-    """The VLA to attest against: the one named in the request's params, else the configured one."""
-    vla_id = params.get("vlaID") or settings.vla_id
+def _vla_id(what: str, param: str, setting: str, from_params: Any, configured: Optional[str]) -> str:
+    vla_id = from_params or configured
     if not vla_id:
-        raise HTTPException(status_code=422, detail="no VLA to attest against: set VLA_ID or send params.vlaID")
+        raise HTTPException(
+            status_code=422, detail=f"no VLA for the {what} data: set {setting} or send params.{param}"
+        )
     try:
         return str(uuid.UUID(str(vla_id)))
     except ValueError:
-        raise HTTPException(status_code=422, detail=f"the VLA ID {vla_id!r} is not a valid UUID") from None
+        raise HTTPException(
+            status_code=422, detail=f"the VLA ID {vla_id!r} for the {what} data is not a valid UUID"
+        ) from None
+
+
+def vla_ids_for(settings: Settings, params: dict[str, Any]) -> tuple[str, str]:
+    """The VLAs for the anonymized and for the aggregated data: the ones named in the
+    request's params, else the configured ones."""
+    return (
+        _vla_id("anonymized", "anonymizedVlaID", "ANONYMIZED_VLA_ID",
+                params.get("anonymizedVlaID"), settings.anonymized_vla_id),
+        _vla_id("aggregated", "aggregatedVlaID", "AGGREGATED_VLA_ID",
+                params.get("aggregatedVlaID"), settings.aggregated_vla_id),
+    )
 
 
 async def attest(
-    client: httpx.AsyncClient, settings: Settings, exchange_id: str, contract_id: str, vla_id: str, data: Any
+    client: httpx.AsyncClient,
+    settings: Settings,
+    stage: str,
+    exchange_id: str,
+    contract_id: str,
+    vla_id: str,
+    data: Any,
 ) -> dict[str, Any]:
-    response = await _post(
+    """The DVA's attestation of the data against the VLA: the AoV and the evaluation results.
+
+    @raises AttestationRefused if the data does not satisfy the VLA
+    """
+    attestation = await _post(
         client,
-        "attestation",
+        stage,
         f"{settings.dva_url}/attestation",
         {"exchangeID": exchange_id, "contractID": contract_id, "vlaID": vla_id, "data": data},
     )
-    try:
-        return response.json()
-    except ValueError as e:
-        raise UpstreamError("attestation", "the DVA did not answer with JSON") from e
+    if not (attestation.get("evaluationPassing") and attestation.get("jws")):
+        raise AttestationRefused(stage, attestation.get("evaluationResults", []))
+    return {
+        "vlaID": vla_id,
+        "jws": attestation["jws"],
+        "evaluationResults": attestation.get("evaluationResults", []),
+    }
 
 
 @app.post("/analyse")
@@ -181,44 +234,30 @@ async def analyse(
     settings: Settings = Depends(get_settings),
     client: httpx.AsyncClient = Depends(get_client),
 ) -> JSONResponse:
-    """Anonymize the data, attest it, and forward it if the attestation succeeds."""
+    """Anonymize the data, attest it, aggregate it, attest the aggregate, and return it."""
     data, params, contract = unwrap(body)
-    vla_id = vla_id_for(settings, params)
+    anonymized_vla, aggregated_vla = vla_ids_for(settings, params)
 
     # The PDC identifies the exchange and the contract in its headers (the contract
     # also in the body, in a service chain)
     exchange_id = as_uuid(request.headers.get("x-ptx-dataExchangeId"))
     contract_id = as_uuid(request.headers.get("x-ptx-contractId") or contract)
 
-    anonymized, anonymization = await anonymize(client, settings, data)
+    anonymized = await anonymize(client, settings, data)
+    anonymized_attestation = await attest(
+        client, settings, ATTESTATION_ANONYMIZED, exchange_id, contract_id, anonymized_vla, anonymized
+    )
 
-    attestation = await attest(client, settings, exchange_id, contract_id, vla_id, anonymized)
-    passing = bool(attestation.get("evaluationPassing")) and bool(attestation.get("jws"))
-    if not passing:
-        logger.info("exchange %s: the data does not satisfy the VLA, not forwarded", exchange_id)
-        return JSONResponse(
-            status_code=422,
-            content={
-                "detail": "the data does not satisfy the VLA, so it was not forwarded",
-                "anonymization": anonymization,
-                "evaluationResults": attestation.get("evaluationResults", []),
-            },
-        )
-
-    forwarded = settings.forward_url is not None
-    if forwarded:
-        await _post(client, "forward", settings.forward_url, anonymized)
-    else:
-        logger.warning("FORWARD_URL is not set: the attested data is NOT forwarded")
+    aggregated = await aggregate(client, settings, anonymized)
+    aggregated_attestation = await attest(
+        client, settings, ATTESTATION_AGGREGATED, exchange_id, contract_id, aggregated_vla, aggregated
+    )
 
     return JSONResponse(
         content={
-            "data": {
-                "exchangeID": exchange_id,
-                "contractID": contract_id,
-                "vlaID": vla_id,
-                "jws": attestation["jws"],
-                "evaluationResults": attestation.get("evaluationResults", []),
-            }
+            "data": aggregated,
+            "attestations": {"anonymized": anonymized_attestation, "aggregated": aggregated_attestation},
+            "exchangeID": exchange_id,
+            "contractID": contract_id,
         }
     )

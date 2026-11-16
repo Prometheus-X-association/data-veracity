@@ -1,0 +1,13 @@
+services:
+  aggregation:
+    build: .
+    container_name: xapi-aggregation
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./output:/srv/output:rw
+    environment:
+      NEXT_URL: ""
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

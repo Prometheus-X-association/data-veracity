@@ -1,0 +1,9 @@
+# Local notes, not committed
+README.local.md
+
+# Environment and generated files
+.venv/
+__pycache__/
+.pytest_cache/
+output/
+test_input.json
