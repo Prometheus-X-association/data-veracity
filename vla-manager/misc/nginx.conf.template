@@ -1,6 +1,13 @@
 server {
     listen 80;
 
+    # Keep redirects relative so they work behind a reverse proxy
+    absolute_redirect off;
+
+    # Generated at start-up from BASE_PATH (see base-path.sh): strips the URL
+    # prefix if the reverse proxy forwards it unchanged
+    include /etc/nginx/base-path.conf;
+
     location / {
         root /usr/share/nginx/html;
         index unresolvable-file-html.html;

@@ -12,7 +12,11 @@ RUN pnpm run build
 
 
 FROM nginx:1.27-alpine-slim
-COPY --from=build /app/dist /usr/share/nginx/html
+# Pristine build (with base path placeholder); copied into the web root and
+# configured at container start-up from the BASE_PATH env var (default: /)
+COPY --from=build /app/dist /opt/app/dist
+COPY --from=build --chmod=755 /app/misc/base-path.sh /docker-entrypoint.d/40-base-path.sh
+ENV BASE_PATH=/
 COPY --from=build /app/misc/nginx.conf.template /etc/nginx/templates/default.conf.template
 # Let the nginx image export NGINX_LOCAL_RESOLVERS from /etc/resolv.conf
 ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1

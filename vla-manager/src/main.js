@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import axios from 'axios'
 
 import App from './App.vue'
 import './style.css'
@@ -14,8 +15,11 @@ if (import.meta.env.VITE_USE_MOCKS === 'true') {
   await worker.start({ onUnhandledRequest: 'bypass' })
 }
 
+// Resolve API calls like '/api/...' relative to the app's base path
+axios.defaults.baseURL = import.meta.env.BASE_URL
+
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', redirect: '/create' },
     { path: '/create', component: CreateView },
