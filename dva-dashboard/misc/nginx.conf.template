@@ -12,11 +12,16 @@ server {
         return 200 '{"status":"pass"}';
     }
 
-    # Resolve upstreams through Docker's DNS on each request rather than once
+    # Resolve upstreams through the container's DNS on each request rather than once
     # at startup: a recreated container can come back on another address –
     # even the one the other DVA API had, crossing the two dashboards.
     # A variable in proxy_pass is what makes nginx re-resolve.
-    resolver 127.0.0.11 valid=10s ipv6=off;
+    # The nameserver(s) come from the container's /etc/resolv.conf (filled in by
+    # the nginx image when NGINX_ENTRYPOINT_LOCAL_RESOLVERS is set), so this works
+    # with Docker's embedded DNS as well as with Kubernetes' cluster DNS.
+    # Note: nginx's resolver ignores DNS search domains, so in Kubernetes the
+    # upstream URLs must use fully qualified names (<svc>.<ns>.svc.cluster.local).
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
 
     location /api/vla {
         set $vla_manager ${DVA_VLA_MANAGER_URL};
